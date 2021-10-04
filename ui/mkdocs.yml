@@ -1,0 +1,17 @@
+site_name: Searchlab
+site_author: Michael Christen
+site_description: "YaCy Searchlab"
+site_url: "https://searchlab.eu"
+repo_url: "https://github.com/yacy/searchlab.git"
+
+theme:
+    name: null
+    custom_dir: 'cinder-superhero'
+
+nav:
+  - Home: index.md
+  - About: about.md
+
+markdown_extensions:
+  - admonition
+  - attr_list

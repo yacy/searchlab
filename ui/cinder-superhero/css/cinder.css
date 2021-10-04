@@ -1,0 +1,100 @@
+/*
+  Cinder Theme for MkDocs | Copyright 2015 Christopher Simpkins | MIT License
+*/
+
+body {
+    font-size: 16px;
+    line-height: 1.7;
+    background-color: #2B3E50;
+    color: #fff;
+}
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'LatoLatinWeb', PT Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #fff;
+}
+h1 small, h2 small, h3 small, h4 small, h5 small, h6 small, .h1 small, .h2 small, .h3 small, .h4 small, .h5 small, .h6 small, h1 .small, h2 .small, h3 .small, h4 .small, h5 .small, h6 .small, .h1 .small, .h2 .small, .h3 .small, .h4 .small, .h5 .small, .h6 .small {
+    color: #B1B7B9;
+}
+h1 {
+    font-weight: 700;
+    color: #30c0ff;
+}
+h2 {
+    font-weight: 700;
+    color:#fff;
+}
+h2 {
+    margin-top:40px;
+}
+h3 {
+    margin-top:25px;
+    color:#DE6724;
+}
+h4 {
+    font-weight: 300;
+    margin-top: 20px;
+    font-style: italic;
+}
+h5 {
+    font-weight: 300;
+    font-variant: small-caps;
+}
+pre, code {
+    color: #43ac6a;
+    background-color: #111;
+}
+pre>code {
+    font-size: 13px;
+}
+pre {
+    margin-top: 25px;
+    margin-bottom: 25px;
+    border: none;
+}
+.lead {
+    font-family: "LatoLatinWeb", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: 0.0312em;
+    color: #B1B7B9;
+}
+.navbar-default {
+    background-color: #4E5D6C;
+}
+.navbar-brand {
+    padding: 7px 15px;
+}
+.bs-sidebar {
+    border: none;
+}
+.bs-sidebar  a {
+    color: #ffffff;
+}
+.bs-sidenav {
+    font-size: 12px;
+}
+.well {
+    background-color: #4E5D6C;
+}
+.btn-secondary {
+    background-color:#4E5D6C;
+    border: none;
+}
+.table-striped > tbody > tr:nth-child(2n+1) > td, .table-striped > tbody > tr:nth-child(2n+1) > th {
+    background-color: #4E5D6C;
+}
+#mkdocs-search-query:focus {
+    outline: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+#mkdocs-search-query {
+    font-family: "LatoLatinWeb", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #EBEBEB;
+    height: 45px;
+}
+footer > hr {
+    width: 35%;
+}
