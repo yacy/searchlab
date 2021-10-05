@@ -8,7 +8,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'application'
 
-group = 'rgag.net'
+group = 'eu.searchlab'
 version = '0.0.1-SNAPSHOT'
 description = "Searchlab"
 archivesBaseName = 'searchlab'
