@@ -127,7 +127,7 @@ public class JSONObject {
      * Creates a {@code JSONObject} with no name/value mappings.
      */
     public JSONObject() {
-        nameValuePairs = new LinkedHashMap<String, Object>();
+        this.nameValuePairs = new LinkedHashMap<>();
     }
 
     /**
@@ -136,7 +136,7 @@ public class JSONObject {
      * @param keepOrder if set to true, the elements will preserve its insert order
      */
     public JSONObject(boolean keepOrder) {
-        nameValuePairs = keepOrder ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
+        this.nameValuePairs = keepOrder ? new LinkedHashMap<>() : new HashMap<>();
     }
 
     /**
@@ -150,17 +150,17 @@ public class JSONObject {
     /* (accept a raw type for API compatibility) */
     public JSONObject(Map<?, ?> copyFrom) {
         this();
-        Map<?, ?> contentsTyped = copyFrom;
-        for (Map.Entry<?, ?> entry : contentsTyped.entrySet()) {
+        final Map<?, ?> contentsTyped = copyFrom;
+        for (final Map.Entry<?, ?> entry : contentsTyped.entrySet()) {
             /*
              * Deviate from the original by checking that keys are non-null and
              * of the proper type. (We still defer validating the values).
              */
-            String key = (String) entry.getKey();
+            final String key = (String) entry.getKey();
             if (key == null) {
                 throw new NullPointerException("key == null");
             }
-            nameValuePairs.put(key, wrap(entry.getValue()));
+            this.nameValuePairs.put(key, wrap(entry.getValue()));
         }
     }
 
@@ -178,7 +178,7 @@ public class JSONObject {
          * Getting the parser to populate this could get tricky. Instead, just
          * parse to temporary JSONObject and then steal the data from that.
          */
-        Object object = readFrom.nextValue();
+        final Object object = readFrom.nextValue();
         if (object instanceof JSONObject) {
             this.nameValuePairs = ((JSONObject) object).nameValuePairs;
         } else {
@@ -205,19 +205,23 @@ public class JSONObject {
      */
     public JSONObject(JSONObject copyFrom, String [] names) {
         this();
-        for (String name : names) {
-            Object value = copyFrom.nameValuePairs.get(name);
+        for (final String name : names) {
+            final Object value = copyFrom.nameValuePairs.get(name);
             if (value != null) {
-                nameValuePairs.put(name, value);
+                this.nameValuePairs.put(name, value);
             }
         }
+    }
+
+    public Map<String, Object> toMap() {
+        return this.nameValuePairs;
     }
 
     /**
      * Returns the number of name/value mappings in this object.
      */
     public int length() {
-        return nameValuePairs.size();
+        return this.nameValuePairs.size();
     }
 
     /**
@@ -227,7 +231,7 @@ public class JSONObject {
      * @return this object.
      */
     public JSONObject put(String name, boolean value) throws JSONException {
-        nameValuePairs.put(checkName(name), value);
+        this.nameValuePairs.put(this.checkName(name), value);
         return this;
     }
 
@@ -240,7 +244,7 @@ public class JSONObject {
      * @return this object.
      */
     public JSONObject put(String name, double value) throws JSONException {
-        nameValuePairs.put(checkName(name), JSON.checkDouble(value));
+        this.nameValuePairs.put(this.checkName(name), JSON.checkDouble(value));
         return this;
     }
 
@@ -251,7 +255,7 @@ public class JSONObject {
      * @return this object.
      */
     public JSONObject put(String name, int value) throws JSONException {
-        nameValuePairs.put(checkName(name), value);
+        this.nameValuePairs.put(this.checkName(name), value);
         return this;
     }
 
@@ -262,7 +266,7 @@ public class JSONObject {
      * @return this object.
      */
     public JSONObject put(String name, long value) throws JSONException {
-        nameValuePairs.put(checkName(name), value);
+        this.nameValuePairs.put(this.checkName(name), value);
         return this;
     }
 
@@ -279,14 +283,14 @@ public class JSONObject {
      */
     public JSONObject put(String name, Object value) throws JSONException {
         if (value == null) {
-            nameValuePairs.remove(name);
+            this.nameValuePairs.remove(name);
             return this;
         }
         if (value instanceof Number) {
             // deviate from the original by checking all Numbers, not just floats & doubles
             JSON.checkDouble(((Number) value).doubleValue());
         }
-        nameValuePairs.put(checkName(name), value);
+        this.nameValuePairs.put(this.checkName(name), value);
         return this;
     }
 
@@ -298,7 +302,7 @@ public class JSONObject {
         if (name == null || value == null) {
             return this;
         }
-        return put(name, value);
+        return this.put(name, value);
     }
 
     /**
@@ -322,19 +326,19 @@ public class JSONObject {
     // TODO: Change {@code append) to {@link #append} when append is
     // unhidden.
     public JSONObject accumulate(String name, Object value) throws JSONException {
-        Object current = nameValuePairs.get(checkName(name));
+        final Object current = this.nameValuePairs.get(this.checkName(name));
         if (current == null) {
-            return put(name, value);
+            return this.put(name, value);
         }
 
         if (current instanceof JSONArray) {
-            JSONArray array = (JSONArray) current;
+            final JSONArray array = (JSONArray) current;
             array.checkedPut(value);
         } else {
-            JSONArray array = new JSONArray(2);
+            final JSONArray array = new JSONArray(2);
             array.checkedPut(current);
             array.checkedPut(value);
-            nameValuePairs.put(name, array);
+            this.nameValuePairs.put(name, array);
         }
         return this;
     }
@@ -351,14 +355,14 @@ public class JSONObject {
      * @hide
      */
     public JSONObject append(String name, Object value) throws JSONException {
-        Object current = nameValuePairs.get(checkName(name));
+        final Object current = this.nameValuePairs.get(this.checkName(name));
 
         final JSONArray array;
         if (current instanceof JSONArray) {
             array = (JSONArray) current;
         } else if (current == null) {
-            JSONArray newArray = new JSONArray();
-            nameValuePairs.put(name, newArray);
+            final JSONArray newArray = new JSONArray();
+            this.nameValuePairs.put(name, newArray);
             array = newArray;
         } else {
             throw new JSONException("Key " + name + " is not a JSONArray");
@@ -383,7 +387,7 @@ public class JSONObject {
      *     no such mapping.
      */
     public Object remove(String name) {
-        return nameValuePairs.remove(name);
+        return this.nameValuePairs.remove(name);
     }
 
     /**
@@ -391,35 +395,35 @@ public class JSONObject {
      * a mapping whose value is {@link #NULL}.
      */
     public boolean isNull(String name) {
-        Object value = nameValuePairs.get(name);
+        final Object value = this.nameValuePairs.get(name);
         return value == null || value == NULL;
     }
 
     /**
      * Returns true if this object has a mapping for {@code name}. The mapping
      * may be {@link #NULL}.
-     * 
+     *
      * This method has the deprecated flag because usage of this method leads to poor
      * code performance if used in combination with get(). Its much better to opt() and
      * check the result instead of doing two look-ups (first has(), then get()).
      */
     @Deprecated
     public boolean has(String name) {
-        return nameValuePairs.containsKey(name);
+        return this.nameValuePairs.containsKey(name);
     }
 
     /**
      * Returns the value mapped by {@code name}, or throws if no such mapping exists.
      *
      * @throws JSONException if no such mapping exists.
-     * 
+     *
      * This method has the deprecated flag because usage of this method leads to poor
      * code performance if used in combination with has(). Its much better to opt() and
      * check the result instead of doing two look-ups (first has(), then get()).
      */
     @Deprecated
     public Object get(String name) throws JSONException {
-        Object result = nameValuePairs.get(name);
+        final Object result = this.nameValuePairs.get(name);
         if (result == null) {
             throw new JSONException("No value for " + name);
         }
@@ -431,7 +435,7 @@ public class JSONObject {
      * exists.
      */
     public Object opt(String name) {
-        return nameValuePairs.get(name);
+        return this.nameValuePairs.get(name);
     }
 
     /**
@@ -442,8 +446,8 @@ public class JSONObject {
      *     to a boolean.
      */
     public boolean getBoolean(String name) throws JSONException {
-        Object object = get(name);
-        Boolean result = JSON.toBoolean(object);
+        final Object object = this.get(name);
+        final Boolean result = JSON.toBoolean(object);
         if (result == null) {
             throw JSON.typeMismatch(name, object, "boolean");
         }
@@ -455,7 +459,7 @@ public class JSONObject {
      * can be coerced to a boolean, or false otherwise.
      */
     public boolean optBoolean(String name) {
-        return optBoolean(name, false);
+        return this.optBoolean(name, false);
     }
 
     /**
@@ -463,8 +467,8 @@ public class JSONObject {
      * can be coerced to a boolean, or {@code fallback} otherwise.
      */
     public boolean optBoolean(String name, boolean fallback) {
-        Object object = nameValuePairs.get(name);
-        Boolean result = JSON.toBoolean(object);
+        final Object object = this.nameValuePairs.get(name);
+        final Boolean result = JSON.toBoolean(object);
         return result != null ? result : fallback;
     }
 
@@ -476,8 +480,8 @@ public class JSONObject {
      *     to a double.
      */
     public double getDouble(String name) throws JSONException {
-        Object object = get(name);
-        Double result = JSON.toDouble(object);
+        final Object object = this.get(name);
+        final Double result = JSON.toDouble(object);
         if (result == null) {
             throw JSON.typeMismatch(name, object, "double");
         }
@@ -489,7 +493,7 @@ public class JSONObject {
      * can be coerced to a double, or {@code NaN} otherwise.
      */
     public double optDouble(String name) {
-        return optDouble(name, Double.NaN);
+        return this.optDouble(name, Double.NaN);
     }
 
     /**
@@ -497,8 +501,8 @@ public class JSONObject {
      * can be coerced to a double, or {@code fallback} otherwise.
      */
     public double optDouble(String name, double fallback) {
-        Object object = nameValuePairs.get(name);
-        Double result = JSON.toDouble(object);
+        final Object object = this.nameValuePairs.get(name);
+        final Double result = JSON.toDouble(object);
         return result != null ? result : fallback;
     }
 
@@ -510,8 +514,8 @@ public class JSONObject {
      *     to an int.
      */
     public int getInt(String name) throws JSONException {
-        Object object = get(name);
-        Integer result = JSON.toInteger(object);
+        final Object object = this.get(name);
+        final Integer result = JSON.toInteger(object);
         if (result == null) {
             throw JSON.typeMismatch(name, object, "int");
         }
@@ -523,7 +527,7 @@ public class JSONObject {
      * can be coerced to an int, or 0 otherwise.
      */
     public int optInt(String name) {
-        return optInt(name, 0);
+        return this.optInt(name, 0);
     }
 
     /**
@@ -531,8 +535,8 @@ public class JSONObject {
      * can be coerced to an int, or {@code fallback} otherwise.
      */
     public int optInt(String name, int fallback) {
-        Object object = nameValuePairs.get(name);
-        Integer result = JSON.toInteger(object);
+        final Object object = this.nameValuePairs.get(name);
+        final Integer result = JSON.toInteger(object);
         return result != null ? result : fallback;
     }
 
@@ -546,8 +550,8 @@ public class JSONObject {
      *     to a long.
      */
     public long getLong(String name) throws JSONException {
-        Object object = get(name);
-        Long result = JSON.toLong(object);
+        final Object object = this.get(name);
+        final Long result = JSON.toLong(object);
         if (result == null) {
             throw JSON.typeMismatch(name, object, "long");
         }
@@ -560,7 +564,7 @@ public class JSONObject {
      * so this is <a href="#lossy">lossy</a>; use strings to transfer numbers via JSON.
      */
     public long optLong(String name) {
-        return optLong(name, 0L);
+        return this.optLong(name, 0L);
     }
 
     /**
@@ -570,8 +574,8 @@ public class JSONObject {
      * numbers via JSON.
      */
     public long optLong(String name, long fallback) {
-        Object object = nameValuePairs.get(name);
-        Long result = JSON.toLong(object);
+        final Object object = this.nameValuePairs.get(name);
+        final Long result = JSON.toLong(object);
         return result != null ? result : fallback;
     }
 
@@ -582,8 +586,8 @@ public class JSONObject {
      * @throws JSONException if no such mapping exists.
      */
     public String getString(String name) throws JSONException {
-        Object object = get(name);
-        String result = JSON.toString(object);
+        final Object object = this.get(name);
+        final String result = JSON.toString(object);
         if (result == null) {
             throw JSON.typeMismatch(name, object, "String");
         }
@@ -595,7 +599,7 @@ public class JSONObject {
      * necessary, or the empty string if no such mapping exists.
      */
     public String optString(String name) {
-        return optString(name, "");
+        return this.optString(name, "");
     }
 
     /**
@@ -603,8 +607,8 @@ public class JSONObject {
      * necessary, or {@code fallback} if no such mapping exists.
      */
     public String optString(String name, String fallback) {
-        Object object = nameValuePairs.get(name);
-        String result = JSON.toString(object);
+        final Object object = this.nameValuePairs.get(name);
+        final String result = JSON.toString(object);
         return result != null ? result : fallback;
     }
 
@@ -616,7 +620,7 @@ public class JSONObject {
      *     JSONArray}.
      */
     public JSONArray getJSONArray(String name) throws JSONException {
-        Object object = get(name);
+        final Object object = this.get(name);
         if (object instanceof JSONArray) {
             return (JSONArray) object;
         }
@@ -628,7 +632,7 @@ public class JSONObject {
      * JSONArray}, or null otherwise.
      */
     public JSONArray optJSONArray(String name) {
-        Object object = nameValuePairs.get(name);
+        final Object object = this.nameValuePairs.get(name);
         return object instanceof JSONArray ? (JSONArray) object : null;
     }
 
@@ -640,7 +644,7 @@ public class JSONObject {
      *     JSONObject}.
      */
     public JSONObject getJSONObject(String name) throws JSONException {
-        Object object = get(name);
+        final Object object = this.get(name);
         if (object instanceof JSONObject) {
             return (JSONObject) object;
         }
@@ -652,7 +656,7 @@ public class JSONObject {
      * JSONObject}, or null otherwise.
      */
     public JSONObject optJSONObject(String name) {
-        Object object = nameValuePairs.get(name);
+        final Object object = this.nameValuePairs.get(name);
         return object instanceof JSONObject ? (JSONObject) object : null;
     }
 
@@ -665,14 +669,14 @@ public class JSONObject {
         if (names == null) {
             return null;
         }
-        int length = names.length();
+        final int length = names.length();
         if (length == 0) {
             return null;
         }
-        JSONArray result = new JSONArray(length);
+        final JSONArray result = new JSONArray(length);
         for (int i = 0; i < length; i++) {
-            String name = JSON.toString(names.opt(i));
-            result.put(nameValuePairs.get(name));
+            final String name = JSON.toString(names.opt(i));
+            result.put(this.nameValuePairs.get(name));
         }
         return result;
     }
@@ -685,7 +689,7 @@ public class JSONObject {
      * undefined. The order of the keys is undefined.
      */
     public Iterator<String> keys() {
-        return nameValuePairs.keySet().iterator();
+        return this.nameValuePairs.keySet().iterator();
     }
 
     /**
@@ -699,7 +703,7 @@ public class JSONObject {
      * @hide.
      */
     public Set<String> keySet() {
-        return nameValuePairs.keySet();
+        return this.nameValuePairs.keySet();
     }
 
     /**
@@ -707,9 +711,9 @@ public class JSONObject {
      * returns null if this object contains no mappings.
      */
     public JSONArray names() {
-        return nameValuePairs.isEmpty()
+        return this.nameValuePairs.isEmpty()
                 ? null
-                : new JSONArray(new ArrayList<String>(nameValuePairs.keySet()));
+                : new JSONArray(new ArrayList<>(this.nameValuePairs.keySet()));
     }
 
     /**
@@ -718,10 +722,10 @@ public class JSONObject {
      */
     @Override public String toString() {
         try {
-            JSONStringer stringer = new JSONStringer();
-            writeTo(stringer);
+            final JSONStringer stringer = new JSONStringer();
+            this.writeTo(stringer);
             return stringer.toString();
-        } catch (JSONException e) {
+        } catch (final JSONException e) {
             return null;
         }
     }
@@ -742,14 +746,14 @@ public class JSONObject {
      *     nesting.
      */
     public String toString(int indentSpaces) throws JSONException {
-        JSONStringer stringer = new JSONStringer(indentSpaces);
-        writeTo(stringer);
+        final JSONStringer stringer = new JSONStringer(indentSpaces);
+        this.writeTo(stringer);
         return stringer.toString();
     }
 
     void writeTo(JSONStringer stringer) throws JSONException {
         stringer.object();
-        for (Map.Entry<String, Object> entry : nameValuePairs.entrySet()) {
+        for (final Map.Entry<String, Object> entry : this.nameValuePairs.entrySet()) {
             stringer.key(entry.getKey()).value(entry.getValue());
         }
         stringer.endObject();
@@ -766,7 +770,7 @@ public class JSONObject {
             throw new JSONException("Number must be non-null");
         }
 
-        double doubleValue = number.doubleValue();
+        final double doubleValue = number.doubleValue();
         JSON.checkDouble(doubleValue);
 
         // the original returns "-0" instead of "-0.0" for negative zero
@@ -774,7 +778,7 @@ public class JSONObject {
             return "-0";
         }
 
-        long longValue = number.longValue();
+        final long longValue = number.longValue();
         if (doubleValue == longValue) {
             return Long.toString(longValue);
         }
@@ -794,12 +798,12 @@ public class JSONObject {
             return "\"\"";
         }
         try {
-            JSONStringer stringer = new JSONStringer();
+            final JSONStringer stringer = new JSONStringer();
             stringer.open(JSONStringer.Scope.NULL, "");
             stringer.value(data);
             stringer.close(JSONStringer.Scope.NULL, JSONStringer.Scope.NULL, "");
             return stringer.toString();
-        } catch (JSONException e) {
+        } catch (final JSONException e) {
             throw new AssertionError();
         }
     }
@@ -849,7 +853,7 @@ public class JSONObject {
             if (o.getClass().getPackage().getName().startsWith("java.")) {
                 return o.toString();
             }
-        } catch (Exception ignored) {
+        } catch (final Exception ignored) {
         }
         return null;
     }

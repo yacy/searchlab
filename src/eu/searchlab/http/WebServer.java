@@ -42,6 +42,10 @@ import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jknack.handlebars.Context;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
+
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -57,7 +61,7 @@ public class WebServer implements Runnable {
     static {
         try {
             mimeTable.load(new FileInputStream("conf/httpd.mime"));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.error("failed loading defaults/httpd.mime", e);
         }
     }
@@ -84,10 +88,10 @@ public class WebServer implements Runnable {
     }
 
     private static ByteBuffer file2bytebuffer(File f) throws IOException {
-        RandomAccessFile raf = new RandomAccessFile(f,"r");
-        FileChannel fc = raf.getChannel();
-        long fileSize = fc.size();
-        ByteBuffer bb = ByteBuffer.allocate((int) fileSize);
+        final RandomAccessFile raf = new RandomAccessFile(f,"r");
+        final FileChannel fc = raf.getChannel();
+        final long fileSize = fc.size();
+        final ByteBuffer bb = ByteBuffer.allocate((int) fileSize);
         fc.read(bb);
         bb.flip();
         fc.close();
@@ -97,19 +101,19 @@ public class WebServer implements Runnable {
 
     private static HttpHandler requestmirror() {
         // HttpServerExchange
-        return (exchange) -> {
+        return exchange -> {
             //exchange.startBlocking();
             //String post_message = readStream(exchange.getInputStream());
-            String post_message = "";
+            final String post_message = "";
             JSONObject post = new JSONObject();
             if (post_message.length() > 0) try {
                 post = new JSONObject(new JSONTokener(post_message));
-            } catch (JSONException e) {};
+            } catch (final JSONException e) {}
 
             final Map<String, Deque<String>> query = exchange.getQueryParameters();
-            JSONObject json = new JSONObject(true);
+            final JSONObject json = new JSONObject(true);
             json.put("POST", post);
-            for (Map.Entry<String, Deque<String>> entry: query.entrySet()) {
+            for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
                 json.put(entry.getKey(), entry.getValue().getFirst());
             }
 
@@ -119,15 +123,31 @@ public class WebServer implements Runnable {
     }
 
     private static HttpHandler fileserver(File root) {
-        return (exchange) -> {
+        return exchange -> {
             File f = new File(root, exchange.getRequestPath());
             if (f.isDirectory()) f = new File(f, "index.html");
-            String path = f.getAbsolutePath();
-            int p = path.lastIndexOf('.');
-            String ext = p < 0 ? "default" : path.substring(p + 1);
-            String mime = mimeTable.getProperty(ext, "application/octet-stream");
+            final String path = f.getAbsolutePath();
+            final int p = path.lastIndexOf('.');
+            final String ext = p < 0 ? "default" : path.substring(p + 1);
+            final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
-            exchange.getResponseSender().send(file2bytebuffer(f));
+            if (ext.equals("html")) {
+                String html = file2tring(f);
+                final JSONObject json = new JSONObject();
+                json.put("name", "Baeldung");
+
+                final Handlebars handlebars = new Handlebars();
+                final Context context = Context
+                        .newBuilder(json)
+                        .resolver(JSONObjectValueResolver.INSTANCE)
+                        .build();
+                final Template template = handlebars.compileInline(html);
+                html = template.apply(context);
+
+                exchange.getResponseSender().send(html);
+            } else {
+                exchange.getResponseSender().send(file2bytebuffer(f));
+            }
         };
     }
 
