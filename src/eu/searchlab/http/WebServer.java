@@ -42,10 +42,7 @@ import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.jknack.handlebars.Context;
-import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Template;
-
+import eu.searchlab.http.services.MirrorService;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -73,6 +70,9 @@ public class WebServer implements Runnable {
     public WebServer(int port, String bind) {
         this.port = port;
         this.bind = bind;
+
+        // register services
+        ServiceMap.register(new MirrorService());
     }
 
     private static String stream2string(InputStream is) {
@@ -99,65 +99,55 @@ public class WebServer implements Runnable {
         return bb;
     }
 
-    private static HttpHandler requestmirror() {
-        // HttpServerExchange
-        return exchange -> {
-            //exchange.startBlocking();
-            //String post_message = readStream(exchange.getInputStream());
-            final String post_message = "";
-            JSONObject post = new JSONObject();
-            if (post_message.length() > 0) try {
-                post = new JSONObject(new JSONTokener(post_message));
-            } catch (final JSONException e) {}
-
-            final Map<String, Deque<String>> query = exchange.getQueryParameters();
-            final JSONObject json = new JSONObject(true);
-            json.put("POST", post);
-            for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
-                json.put(entry.getKey(), entry.getValue().getFirst());
-            }
-
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-            exchange.getResponseSender().send(json.toString(2), StandardCharsets.UTF_8);
-        };
-    }
-
     private static HttpHandler fileserver(File root) {
         return exchange -> {
-            File f = new File(root, exchange.getRequestPath());
+            final String requestPath = exchange.getRequestPath();
+            File f = new File(root, requestPath);
             if (f.isDirectory()) f = new File(f, "index.html");
-            final String path = f.getAbsolutePath();
-            final int p = path.lastIndexOf('.');
-            final String ext = p < 0 ? "default" : path.substring(p + 1);
+            final String filePath = f.getAbsolutePath();
+            final int p = filePath.lastIndexOf('.');
+            final String ext = p < 0 ? "default" : filePath.substring(p + 1);
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
-            if (ext.equals("html")) {
-                String html = file2tring(f);
-                final JSONObject json = new JSONObject();
-                json.put("name", "Baeldung");
 
-                final Handlebars handlebars = new Handlebars();
-                final Context context = Context
-                        .newBuilder(json)
-                        .resolver(JSONObjectValueResolver.INSTANCE)
-                        .build();
-                final Template template = handlebars.compileInline(html);
-                html = template.apply(context);
+            if (ext.equals("html") || ext.equals("json") || ext.equals("csv")) {
 
-                exchange.getResponseSender().send(html);
+                // read query parameters
+                //exchange.startBlocking();
+                //String post_message = readStream(exchange.getInputStream());
+                final String post_message = "";
+                JSONObject post = new JSONObject(true);
+                if (post_message.length() > 0) try {
+                    post = new JSONObject(new JSONTokener(post_message));
+                } catch (final JSONException e) {};
+
+                final Map<String, Deque<String>> query = exchange.getQueryParameters();
+                final JSONObject json = new JSONObject(true);
+                json.put("POST", post);
+                for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
+                    json.put(entry.getKey(), entry.getValue().getFirst());
+                }
+
+                // generate response
+                String template = null;
+                try {template = file2tring(f);} catch (final FileNotFoundException e) {}
+                final String response = ServiceMap.propose(requestPath, template, json);
+                if (response == null) {
+                    exchange.setStatusCode(404).setReasonPhrase("not found").getResponseSender().send("");
+                } else {
+                    exchange.getResponseSender().send(response);
+                }
             } else {
                 exchange.getResponseSender().send(file2bytebuffer(f));
             }
         };
     }
 
-
     @Override
     public void run() {
         // Start webserver
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         final PathHandler ph = Handlers.path();
-        ph.addExactPath("/api/mirror.json", requestmirror());
         ph.addPrefixPath("/", fileserver(new File(new File("ui"), "site")));
         builder.setHandler(ph);
         this.server = builder.build();
