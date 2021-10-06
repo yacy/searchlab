@@ -1,5 +1,5 @@
 /**
- *  Service
+ *  AbstractService
  *  Copyright 06.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
@@ -17,23 +17,29 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.http;
+
+package eu.searchlab.http.services;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public interface Service {
+import eu.searchlab.http.Service;
 
-    public enum Type {
-        OBJECT, ARRAY;
+public abstract class AbstractService implements Service {
+
+    @Override
+    public Type getType() {
+        return Service.Type.OBJECT;
     }
 
-    public String[] getPaths();
+    @Override
+    public JSONObject serveObject(JSONObject post) {
+        return new JSONObject();
+    }
 
-    public Type getType();
-
-    public JSONObject serveObject(JSONObject post);
-
-    public JSONArray serveArray(JSONObject post);
+    @Override
+    public JSONArray serveArray(JSONObject post) {
+        return new JSONArray();
+    }
 
 }

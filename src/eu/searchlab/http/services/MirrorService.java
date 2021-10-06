@@ -1,5 +1,5 @@
 /**
- *  Service
+ *  MirrorService
  *  Copyright 06.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
@@ -17,23 +17,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.http;
+package eu.searchlab.http.services;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-public interface Service {
+import eu.searchlab.http.Service;
 
-    public enum Type {
-        OBJECT, ARRAY;
+public class MirrorService extends AbstractService implements Service {
+
+    @Override
+    public String[] getPaths() {
+        return new String[] {"/api/mirror.json"};
     }
 
-    public String[] getPaths();
-
-    public Type getType();
-
-    public JSONObject serveObject(JSONObject post);
-
-    public JSONArray serveArray(JSONObject post);
+    @Override
+    public JSONObject serveObject(JSONObject post) {
+        return post; // mirror the post
+    }
 
 }
