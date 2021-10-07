@@ -110,6 +110,7 @@ sxw     = application/OOo-writer
 sxc     = application/OOo-calc 
 sxd     = application/OOo-draw 
 sxi     = application/OOo-impress 
+table   = text/html
 tar     = application/tar
 tbz     = application/x-bzip2
 tbz2    = application/x-bzip2

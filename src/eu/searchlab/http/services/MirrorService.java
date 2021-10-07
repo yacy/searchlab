@@ -27,7 +27,7 @@ public class MirrorService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/mirror.json"};
+        return new String[] {"/api/mirror.json", "/api/mirror.csv", "/api/mirror.table"};
     }
 
     @Override
