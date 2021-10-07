@@ -43,12 +43,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.searchlab.http.services.MirrorService;
+import eu.searchlab.storage.io.AbstractIO;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.Headers;
+import io.undertow.util.Methods;
 
 public class WebServer implements Runnable {
 
@@ -99,10 +102,24 @@ public class WebServer implements Runnable {
         return bb;
     }
 
-    private static HttpHandler fileserver(File root) {
-        return exchange -> {
+    private static class Fileserver implements HttpHandler {
+        File root;
+        public Fileserver(File root) {
+            this.root = root;
+        }
+
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+
+            if (exchange.isInIoThread()) {
+                // dispatch to a worker thread, see
+                // https://undertow.io/undertow-docs/undertow-docs-2.0.0/undertow-handler-guide.html#dispatch-code
+                exchange.dispatch(this);
+                return;
+            }
+
             final String requestPath = exchange.getRequestPath();
-            File f = new File(root, requestPath);
+            File f = new File(this.root, requestPath);
             if (f.isDirectory()) f = new File(f, "index.html");
             final String filePath = f.getAbsolutePath();
             final int p = filePath.lastIndexOf('.');
@@ -110,12 +127,14 @@ public class WebServer implements Runnable {
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
 
-            if (ext.equals("html") || ext.equals("json") || ext.equals("csv")) {
+            if (ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table")) {
 
+                String post_message = "";
                 // read query parameters
-                //exchange.startBlocking();
-                //String post_message = readStream(exchange.getInputStream());
-                final String post_message = "";
+                if (exchange.getRequestMethod().equals(Methods.POST) || exchange.getRequestMethod().equals(Methods.PUT)) {
+                    exchange.startBlocking();
+                    post_message = new String(AbstractIO.readAll(exchange.getInputStream(), -1), StandardCharsets.UTF_8);
+                }
                 JSONObject post = new JSONObject(true);
                 if (post_message.length() > 0) try {
                     post = new JSONObject(new JSONTokener(post_message));
@@ -140,7 +159,7 @@ public class WebServer implements Runnable {
             } else {
                 exchange.getResponseSender().send(file2bytebuffer(f));
             }
-        };
+        }
     }
 
     @Override
@@ -148,7 +167,7 @@ public class WebServer implements Runnable {
         // Start webserver
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         final PathHandler ph = Handlers.path();
-        ph.addPrefixPath("/", fileserver(new File(new File("ui"), "site")));
+        ph.addPrefixPath("/", new Fileserver(new File(new File("ui"), "site")));
         builder.setHandler(ph);
         this.server = builder.build();
         this.server.start();

@@ -62,12 +62,18 @@ public class ServiceMap {
             // its possible that the given html is null in case that we don't want to
             // use a template and instead we want to return the JSON only.
             if (service.getType() == Service.Type.OBJECT) {
-                final JSONObject json = service.serveObject(post);
-                try {
-                    return json.toString(2);
-                } catch (final JSONException e) {
-                    throw new IOException(e.getMessage());
+                if (path.endsWith(".json")) {
+                    final JSONObject json = service.serveObject(post);
+                    try {
+                        return json.toString(2);
+                    } catch (final JSONException e) {
+                        throw new IOException(e.getMessage());
+                    }
                 }
+                if (path.endsWith(".table")) {
+                    return TableGenerator.example;
+                }
+                new IOException("extension not appropriate for JSONObject");
             } else {
                 final JSONArray json = service.serveArray(post);
                 if (path.endsWith(".json")) {
@@ -80,21 +86,40 @@ public class ServiceMap {
                 if (path.endsWith(".csv")) {
                     // write a csv file
                     try {
-                        final JSONObject head = json.getJSONObject(0);
                         final List<String> headKeys = new ArrayList<>();
-                        headKeys.addAll(head.keySet()); // this MUST be put into an List to ensure that the order is consistent in all lines
                         final StringBuilder sb = new StringBuilder();
-                        for (final String k: headKeys) sb.append(k).append(';');
-                        sb.setCharAt(sb.length() - 1, '\n');
-                        for (int i = 0; i < json.length(); i++) {
-                            final JSONObject row = json.getJSONObject(i);
-                            for (final String k: headKeys) sb.append(row.optString(k, "")).append(';');
+                        // there are two types of array representations
+                        // - either as array of arrays where the first array has the column names
+                        // - or as array of objects where each array entry has objects with same keys
+                        final Object head = json.get(0);
+                        if (head instanceof JSONArray) {
+                            // array of arrays
+                            for (int i = 0; i < ((JSONArray) head).length(); i++) headKeys.add(((JSONArray) head).getString(i));
+                            for (final String k: headKeys) sb.append(k).append(';');
                             sb.setCharAt(sb.length() - 1, '\n');
+                            for (int i = 1; i < json.length(); i++) {
+                                final JSONArray row = json.getJSONArray(i);
+                                for (int j = 0; j < headKeys.size(); j++) sb.append(row.getString(j)).append(';');
+                                sb.setCharAt(sb.length() - 1, '\n');
+                            }
+                        } else {
+                            // array of objects
+                            headKeys.addAll(((JSONObject) head).keySet()); // this MUST be put into an List to ensure that the order is consistent in all lines
+                            for (final String k: headKeys) sb.append(k).append(';');
+                            sb.setCharAt(sb.length() - 1, '\n');
+                            for (int i = 0; i < json.length(); i++) {
+                                final JSONObject row = json.getJSONObject(i);
+                                for (final String k: headKeys) sb.append(row.optString(k, "")).append(';');
+                                sb.setCharAt(sb.length() - 1, '\n');
+                            }
                         }
                         return sb.toString();
                     } catch (final JSONException e) {
                         throw new IOException(e.getMessage());
                     }
+                }
+                if (path.endsWith(".table")) {
+                    return TableGenerator.example;
                 }
                 new IOException("extension not appropriate for JSONArray");
             }
