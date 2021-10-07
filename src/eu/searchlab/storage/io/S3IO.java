@@ -456,4 +456,13 @@ public class S3IO extends AbstractIO implements GenericIO {
         return item.size();
     }
 
+    @Override
+    public boolean exists(String bucketName, String objectName) {
+        try {
+            size(bucketName, objectName);
+            return true;
+        } catch (final IOException e) {
+            return false;
+        }
+    }
 }

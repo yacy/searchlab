@@ -19,11 +19,42 @@
 
 package eu.searchlab.storage.io;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
 
 public abstract class AbstractIO implements GenericIO {
+
+
+    public static byte[] readAll(InputStream is, int len) throws IOException {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int c;
+        byte[] b = new byte[16384];
+        while ((c = is.read(b, 0, b.length)) != -1) {
+            baos.write(b, 0, c);
+            if (len > 0 && baos.size() >= len) break;
+        }
+        b = baos.toByteArray();
+        if (len <= 0) return b;
+        if (b.length < len) throw new IOException("only " + b.length + " bytes available in stream");
+        if (b.length == len) return b;
+        final byte[] a = new byte[(int) len];
+        System.arraycopy(b, 0, a, 0, (int) len);
+        return a;
+    }
+
+    public byte[] readAll(String bucketName, String objectName) throws IOException {
+        return readAll(read(bucketName, objectName), -1);
+    }
+
+    public byte[] readAll(String bucketName, String objectName, long offset) throws IOException {
+        return readAll(read(bucketName, objectName, offset), -1);
+    }
+
+    public byte[] readAll(String bucketName, String objectName, long offset, long len) throws IOException {
+        return readAll(read(bucketName, objectName, offset), (int) len);
+    }
 
     /**
      * client-side merge of two objects into a new object

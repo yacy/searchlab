@@ -19,12 +19,16 @@
 
 package eu.searchlab.storage.io;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -150,41 +154,55 @@ public class FileIO extends AbstractIO implements GenericIO {
     public void copy(
             final String fromBucketName, final String fromObjectName,
             final String toBucketName, final String toObjectName) throws IOException {
-        // TODO Auto-generated method stub
-
+        final File from = getObjectFile(fromBucketName, fromObjectName);
+        final File to = getObjectFile(toBucketName, toObjectName);
+        final FileInputStream fis = new FileInputStream(from);
+        final FileOutputStream fos = new FileOutputStream(to);
+        final FileChannel src = fis.getChannel();
+        final FileChannel dest = fos.getChannel();
+        dest.transferFrom(src, 0, src.size());
+        src.close();
+        dest.close();
+        fis.close();
+        fos.close();
     }
 
     @Override
     public void move(
             final String fromBucketName, final String fromObjectName,
             final String toBucketName, final String toObjectName) throws IOException {
-        // TODO Auto-generated method stub
-
+        final File from = getObjectFile(fromBucketName, fromObjectName);
+        final File to = getObjectFile(toBucketName, toObjectName);
+        if (to.exists()) to.delete();
+        from.renameTo(to);
     }
 
     @Override
     public InputStream read(final String bucketName, final String objectName) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+        final File f = getObjectFile(bucketName, objectName);
+        final InputStream bis = new BufferedInputStream(new FileInputStream(f));
+        return bis;
     }
 
     @Override
-    public InputStream read(final String bucketName, final String objectName, final long offset)
-            throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+    public InputStream read(final String bucketName, final String objectName, final long offset) throws IOException {
+        final File f = getObjectFile(bucketName, objectName);
+        final InputStream bis = new BufferedInputStream(new FileInputStream(f));
+        bis.skip(offset);
+        return bis;
     }
 
     @Override
     public InputStream read(final String bucketName, final String objectName, final long offset, final long len) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+        final InputStream is = read(bucketName, objectName, offset);
+        final byte[] b = readAll(is, (int) len);
+        return new ByteArrayInputStream(b);
     }
 
     @Override
     public void remove(final String bucketName, final String objectName) throws IOException {
-        // TODO Auto-generated method stub
-
+        final File f = getObjectFile(bucketName, objectName);
+        f.delete();
     }
 
     @Override
@@ -220,4 +238,9 @@ public class FileIO extends AbstractIO implements GenericIO {
         return f.length();
     }
 
+    @Override
+    public boolean exists(String bucketName, String objectName) {
+        final File f = getObjectFile(bucketName, objectName);
+        return f.exists();
+    }
 }

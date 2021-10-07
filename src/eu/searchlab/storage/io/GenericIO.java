@@ -139,11 +139,42 @@ public interface GenericIO {
      * @throws IOException
      */
     public void move(String fromBucketName, String fromObjectName, String toBucketName, String toObjectName) throws IOException;
+
+    /**
+     * reading of an object into a byte array
+     * @param bucketName
+     * @param objectName
+     * @return whole object as byte[]
+     * @throws IOException
+     */
+    public byte[] readAll(String bucketName, String objectName) throws IOException;
+
+    /**
+     * reading of an object beginning with an offset into a byte array
+     * @param bucketName
+     * @param objectName
+     * @param offset
+     * @return whole object as byte[]
+     * @throws IOException
+     */
+    public byte[] readAll(String bucketName, String objectName, long offset) throws IOException;
+
+    /**
+     * reading of an object from an offset with given length into a byte array
+     * @param bucketName
+     * @param objectName
+     * @param offset
+     * @param len
+     * @return whole object as byte[]
+     * @throws IOException
+     */
+    public byte[] readAll(String bucketName, String objectName, long offset, long len) throws IOException;
+
     /**
      * reading of an object into a stream
      * @param bucketName
      * @param objectName
-     * @return
+     * @return InputStream
      * @throws IOException
      */
     public InputStream read(String bucketName, String objectName) throws IOException;
@@ -153,7 +184,7 @@ public interface GenericIO {
      * @param bucketName
      * @param objectName
      * @param offset
-     * @return
+     * @return InputStream
      * @throws IOException
      */
     public InputStream read(String bucketName, String objectName, long offset) throws IOException;
@@ -164,7 +195,7 @@ public interface GenericIO {
      * @param objectName
      * @param offset
      * @param len
-     * @return
+     * @return InputStream
      * @throws IOException
      */
     public InputStream read(String bucketName, String objectName, long offset, long len) throws IOException;
@@ -181,7 +212,7 @@ public interface GenericIO {
      * listing of object names in a given prefix path
      * @param bucketName
      * @param prefix
-     * @return
+     * @return list of object names
      * @throws IOException
      */
     public List<String> list(String bucketName, String prefix) throws IOException;
@@ -191,7 +222,7 @@ public interface GenericIO {
      * calculate the disk usage in a given path
      * @param bucketName
      * @param prefix
-     * @return
+     * @return disk usage in bytes
      * @throws IOException
      */
     public long diskUsage(String bucketName, String prefix) throws IOException;
@@ -200,7 +231,7 @@ public interface GenericIO {
      * last-modified date of an object
      * @param bucketName
      * @param objectName
-     * @return
+     * @return milliseconds since epoch
      * @throws IOException
      */
     public long lastModified(String bucketName, String objectName) throws IOException;
@@ -209,11 +240,19 @@ public interface GenericIO {
      * size of an object
      * @param bucketName
      * @param objectName
-     * @return
+     * @return size in bytes
      * @throws IOException
      */
     public long size(String bucketName, String objectName) throws IOException;
 
+    /**
+     * checks if an item exists
+     * @param bucketName
+     * @param objectName
+     * @return true if file exists
+     * @throws IOException
+     */
+    public boolean exists(String bucketName, String objectName);
 
 
 }
