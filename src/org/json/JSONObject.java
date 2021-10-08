@@ -305,6 +305,10 @@ public class JSONObject {
         return this.put(name, value);
     }
 
+    public void putAll(JSONObject other) {
+        this.nameValuePairs.putAll(other.nameValuePairs);
+    }
+
     /**
      * Appends {@code value} to the array already mapped to {@code name}. If
      * this object has no mapping for {@code name}, this inserts a new mapping.
