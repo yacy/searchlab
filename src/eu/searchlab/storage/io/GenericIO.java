@@ -42,7 +42,7 @@ public interface GenericIO {
      * @param bucketName
      * @throws IOException
      */
-    public void makeBucket(String bucketName) throws IOException;
+    public void makeBucket(final String bucketName) throws IOException;
 
     /**
      * test if a bucket exists
@@ -50,7 +50,7 @@ public interface GenericIO {
      * @return
      * @throws IOException
      */
-    public boolean bucketExists(String bucketName) throws IOException;
+    public boolean bucketExists(final String bucketName) throws IOException;
 
     /**
      * list all buckets
@@ -65,23 +65,22 @@ public interface GenericIO {
      * @return
      * @throws IOException
      */
-    public long bucketCreation(String bucketName) throws IOException;
+    public long bucketCreation(final String bucketName) throws IOException;
 
     /**
      * remove bucket; that bucket must be empty or the method will fail
      * @param bucketName
      * @throws IOException
      */
-    public void removeBucket(String bucketName) throws IOException;
+    public void removeBucket(final String bucketName) throws IOException;
 
     /**
      * write an object from a byte array
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @param object
      * @throws IOException
      */
-    public void write(String bucketName, String objectName, byte[] object) throws IOException;
+    public void write(final IOPath iop, final byte[] object) throws IOException;
 
     /**
      * write to an object until given PipedOutputStream is closed
@@ -91,122 +90,102 @@ public interface GenericIO {
      * @param len
      * @throws IOException
      */
-    public void write(String bucketName, String objectName, PipedOutputStream pos, long len) throws IOException;
+    public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException;
 
     /**
      * client-side merge of two objects into a new object
-     * @param fromBucketName0
-     * @param fromObjectName0
-     * @param fromBucketName1
-     * @param fromObjectName1
-     * @param toBucketName
-     * @param toObjectName
+     * @param fromIOp0
+     * @param fromIOp1
+     * @param toIOp
      * @throws IOException
      */
-    public void merge(
-            String fromBucketName0, String fromObjectName0,
-            String fromBucketName1, String fromObjectName1,
-            String toBucketName, String toObjectName) throws IOException;
+    public void merge(final IOPath fromIOp0, final IOPath fromIOp1, final IOPath toIOp) throws IOException;
 
     /**
      * merge an arbitrary number of objects into one target object
-     * @param bucketName
-     * @param toObjectName
-     * @param fromObjectNames
+     * @param IOPath iop
+     * @param fromIOps
      * @throws IOException
      */
-    public void mergeFrom(String bucketName, String toObjectName, String... fromObjectNames) throws IOException;
+    public void mergeFrom(final IOPath iop, final IOPath... fromIOps) throws IOException;
 
     /**
      * server-side copy of an object to another object
-     * @param fromBucketName
-     * @param fromObjectName
-     * @param toBucketName
-     * @param toObjectName
+     * @param fromIOp
+     * @param toIOp
      * @throws IOException
      */
-    public void copy(
-            String fromBucketName, String fromObjectName,
-            String toBucketName, String toObjectName) throws IOException;
+    public void copy(final IOPath fromIOp, final IOPath toIOp) throws IOException;
 
     /**
      * renaming/moving of one object into another. This is done using client-side object duplication
      * with deletion of the original because S3 does not support renaming/moving.
-     * @param fromBucketName
-     * @param fromObjectName
-     * @param toBucketName
-     * @param toObjectName
+     * @param fromIOp
+     * @param toIOp
      * @throws IOException
      */
-    public void move(String fromBucketName, String fromObjectName, String toBucketName, String toObjectName) throws IOException;
+    public void move(final IOPath fromIOp, final IOPath toIOp) throws IOException;
 
     /**
      * reading of an object into a byte array
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @return whole object as byte[]
      * @throws IOException
      */
-    public byte[] readAll(String bucketName, String objectName) throws IOException;
+    public byte[] readAll(final IOPath iop) throws IOException;
 
     /**
      * reading of an object beginning with an offset into a byte array
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @param offset
      * @return whole object as byte[]
      * @throws IOException
      */
-    public byte[] readAll(String bucketName, String objectName, long offset) throws IOException;
+    public byte[] readAll(final IOPath iop, final long offset) throws IOException;
 
     /**
      * reading of an object from an offset with given length into a byte array
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @param offset
      * @param len
      * @return whole object as byte[]
      * @throws IOException
      */
-    public byte[] readAll(String bucketName, String objectName, long offset, long len) throws IOException;
+    public byte[] readAll(final IOPath iop, final long offset, final long len) throws IOException;
 
     /**
      * reading of an object into a stream
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @return InputStream
      * @throws IOException
      */
-    public InputStream read(String bucketName, String objectName) throws IOException;
+    public InputStream read(final IOPath iop) throws IOException;
 
     /**
      * reading of an object beginning with an offset
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @param offset
      * @return InputStream
      * @throws IOException
      */
-    public InputStream read(String bucketName, String objectName, long offset) throws IOException;
+    public InputStream read(final IOPath iop, final long offset) throws IOException;
 
     /**
      * reading of an object from an offset with given length
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @param offset
      * @param len
      * @return InputStream
      * @throws IOException
      */
-    public InputStream read(String bucketName, String objectName, long offset, long len) throws IOException;
+    public InputStream read(final IOPath iop, final long offset, final long len) throws IOException;
 
     /**
      * removal of an object
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @throws IOException
      */
-    public void remove(String bucketName, String objectName) throws IOException;
+    public void remove(final IOPath iop) throws IOException;
 
     /**
      * listing of object names in a given prefix path
@@ -215,7 +194,7 @@ public interface GenericIO {
      * @return list of object names
      * @throws IOException
      */
-    public List<String> list(String bucketName, String prefix) throws IOException;
+    public List<String> list(final String bucketName, final String prefix) throws IOException;
 
 
     /**
@@ -225,34 +204,31 @@ public interface GenericIO {
      * @return disk usage in bytes
      * @throws IOException
      */
-    public long diskUsage(String bucketName, String prefix) throws IOException;
+    public long diskUsage(final String bucketName, final String prefix) throws IOException;
 
     /**
      * last-modified date of an object
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @return milliseconds since epoch
      * @throws IOException
      */
-    public long lastModified(String bucketName, String objectName) throws IOException;
+    public long lastModified(final IOPath iop) throws IOException;
 
     /**
      * size of an object
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @return size in bytes
      * @throws IOException
      */
-    public long size(String bucketName, String objectName) throws IOException;
+    public long size(final IOPath iop) throws IOException;
 
     /**
      * checks if an item exists
-     * @param bucketName
-     * @param objectName
+     * @param iop
      * @return true if file exists
      * @throws IOException
      */
-    public boolean exists(String bucketName, String objectName);
+    public boolean exists(final IOPath iop);
 
 
 }

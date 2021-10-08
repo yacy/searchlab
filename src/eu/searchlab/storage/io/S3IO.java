@@ -151,16 +151,16 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public void write(final String bucketName, final String objectName, final PipedOutputStream pos, final long len) throws IOException {
+    public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException {
         final InputStream is = new PipedInputStream(pos, 4096);
         final IOException[] ea = new IOException[1];
         ea[0] = null;
         final Thread t = new Thread() {
             @Override
             public void run() {
-                this.setName("S3IO writer for " + bucketName + "/" + objectName);
+                this.setName("S3IO writer for " + iop.toString());
                 try {
-                    S3IO.this.write(bucketName, objectName, is, len);
+                    S3IO.this.write(iop, is, len);
                 } catch (final IOException e) {
                     e.printStackTrace();
                     ea[0] = e;
@@ -180,22 +180,21 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @param len
      * @throws IOException
      */
-    public void write(final String bucketName, String objectName, final InputStream stream, final long len) throws IOException {
-        if (objectName.startsWith("/")) objectName = objectName.substring(1);
+    public void write(final IOPath iop, final InputStream stream, final long len) throws IOException {
         try {
             if (len < 0) {
                 this.mc.putObject(
                         PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectName)
+                            .bucket(iop.getBucket())
+                            .object(iop.getPath())
                             .stream(stream, -1, this.partSize)
                             .contentType("application/octet-stream")
                             .build());
             } else {
                 this.mc.putObject(
                         PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectName)
+                            .bucket(iop.getBucket())
+                            .object(iop.getPath())
                             .stream(stream, len, -1)
                             .contentType("application/octet-stream")
                             .build());
@@ -210,8 +209,8 @@ public class S3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public void write(final String bucketName, final String objectName, final byte[] object) throws IOException {
-        this.write(bucketName, objectName, new ByteArrayInputStream(object), object.length);
+    public void write(final IOPath iop, final byte[] object) throws IOException {
+        this.write(iop, new ByteArrayInputStream(object), object.length);
     }
 
     /**
@@ -223,17 +222,16 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public void copy(
-            final String fromBucketName, String fromObjectName,
-            final String toBucketName, String toObjectName) throws IOException {
-        if (fromObjectName.startsWith("/")) fromObjectName = fromObjectName.substring(1);
-        if (toObjectName.startsWith("/")) toObjectName = toObjectName.substring(1);
+    public void copy(final IOPath fromIOp, final IOPath toIOp) throws IOException {
         try {
             this.mc.copyObject(
                     CopyObjectArgs.builder()
-                        .bucket(toBucketName)
-                        .object(toObjectName)
-                        .source(CopySource.builder().bucket(fromBucketName).object(fromObjectName).build())
+                        .bucket(toIOp.getBucket())
+                        .object(toIOp.getPath())
+                        .source(
+                            CopySource.builder()
+                            .bucket(fromIOp.getBucket())
+                            .object(fromIOp.getPath()).build())
                         .build());
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -252,13 +250,12 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public InputStream read(final String bucketName, String objectName) throws IOException {
-        if (objectName.startsWith("/")) objectName = objectName.substring(1);
+    public InputStream read(final IOPath iop) throws IOException {
         try {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectName)
+                        .bucket(iop.getBucket())
+                        .object(iop.getPath())
                         .build());
             return stream;
         } catch (InvalidKeyException | ErrorResponseException
@@ -279,13 +276,12 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public InputStream read(final String bucketName, String objectName, final long offset) throws IOException {
-        if (objectName.startsWith("/")) objectName = objectName.substring(1);
+    public InputStream read(final IOPath iop, final long offset) throws IOException {
         try {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectName)
+                        .bucket(iop.getBucket())
+                        .object(iop.getPath())
                         .offset(offset)
                         .build());
             return stream;
@@ -308,13 +304,12 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public InputStream read(final String bucketName, String objectName, final long offset, final long len) throws IOException {
-        if (objectName.startsWith("/")) objectName = objectName.substring(1);
+    public InputStream read(final IOPath iop, final long offset, final long len) throws IOException {
         try {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectName)
+                        .bucket(iop.getBucket())
+                        .object(iop.getPath())
                         .offset(offset)
                         .length(len)
                         .build());
@@ -335,10 +330,9 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public void remove(final String bucketName, String objectName) throws IOException {
-        if (objectName.startsWith("/")) objectName = objectName.substring(1);
+    public void remove(final IOPath iop) throws IOException {
         try {
-            this.mc.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(objectName).build());
+            this.mc.removeObject(RemoveObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException
@@ -405,13 +399,12 @@ public class S3IO extends AbstractIO implements GenericIO {
         return cache;
     }
 
-    private Item getItem(final String bucketName, String objectName) throws IOException {
-        if (objectName.startsWith("/")) objectName = objectName.substring(1);
-        final int p = objectName.lastIndexOf("/");
-        final String prefix = p < 0 ? "" : objectName.substring(0, p);
-        final LinkedHashMap<String, Item> cache = this.getItems(bucketName, prefix);
-        final Item item = cache.get(objectName);
-        if (item == null) throw new IOException("object " + objectName + " in bucket " + bucketName + " does not exist (2)");
+    private Item getItem(final IOPath iop) throws IOException {
+        final int p = iop.getPath().lastIndexOf("/");
+        final String prefix = p < 0 ? "" : iop.getPath().substring(0, p);
+        final LinkedHashMap<String, Item> cache = this.getItems(iop.getBucket(), prefix);
+        final Item item = cache.get(iop.getPath());
+        if (item == null) throw new IOException("object " + iop.toString() + " does not exist (2)");
         return item;
     }
 
@@ -438,8 +431,8 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public long lastModified(final String bucketName, final String objectName) throws IOException {
-        final Item item = this.getItem(bucketName, objectName);
+    public long lastModified(final IOPath iop) throws IOException {
+        final Item item = this.getItem(iop);
         return item.lastModified().toEpochSecond() * 1000;
     }
 
@@ -451,15 +444,15 @@ public class S3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public long size(final String bucketName, final String objectName) throws IOException {
-        final Item item = this.getItem(bucketName, objectName);
+    public long size(final IOPath iop) throws IOException {
+        final Item item = this.getItem(iop);
         return item.size();
     }
 
     @Override
-    public boolean exists(String bucketName, String objectName) {
+    public boolean exists(final IOPath iop) {
         try {
-            size(bucketName, objectName);
+            size(iop);
             return true;
         } catch (final IOException e) {
             return false;

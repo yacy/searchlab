@@ -44,61 +44,44 @@ public abstract class AbstractIO implements GenericIO {
         return a;
     }
 
-    public byte[] readAll(String bucketName, String objectName) throws IOException {
-        return readAll(read(bucketName, objectName), -1);
-    }
-
-    public byte[] readAll(String bucketName, String objectName, long offset) throws IOException {
-        return readAll(read(bucketName, objectName, offset), -1);
-    }
-
-    public byte[] readAll(String bucketName, String objectName, long offset, long len) throws IOException {
-        return readAll(read(bucketName, objectName, offset), (int) len);
-    }
-
-    /**
-     * client-side merge of two objects into a new object
-     * @param fromBucketName0
-     * @param fromObjectName0
-     * @param fromBucketName1
-     * @param fromObjectName1
-     * @param toBucketName
-     * @param toObjectName
-     * @throws IOException
-     */
     @Override
-    public void merge(
-            final String fromBucketName0, final String fromObjectName0,
-            final String fromBucketName1, final String fromObjectName1,
-            final String toBucketName, final String toObjectName) throws IOException {
-        final long size0 = this.size(fromBucketName0, fromObjectName0);
-        final long size1 = this.size(fromBucketName1, fromObjectName1);
+    public byte[] readAll(IOPath iop) throws IOException {
+        return readAll(read(iop), -1);
+    }
+
+    @Override
+    public byte[] readAll(IOPath iop, long offset) throws IOException {
+        return readAll(read(iop, offset), -1);
+    }
+
+    @Override
+    public byte[] readAll(IOPath iop, long offset, long len) throws IOException {
+        return readAll(read(iop, offset), (int) len);
+    }
+
+    @Override
+    public void merge(IOPath fromIOp0, IOPath fromIOp1, IOPath toIOp) throws IOException {
+        final long size0 = this.size(fromIOp0);
+        final long size1 = this.size(fromIOp1);
         final long size = size0 < 0 || size1 < 0 ? -1 : size0 + size1;
         final PipedOutputStream pos = new PipedOutputStream();
-        this.write(toBucketName, toObjectName, pos, size);
-        InputStream is = this.read(fromBucketName0, fromObjectName0);
+        this.write(toIOp, pos, size);
+        InputStream is = this.read(fromIOp0);
         final byte[] buffer = new byte[4096];
         int l;
         while ((l = is.read(buffer)) > 0) pos.write(buffer, 0, l);
         is.close();
-        is = this.read(fromBucketName1, fromObjectName1);
+        is = this.read(fromIOp1);
         while ((l = is.read(buffer)) > 0) pos.write(buffer, 0, l);
         is.close();
         pos.close();
     }
 
-    /**
-     * merge an arbitrary number of objects into one target object
-     * @param bucketName
-     * @param toObjectName
-     * @param fromObjectNames
-     * @throws IOException
-     */
     @Override
-    public void mergeFrom(final String bucketName, final String toObjectName, final String... fromObjectNames) throws IOException {
+    public void mergeFrom(IOPath iop, IOPath... fromIOps) throws IOException {
         long size = 0;
-        for (final String fromObjectName: fromObjectNames) {
-            final long sizeN = this.size(bucketName, fromObjectName);
+        for (final IOPath fromIOp: fromIOps) {
+            final long sizeN = this.size(fromIOp);
             if (sizeN < 0) {
                 size = -1;
                 break;
@@ -106,10 +89,10 @@ public abstract class AbstractIO implements GenericIO {
             size += sizeN;
         }
         final PipedOutputStream pos = new PipedOutputStream();
-        this.write(bucketName, toObjectName, pos, size);
+        this.write(iop, pos, size);
         final byte[] buffer = new byte[4096];
-        for (final String fromObjectName: fromObjectNames) {
-            final InputStream is = this.read(bucketName, fromObjectName);
+        for (final IOPath fromIOp: fromIOps) {
+            final InputStream is = this.read(fromIOp);
             int l;
             while ((l = is.read(buffer)) > 0) pos.write(buffer, 0, l);
             is.close();
@@ -117,20 +100,11 @@ public abstract class AbstractIO implements GenericIO {
         pos.close();
     }
 
-    /**
-     * renaming/moving of one object into another. This is done using client-side object duplication
-     * with deletion of the original because S3 does not support renaming/moving.
-     * @param fromBucketName
-     * @param fromObjectName
-     * @param toBucketName
-     * @param toObjectName
-     * @throws IOException
-     */
     @Override
-    public void move(final String fromBucketName, final String fromObjectName, final String toBucketName, final String toObjectName) throws IOException {
+    public void move(IOPath fromIOp, IOPath toIOp) throws IOException {
         // there is unfortunately no server-side move
-        this.copy(fromBucketName, fromObjectName, toBucketName, toObjectName);
-        this.remove(fromBucketName, fromObjectName);
+        this.copy(fromIOp, toIOp);
+        this.remove(fromIOp);
     }
 
 }

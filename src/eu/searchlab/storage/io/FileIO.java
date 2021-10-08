@@ -52,11 +52,15 @@ public class FileIO extends AbstractIO implements GenericIO {
         return f;
     }
 
-    private File getObjectFile(final String bucket, final String objectName) {
+    private File getObjectFile(final String bucket, final String path) {
         File f = getBucketFile(bucket);
-        final String[] paths = objectName.split("/");
+        final String[] paths = path.split("/");
         for (final String p: paths) f = new File(f, p);
         return f;
+    }
+
+    private File getObjectFile(final IOPath iop) {
+        return getObjectFile(iop.getBucket(), iop.getPath());
     }
 
     @Override
@@ -100,16 +104,16 @@ public class FileIO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public void write(final String bucketName, final String objectName, final byte[] object) throws IOException {
-        final File f = getObjectFile(bucketName, objectName);
+    public void write(final IOPath iop, final byte[] object) throws IOException {
+        final File f = getObjectFile(iop);
         final FileOutputStream fos = new FileOutputStream(f);
         fos.write(object);
         fos.close();
     }
 
     @Override
-    public void write(final String bucketName, final String objectName, final PipedOutputStream pos, final long len) throws IOException {
-        final File f = getObjectFile(bucketName, objectName);
+    public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException {
+        final File f = getObjectFile(iop);
         final FileOutputStream fos = new FileOutputStream(f);
         final InputStream is = new PipedInputStream(pos, 4096);
         final IOException[] ea = new IOException[1];
@@ -118,7 +122,7 @@ public class FileIO extends AbstractIO implements GenericIO {
         final Thread t = new Thread() {
             @Override
             public void run() {
-                this.setName("FileIO writer for " + bucketName + "/" + objectName);
+                this.setName("FileIO writer for " + iop.toString());
                 final byte[] buffer = new byte[4096];
                 int l;
                 try {
@@ -151,11 +155,9 @@ public class FileIO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public void copy(
-            final String fromBucketName, final String fromObjectName,
-            final String toBucketName, final String toObjectName) throws IOException {
-        final File from = getObjectFile(fromBucketName, fromObjectName);
-        final File to = getObjectFile(toBucketName, toObjectName);
+    public void copy(final IOPath fromIOp, final IOPath toIOp) throws IOException {
+        final File from = getObjectFile(fromIOp);
+        final File to = getObjectFile(toIOp);
         final FileInputStream fis = new FileInputStream(from);
         final FileOutputStream fos = new FileOutputStream(to);
         final FileChannel src = fis.getChannel();
@@ -168,40 +170,38 @@ public class FileIO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public void move(
-            final String fromBucketName, final String fromObjectName,
-            final String toBucketName, final String toObjectName) throws IOException {
-        final File from = getObjectFile(fromBucketName, fromObjectName);
-        final File to = getObjectFile(toBucketName, toObjectName);
+    public void move(final IOPath fromIOp, final IOPath toIOp) throws IOException {
+        final File from = getObjectFile(fromIOp);
+        final File to = getObjectFile(toIOp);
         if (to.exists()) to.delete();
         from.renameTo(to);
     }
 
     @Override
-    public InputStream read(final String bucketName, final String objectName) throws IOException {
-        final File f = getObjectFile(bucketName, objectName);
+    public InputStream read(final IOPath iop) throws IOException {
+        final File f = getObjectFile(iop);
         final InputStream bis = new BufferedInputStream(new FileInputStream(f));
         return bis;
     }
 
     @Override
-    public InputStream read(final String bucketName, final String objectName, final long offset) throws IOException {
-        final File f = getObjectFile(bucketName, objectName);
+    public InputStream read(final IOPath iop, final long offset) throws IOException {
+        final File f = getObjectFile(iop);
         final InputStream bis = new BufferedInputStream(new FileInputStream(f));
         bis.skip(offset);
         return bis;
     }
 
     @Override
-    public InputStream read(final String bucketName, final String objectName, final long offset, final long len) throws IOException {
-        final InputStream is = read(bucketName, objectName, offset);
+    public InputStream read(final IOPath iop, final long offset, final long len) throws IOException {
+        final InputStream is = read(iop, offset);
         final byte[] b = readAll(is, (int) len);
         return new ByteArrayInputStream(b);
     }
 
     @Override
-    public void remove(final String bucketName, final String objectName) throws IOException {
-        final File f = getObjectFile(bucketName, objectName);
+    public void remove(final IOPath iop) throws IOException {
+        final File f = getObjectFile(iop);
         f.delete();
     }
 
@@ -227,20 +227,20 @@ public class FileIO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public long lastModified(final String bucketName, final String objectName) {
-        final File f = getObjectFile(bucketName, objectName);
+    public long lastModified(final IOPath iop) {
+        final File f = getObjectFile(iop);
         return f.lastModified();
     }
 
     @Override
-    public long size(final String bucketName, final String objectName) throws IOException {
-        final File f = getObjectFile(bucketName, objectName);
+    public long size(final IOPath iop) throws IOException {
+        final File f = getObjectFile(iop);
         return f.length();
     }
 
     @Override
-    public boolean exists(String bucketName, String objectName) {
-        final File f = getObjectFile(bucketName, objectName);
+    public boolean exists(final IOPath iop) {
+        final File f = getObjectFile(iop);
         return f.exists();
     }
 }
