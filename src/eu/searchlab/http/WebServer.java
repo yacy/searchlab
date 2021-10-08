@@ -119,6 +119,8 @@ public class WebServer implements Runnable {
             }
 
             final String requestPath = exchange.getRequestPath();
+
+            // load requested file
             File f = new File(this.root, requestPath);
             if (f.isDirectory()) f = new File(f, "index.html");
             final String filePath = f.getAbsolutePath();
@@ -127,10 +129,11 @@ public class WebServer implements Runnable {
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
 
-            if (ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table")) {
+            // switch case: files with templating / without
+            if (isTemplatingFileType(ext)) {
 
-                String post_message = "";
                 // read query parameters
+                String post_message = "";
                 if (exchange.getRequestMethod().equals(Methods.POST) || exchange.getRequestMethod().equals(Methods.PUT)) {
                     exchange.startBlocking();
                     post_message = new String(AbstractIO.readAll(exchange.getInputStream(), -1), StandardCharsets.UTF_8);
@@ -147,19 +150,96 @@ public class WebServer implements Runnable {
                     json.put(entry.getKey(), entry.getValue().getFirst());
                 }
 
-                // generate response
-                String template = null;
-                try {template = file2tring(f);} catch (final FileNotFoundException e) {}
-                final String response = ServiceMap.propose(requestPath, template, json);
-                if (response == null) {
+                // generate response (handle servlets + handlebars)
+                String html = null;
+                try {html = file2tring(f);} catch (final FileNotFoundException e) {}
+                html = ServiceMap.propose(requestPath, html, json);
+
+                // apply server-side includes
+                if (html != null) html = ssi(html);
+
+                // send html to client
+                if (html == null) {
                     exchange.setStatusCode(404).setReasonPhrase("not found").getResponseSender().send("");
                 } else {
-                    exchange.getResponseSender().send(response);
+                    exchange.getResponseSender().send(html);
                 }
             } else {
                 exchange.getResponseSender().send(file2bytebuffer(f));
             }
         }
+
+        private String recursiveRequest(String requestPath) throws Exception {
+
+            // parse query parameters
+            final JSONObject json = new JSONObject(true);
+            final int q = requestPath.indexOf('?');
+            if (q >= 0) {
+                final String qs = requestPath.substring(q + 1);
+                requestPath = requestPath.substring(0, q);
+                final String[] pm = qs.split("&");
+                for (final String pms: pm) {
+                    final int r = pms.indexOf('=');
+                    if (r < 0) continue;
+                    json.put(pms.substring(0, r), pms.substring(r + 1));
+                }
+            }
+
+            // load requested file
+            File f = new File(this.root, requestPath);
+            if (f.isDirectory()) f = new File(f, "index.html");
+            final String filePath = f.getAbsolutePath();
+            final int p = filePath.lastIndexOf('.');
+            final String ext = p < 0 ? "default" : filePath.substring(p + 1);
+
+            // switch case: files with templating / without
+            if (isTemplatingFileType(ext)) {
+
+                // generate response (handle servlets + handlebars)
+                String html = null;
+                try {html = file2tring(f);} catch (final FileNotFoundException e) {}
+                html = ServiceMap.propose(requestPath, html, json);
+
+                // apply server-side includes
+                if (html != null) html = ssi(html);
+
+                return html;
+            } else {
+                return file2tring(f);
+            }
+        }
+
+        boolean isTemplatingFileType(String ext) {
+            return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table");
+        }
+
+        private String ssi(String html) throws Exception {
+            // apply server-side includes
+            /*
+             * include a file in the same path as current path
+             * <!--#include file="header.shtml" -->
+             *
+             * include a file relatively to server root
+             * <!--#include virtual="script.pl" -->
+             */
+            int ssip = html.indexOf("<!--#include virtual=\"");
+            int end;
+            while (ssip >= 0 && (end = html.indexOf("-->", ssip + 24)) > 0 ) { // min length 24; <!--#include virtual="a"
+                final int rightquote = html.indexOf("\"", ssip + 23);
+                if (rightquote <= 0 || rightquote >= end) break;
+                final String virtual = html.substring(ssip + 22, rightquote);
+                final String include = recursiveRequest(virtual);
+                if (include == null) {
+                    html = html.substring(0, ssip) + html.substring(end + 3);
+                    ssip = html.indexOf("<!--#include virtual=\"", ssip);
+                } else {
+                    html = html.substring(0, ssip) + include + html.substring(end + 3);
+                    ssip = html.indexOf("<!--#include virtual=\"", ssip + include.length());
+                }
+            }
+            return html;
+        }
+
     }
 
     @Override
