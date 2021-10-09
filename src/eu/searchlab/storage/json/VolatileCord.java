@@ -20,12 +20,17 @@
 package eu.searchlab.storage.json;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import tech.tablesaw.api.Table;
+import tech.tablesaw.columns.Column;
 
 public class VolatileCord extends AbstractCord implements Cord {
 
@@ -36,10 +41,32 @@ public class VolatileCord extends AbstractCord implements Cord {
         this.unwrittenChanges = false;
     }
 
+    public VolatileCord append(Table table) throws IOException {
+        final Column<?>[] columns = table.columnArray();
+        synchronized (this.mutex) {
+            this.ensureLoaded();
+            try {
+                for (int i = 0; i < table.rowCount(); i++) {
+                    final JSONObject j = new JSONObject(true);
+                    for (final Column<?> c: columns) {
+                        final String key = c.name();
+                        final Object value = c.get(i);
+                        j.put(key, value);
+                    }
+                    this.array.put(j);
+                }
+            } catch (final JSONException e) {
+                throw new IOException(e.getMessage());
+            }
+            this.unwrittenChanges = true;
+            return this;
+        }
+    }
+
     @Override
     public Cord append(JSONObject value) throws IOException {
         synchronized (this.mutex) {
-            ensureLoaded();
+            this.ensureLoaded();
             this.array.put(value);
             this.unwrittenChanges = true;
             return this;
@@ -49,11 +76,11 @@ public class VolatileCord extends AbstractCord implements Cord {
     @Override
     public Cord prepend(JSONObject value) throws IOException {
         synchronized (this.mutex) {
-            ensureLoaded();
+            this.ensureLoaded();
             try {
                 this.array.put(0, value);
                 this.unwrittenChanges = true;
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 throw new IOException(e.getMessage());
             }
             return this;
@@ -63,11 +90,11 @@ public class VolatileCord extends AbstractCord implements Cord {
     @Override
     public Cord insert(JSONObject value, int p) throws IOException {
         synchronized (this.mutex) {
-            ensureLoaded();
+            this.ensureLoaded();
             try {
                 this.array.put(p, value);
                 this.unwrittenChanges = true;
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 throw new IOException(e.getMessage());
             }
             return this;
@@ -77,8 +104,8 @@ public class VolatileCord extends AbstractCord implements Cord {
     @Override
     public JSONObject remove(int p) throws IOException {
         synchronized (this.mutex) {
-            ensureLoaded();
-            Object o = this.array.remove(p);
+            this.ensureLoaded();
+            final Object o = this.array.remove(p);
             this.unwrittenChanges = true;
             assert o instanceof JSONObject;
             return (JSONObject) o;
@@ -87,14 +114,14 @@ public class VolatileCord extends AbstractCord implements Cord {
 
     @Override
     public JSONObject removeFirst() throws IOException {
-        return remove(0);
+        return this.remove(0);
     }
 
     @Override
     public JSONObject removeLast() throws IOException {
         synchronized (this.mutex) {
-            ensureLoaded();
-            Object o = this.array.remove(this.array.length() - 1);
+            this.ensureLoaded();
+            final Object o = this.array.remove(this.array.length() - 1);
             this.unwrittenChanges = true;
             assert o instanceof JSONObject;
             return (JSONObject) o;
@@ -102,37 +129,84 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public JSONObject get(int p) throws IOException {
+    public List<JSONObject> removeAllWhere(String key, String value) throws IOException{
+        final List<JSONObject> list = new ArrayList<>();
         synchronized (this.mutex) {
-            ensureLoaded();
-            Object o;
-            try {
-                o = this.array.get(p);
-                assert o instanceof JSONObject;
-                return (JSONObject) o;
-            } catch (JSONException e) {
-                throw new IOException(e.getMessage());
+            this.ensureLoaded();
+            final Iterator<Object> i = this.array.iterator();
+            while (i.hasNext()) {
+                final Object o = i.next();
+                if (!(o instanceof JSONObject)) continue;
+                final Object v = ((JSONObject) o).opt(key);
+                if (!(v instanceof String)) continue;
+                if (((String) v).equals(value)) {
+                    list.add((JSONObject) o);
+                    i.remove();
+                    this.unwrittenChanges = true;
+                }
             }
+            return list;
         }
     }
 
     @Override
-    public JSONObject getFirst() throws IOException {
-        return get(0);
+    public List<JSONObject> removeAllWhere(String key, long value) throws IOException {
+        final List<JSONObject> list = new ArrayList<>();
+        synchronized (this.mutex) {
+            this.ensureLoaded();
+            final Iterator<Object> i = this.array.iterator();
+            while (i.hasNext()) {
+                final Object o = i.next();
+                if (!(o instanceof JSONObject)) continue;
+                final Object v = ((JSONObject) o).opt(key);
+                if (!(v instanceof Long) && !(v instanceof Integer)) continue;
+                if (((Long) v).longValue() == value) {
+                    list.add((JSONObject) o);
+                    i.remove();
+                    this.unwrittenChanges = true;
+                }
+            }
+            return list;
+        }
     }
 
     @Override
-    public JSONObject getLast() throws IOException {
+    public JSONObject removeOneWhere(String key, String value) throws IOException {
         synchronized (this.mutex) {
-            ensureLoaded();
-            Object o;
-            try {
-                o = this.array.get(this.array.length() - 1);
-                assert o instanceof JSONObject;
-                return (JSONObject) o;
-            } catch (JSONException e) {
-                throw new IOException(e.getMessage());
+            this.ensureLoaded();
+            final Iterator<Object> i = this.array.iterator();
+            while (i.hasNext()) {
+                final Object o = i.next();
+                if (!(o instanceof JSONObject)) continue;
+                final Object v = ((JSONObject) o).opt(key);
+                if (!(v instanceof String)) continue;
+                if (((String) v).equals(value)) {
+                    i.remove();
+                    this.unwrittenChanges = true;
+                    return (JSONObject) o;
+                }
             }
+            return null;
+        }
+    }
+
+    @Override
+    public JSONObject removeOneWhere(String key, long value) throws IOException {
+        synchronized (this.mutex) {
+            this.ensureLoaded();
+            final Iterator<Object> i = this.array.iterator();
+            while (i.hasNext()) {
+                final Object o = i.next();
+                if (!(o instanceof JSONObject)) continue;
+                final Object v = ((JSONObject) o).opt(key);
+                if (!(v instanceof Long) && !(v instanceof Integer)) continue;
+                if (((Long) v).longValue() == value) {
+                    i.remove();
+                    this.unwrittenChanges = true;
+                    return (JSONObject) o;
+                }
+            }
+            return null;
         }
     }
 
