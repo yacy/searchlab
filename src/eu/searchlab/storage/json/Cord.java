@@ -20,6 +20,7 @@
 package eu.searchlab.storage.json;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -63,6 +64,12 @@ public interface Cord {
     public JSONObject removeFirst() throws IOException;
     public JSONObject removeLast() throws IOException;
 
+    public List<JSONObject> removeAllWhere(String key, String value) throws IOException;
+    public List<JSONObject> removeAllWhere(String key, long value) throws IOException;
+
+    public JSONObject removeOneWhere(String key, String value) throws IOException;
+    public JSONObject removeOneWhere(String key, long value) throws IOException;
+
     /**
      * Read one object from the tray.
      * If the key denotes not an object,
@@ -75,6 +82,11 @@ public interface Cord {
     public JSONObject getFirst() throws IOException;
     public JSONObject getLast() throws IOException;
 
+    public List<JSONObject> getAllWhere(String key, String value) throws IOException;
+    public List<JSONObject> getAllWhere(String key, long value) throws IOException;
+
+    public JSONObject getOneWhere(String key, String value) throws IOException;
+    public JSONObject getOneWhere(String key, long value) throws IOException;
     /**
      * Translate the whole tray into JSONArray.
      * For most trays this is equivalent to return the buffered storage object.
