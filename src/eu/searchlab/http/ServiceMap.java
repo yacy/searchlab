@@ -62,8 +62,8 @@ public class ServiceMap {
             // its possible that the given html is null in case that we don't want to
             // use a template and instead we want to return the JSON only.
             if (service.getType() == Service.Type.OBJECT) {
+                final JSONObject json = service.serveObject(post);
                 if (path.endsWith(".json")) {
-                    final JSONObject json = service.serveObject(post);
                     try {
                         return json.toString(2);
                     } catch (final JSONException e) {
@@ -71,14 +71,25 @@ public class ServiceMap {
                     }
                 }
                 if (path.endsWith(".table")) {
-                    return TableGenerator.example;
+                    try {
+                        return new TableGenerator(json).getTable();
+                    } catch (JSONException e) {
+                        throw new IOException(e.getMessage());
+                    }
+                }
+                if (path.endsWith(".tablei")) {
+                    try {
+                        return new TableGenerator(json).getTableI();
+                    } catch (JSONException e) {
+                        throw new IOException(e.getMessage());
+                    }
                 }
                 new IOException("extension not appropriate for JSONObject");
             } else {
-                final JSONArray json = service.serveArray(post);
+                final JSONArray array = service.serveArray(post);
                 if (path.endsWith(".json")) {
                     try {
-                        return json.toString(2);
+                        return array.toString(2);
                     } catch (final JSONException e) {
                         throw new IOException(e.getMessage());
                     }
@@ -91,14 +102,14 @@ public class ServiceMap {
                         // there are two types of array representations
                         // - either as array of arrays where the first array has the column names
                         // - or as array of objects where each array entry has objects with same keys
-                        final Object head = json.get(0);
+                        final Object head = array.get(0);
                         if (head instanceof JSONArray) {
                             // array of arrays
                             for (int i = 0; i < ((JSONArray) head).length(); i++) headKeys.add(((JSONArray) head).getString(i));
                             for (final String k: headKeys) sb.append(k).append(';');
                             sb.setCharAt(sb.length() - 1, '\n');
-                            for (int i = 1; i < json.length(); i++) {
-                                final JSONArray row = json.getJSONArray(i);
+                            for (int i = 1; i < array.length(); i++) {
+                                final JSONArray row = array.getJSONArray(i);
                                 for (int j = 0; j < headKeys.size(); j++) sb.append(row.getString(j)).append(';');
                                 sb.setCharAt(sb.length() - 1, '\n');
                             }
@@ -107,8 +118,8 @@ public class ServiceMap {
                             headKeys.addAll(((JSONObject) head).keySet()); // this MUST be put into an List to ensure that the order is consistent in all lines
                             for (final String k: headKeys) sb.append(k).append(';');
                             sb.setCharAt(sb.length() - 1, '\n');
-                            for (int i = 0; i < json.length(); i++) {
-                                final JSONObject row = json.getJSONObject(i);
+                            for (int i = 0; i < array.length(); i++) {
+                                final JSONObject row = array.getJSONObject(i);
                                 for (final String k: headKeys) sb.append(row.optString(k, "")).append(';');
                                 sb.setCharAt(sb.length() - 1, '\n');
                             }
@@ -119,7 +130,18 @@ public class ServiceMap {
                     }
                 }
                 if (path.endsWith(".table")) {
-                    return TableGenerator.example;
+                    try {
+                        return new TableGenerator(array).getTable();
+                    } catch (JSONException e) {
+                        throw new IOException(e.getMessage());
+                    }
+                }
+                if (path.endsWith(".tablei")) {
+                    try {
+                        return new TableGenerator(array).getTableI();
+                    } catch (JSONException e) {
+                        throw new IOException(e.getMessage());
+                    }
                 }
                 new IOException("extension not appropriate for JSONArray");
             }
