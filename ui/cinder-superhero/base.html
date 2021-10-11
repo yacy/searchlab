@@ -24,7 +24,13 @@
     <link href="{{ 'css/cinder.css'|url }}" rel="stylesheet">
     <link href="{{ 'css/highlight.css'|url }}" rel="stylesheet">
     <!-- <link href="{{ 'css/latostyle.css'|url }}" rel="stylesheet">-->
-
+    <style>
+      div.mermaid {
+         font-family: 'Courier New', Courier, monospace !important;
+      }
+    </style>
+    
+    
     {%- for path in config['extra_css'] %}
     <link href="{{ path|url }}" rel="stylesheet">
     {%- endfor %}
@@ -45,6 +51,11 @@
     <script src="{{ 'js/fontawesome-all.js'|url }}"></script>
     <script src="{{ 'js/bootstrap.min.js'|url }}"></script>
     <script src="{{ 'js/highlight.pack.js'|url }}"></script>
+    <script src="{{ 'js/mermaid.min.js'|url }}"></script>
+    <script src="{{ 'js/bootstrap-table.min.js'|url }}"></script>
+    <script src="{{ 'js/dataTables.bootstrap.min.js'|url }}"></script>
+    <script src="{{ 'js/jquery.dataTables.min.js'|url }}"></script>
+
     <script>hljs.initHighlightingOnLoad();</script>
     <script>var base_url = {{ base_url | tojson }}</script>
     {% if config.shortcuts %}
@@ -127,7 +138,21 @@
         {% endif %}
         {% endblock %}
     </footer>
-    
+
+    <script>
+    mermaid.initialize({
+	theme: 'dark',
+	// themes: default, forest, dark, neutral
+	// themeCSS: '.node rect { fill: red; }',
+	logLevel: 3,
+	securityLevel: 'loose',
+	flowchart: { curve: 'basis' },
+	gantt: { axisFormat: '%m/%d/%Y' },
+	sequence: { actorMargin: 50 },
+	// sequenceDiagram: { actorMargin: 300 } // deprecated
+    });
+    </script>
+
     {% if 'search' in config['plugins'] %}{%- include "search-modal.html" %}{% endif %}
     {%- include "keyboard-modal.html" %}
     </body>

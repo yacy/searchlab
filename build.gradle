@@ -43,11 +43,12 @@ repositories {
 
 dependencies {
   implementation 'org.apache.logging.log4j:log4j-core:2.14.1'
+  implementation 'io.swagger.core.v3:swagger-jaxrs2:2.1.2'
   implementation 'io.undertow:undertow-core:2.2.2.Final'
-  implementation 'com.github.jknack:handlebars:4.2.+'
-  implementation 'tech.tablesaw:tablesaw-core:0.38.+'
-  implementation 'tech.tablesaw:tablesaw-json:0.38.+'
   implementation 'tech.tablesaw:tablesaw-jsplot:0.38.+'
+  implementation 'tech.tablesaw:tablesaw-json:0.38.+'
+  implementation 'tech.tablesaw:tablesaw-core:0.38.+'
+  implementation 'com.github.jknack:handlebars:4.2.+'
   implementation 'org.slf4j:slf4j-log4j12:1.+'
   implementation 'io.minio:minio:8.3.+'
 }
