@@ -43,6 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.searchlab.http.services.MirrorService;
+import eu.searchlab.http.services.TableGetService;
+import eu.searchlab.http.services.TablePutService;
 import eu.searchlab.storage.io.AbstractIO;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -76,6 +78,8 @@ public class WebServer implements Runnable {
 
         // register services
         ServiceMap.register(new MirrorService());
+        ServiceMap.register(new TableGetService());
+        ServiceMap.register(new TablePutService());
     }
 
     private static String stream2string(InputStream is) {
@@ -138,14 +142,13 @@ public class WebServer implements Runnable {
                     exchange.startBlocking();
                     post_message = new String(AbstractIO.readAll(exchange.getInputStream(), -1), StandardCharsets.UTF_8);
                 }
-                JSONObject post = new JSONObject(true);
+                JSONObject json = new JSONObject(true);
+                json.put("PATH", requestPath);
                 if (post_message.length() > 0) try {
-                    post = new JSONObject(new JSONTokener(post_message));
+                    json = new JSONObject(new JSONTokener(post_message));
                 } catch (final JSONException e) {};
 
                 final Map<String, Deque<String>> query = exchange.getQueryParameters();
-                final JSONObject json = new JSONObject(true);
-                json.put("POST", post);
                 for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
                     json.put(entry.getKey(), entry.getValue().getFirst());
                 }

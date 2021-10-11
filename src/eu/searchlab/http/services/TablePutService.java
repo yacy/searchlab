@@ -1,6 +1,6 @@
 /**
- *  AbstractService
- *  Copyright 06.10.2021 by Michael Peter Christen, @orbiterlab
+ *  TablePutService
+ *  Copyright 12.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -17,7 +17,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package eu.searchlab.http.services;
 
 import org.json.JSONArray;
@@ -25,35 +24,21 @@ import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
 
-public abstract class AbstractService implements Service {
+public class TablePutService extends AbstractService implements Service {
 
-    public static String normalizePath(String path) {
-        path = path.trim();
-        if (path.charAt(0) == '/') path = path.substring(1);
-        return path;
+    @Override
+    public String[] getPaths() {
+        return new String[] {"/api/get/test.json", "/api/get/test.csv", "/api/get/test.table"};
     }
 
     @Override
     public Type getType() {
-        return Service.Type.OBJECT;
-    }
-
-    @Override
-    public boolean supportsPath(String path) {
-        path = normalizePath(path);
-        String[] paths = this.getPaths();
-        for (String p: paths) if (normalizePath(p).equals(path)) return true;
-        return false;
-    }
-
-    @Override
-    public JSONObject serveObject(JSONObject post) {
-        return new JSONObject();
+        return Service.Type.ARRAY;
     }
 
     @Override
     public JSONArray serveArray(JSONObject post) {
-        return new JSONArray();
+        JSONArray array = new JSONArray();
+        return array;
     }
-
 }

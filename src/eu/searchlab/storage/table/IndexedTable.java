@@ -19,14 +19,24 @@
 
 package eu.searchlab.storage.table;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
+import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.IOPath;
+import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.api.DateColumn;
 import tech.tablesaw.api.IntColumn;
 import tech.tablesaw.api.LongColumn;
@@ -37,6 +47,7 @@ import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.index.LongIndex;
 import tech.tablesaw.index.StringIndex;
+import tech.tablesaw.io.csv.CsvReadOptions;
 import tech.tablesaw.io.json.JsonWriteOptions;
 
 /**
@@ -54,6 +65,7 @@ public class IndexedTable {
     private final Map<String, LongIndex> namedLongIndex;
     private final Map<Integer, LongIndex> intrfLongIndex;
 
+
     /**
      * Create a table with indexing of given columns
      * @param name
@@ -63,6 +75,55 @@ public class IndexedTable {
      */
     public IndexedTable(Table table) {
         this.table = table;
+        this.namedStringIndex = new HashMap<>();
+        this.intrfStringIndex = new HashMap<>();
+        this.namedLongIndex = new HashMap<>();
+        this.intrfLongIndex = new HashMap<>();
+    }
+
+    /**
+     * Initialize a table with content from a GenericIO path.
+     * The storage format must be CSV.
+     * @param io
+     * @param iop
+     * @param separator
+     * @param charset
+     * @throws IOException
+     */
+    public IndexedTable(GenericIO io, IOPath iop, char separator, Charset charset) throws IOException {
+        IOPath iopgz = new IOPath(iop.getBucket(), iop.getPath() + ".gz");
+        if (!io.exists(iop) && io.exists(iopgz)) iop = iopgz;
+        final InputStream ris = iopgz.getPath().endsWith(".gz") ? new GZIPInputStream(io.read(iopgz)) : io.read(iopgz);
+        final InputStream is = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                final int c = ris.read();
+                if (c == ',') return '.';
+                return c;
+            }
+        };
+
+        final Reader reader = new BufferedReader(new InputStreamReader(is, charset));
+        final List<ColumnType> colTypes = new ArrayList<>();
+        colTypes.add(ColumnType.DOUBLE);
+        colTypes.add(ColumnType.LONG);
+        colTypes.add(ColumnType.STRING); // this is required to prevent that the reader detext TEXT column types where we are not able to create a column index
+        final CsvReadOptions options =
+                CsvReadOptions.builder(reader)
+                    .separator(separator)
+                    .locale(Locale.GERMAN)
+                    .header(true)
+                    .columnTypesToDetect(colTypes)
+                    .build();
+        try {
+            this.table = Table.read().usingOptions(options);
+        } catch (final IllegalArgumentException e) {
+            throw new IOException(e.getMessage());
+        } finally {
+            is.close();
+            ris.close();
+        }
+
         this.namedStringIndex = new HashMap<>();
         this.intrfStringIndex = new HashMap<>();
         this.namedLongIndex = new HashMap<>();
@@ -298,6 +359,14 @@ public class IndexedTable {
         } catch (final IOException e) {
             return this.print();
         }
+    }
+
+    public IndexedTable head(int count) {
+        final Table t = this.table.emptyCopy();
+        for (int r = 0; r < Math.min(count, this.table.rowCount()); r++) {
+            t.addRow(this.table.row(r));
+        }
+        return new IndexedTable(t);
     }
 
     public IndexedTable where(String columnName, String value) {

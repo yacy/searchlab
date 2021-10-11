@@ -22,8 +22,6 @@ package eu.searchlab.http;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -33,26 +31,28 @@ import com.github.jknack.handlebars.Context;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 
+import eu.searchlab.http.services.AbstractService;
+
 
 public class ServiceMap {
 
-    private static Map<String, Service> map = new ConcurrentHashMap<>();
+    private static List<Service> services = new ArrayList<>();
 
     public static void register(Service service) {
-        for (final String path: service.getPaths()) {
-            map.put(normalizePath(path), service);
-        }
+        services.add(service);
     }
 
-    private static String normalizePath(String path) {
-        path = path.trim();
-        if (path.charAt(0) == '/') path = path.substring(1);
-        return path;
-    }
 
     public static String propose(String path, String html, JSONObject post) throws IOException {
 
-        final Service service = map.get(normalizePath(path));
+        path = AbstractService.normalizePath(path);
+        Service service = null;
+        for (int i = 0; i < services.size(); i++) {
+            if (services.get(i).supportsPath(path)) {
+                service = services.get(i);
+                break;
+            }
+        }
 
         if (service == null) {
             return html;

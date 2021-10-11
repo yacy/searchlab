@@ -1,6 +1,6 @@
 /**
- *  Service
- *  Copyright 06.10.2021 by Michael Peter Christen, @orbiterlab
+ *  TabelPanel
+ *  Copyright 09.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -17,25 +17,27 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.http;
+package eu.searchlab.switchboard;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import eu.searchlab.storage.table.IndexedTable;
+import eu.searchlab.storage.table.PersistentTables;
+import tech.tablesaw.api.StringColumn;
+import tech.tablesaw.api.Table;
 
-public interface Service {
+/**
+ * A TablePanel is a static class which holds data available to servlets and other methods.
+ *
+ *
+ */
+public class TabelPanel {
 
-    public enum Type {
-        OBJECT, ARRAY;
+    public static PersistentTables tables;
+
+    static {
+        tables = new PersistentTables();
+
+        Table testTable = Table.create(StringColumn.create("a"), StringColumn.create("b"), StringColumn.create("c"));
+        tables.addTable("test", new IndexedTable(testTable));
     }
-
-    public boolean supportsPath(String path);
-
-    public String[] getPaths();
-
-    public Type getType();
-
-    public JSONObject serveObject(JSONObject post);
-
-    public JSONArray serveArray(JSONObject post);
 
 }
