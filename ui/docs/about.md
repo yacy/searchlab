@@ -6,9 +6,9 @@ YaCy Searchlab is an extension to the existing YaCy Grid Crawler technology. Tha
 
 The concept requires that existing open source software (the YaCy Grid stack) is integrated with other FOSS elements (like storage technology) and extended with new elements. Those are marked as “to be implemented” in the picture above.
 
-## Searchlab Portal
+## The Searchlab Portal - A SaaS Platform
 
-The searchlab portal that you are watching now is also the searchlab application which you can download yourself. All elements of the application can be used within your home or an intranet or as a cloud service that you set up yourself.
+This portal was designed as Search-as-a-service Platform using YaCy Grid. We call it not the "Searchlab" and it is also the searchlab application which you can download yourself. All elements of the application can be used within your home or an intranet or as a cloud service that you set up yourself.
 
 However, the construction of this application is done in such a way that you don't need to set-up anything yourself and use this portal instead.
 
