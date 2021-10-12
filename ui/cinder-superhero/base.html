@@ -17,9 +17,17 @@
     <title>{% if page.title %}{{ page.title }} - {% endif %}{{ config.site_name }}</title>
     {% endblock %}
 
+    <script src="{{ 'js/jquery.min.js'|url }}"></script>
+    <script src="{{ 'js/jquery.dataTables.min.js'|url }}"></script>
+    <script src="{{ 'js/dataTables.bootstrap.min.js'|url }}"></script>
+    <script src="{{ 'js/bootstrap.min.js'|url }}"></script>
+    <script src="{{ 'js/bootstrap-table.min.js'|url }}"></script>
+    <!-- <script src="{{ 'js/bootstrap-table-foundation.min.js'|url }}"></script>-->
     <link href="{{ 'css/hack.min.css'|url }}" rel="stylesheet">
     <link href="{{ 'css/latolatinfonts.css'|url }}" rel="stylesheet">
     <link href="{{ 'css/bootstrap-custom.css'|url }}" rel="stylesheet">
+    <link href="{{ 'css/bootstrap-table.min.css'|url }}" rel="stylesheet">
+    <link href="{{ 'css/bootstrap-table-foundation.min.css'|url }}" rel="stylesheet">
     <link href="{{ 'css/base.css'|url }}" rel="stylesheet">
     <link href="{{ 'css/cinder.css'|url }}" rel="stylesheet">
     <link href="{{ 'css/highlight.css'|url }}" rel="stylesheet">
@@ -29,8 +37,7 @@
          font-family: 'Courier New', Courier, monospace !important;
       }
     </style>
-    
-    
+
     {%- for path in config['extra_css'] %}
     <link href="{{ path|url }}" rel="stylesheet">
     {%- endfor %}
@@ -47,14 +54,9 @@
 <body{% if page and page.is_homepage %} class="homepage" {% endif %}>
 
     {%- block scripts %}
-    <script src="{{ 'js/jquery.min.js'|url }}"></script>
     <script src="{{ 'js/fontawesome-all.js'|url }}"></script>
-    <script src="{{ 'js/bootstrap.min.js'|url }}"></script>
     <script src="{{ 'js/highlight.pack.js'|url }}"></script>
     <script src="{{ 'js/mermaid.min.js'|url }}"></script>
-    <script src="{{ 'js/bootstrap-table.min.js'|url }}"></script>
-    <script src="{{ 'js/dataTables.bootstrap.min.js'|url }}"></script>
-    <script src="{{ 'js/jquery.dataTables.min.js'|url }}"></script>
 
     <script>hljs.initHighlightingOnLoad();</script>
     <script>var base_url = {{ base_url | tojson }}</script>
@@ -87,11 +89,11 @@
         <div class="col-md-3" style="padding-left:15px; padding-right:15px;">
           <h3>Products</h3>
           <p>YaCy is both the name of a project and the name of a software. Our 'products' (it's free-software) is
-	    <ul>
-	      <li>The <a href="https://yacy.net">YaCy Search Server</a> - go to <a href="https://yacy.net">https://yacy.net</a> for more details</li>
-	      <li>The <a href="searchlab.eu">YaCy Searchlab</a>, this portal.</li>
-	    </ul>
-	  </p>
+        <ul>
+          <li>The <a href="https://yacy.net">YaCy Search Server</a> - go to <a href="https://yacy.net">https://yacy.net</a> for more details</li>
+          <li>The <a href="searchlab.eu">YaCy Searchlab</a>, this portal.</li>
+        </ul>
+      </p>
         </div>
         <div class="col-md-3" style="padding-right:15px;">
           <h3>GDPR Compliance</h3>
@@ -112,13 +114,13 @@
         <div class="col-md-3" style="padding-right:15px;">
           <h3>Follow Us</h3>
           <ul>
-	    <li>Searchlab Community: <a href="https://searchlab.eu/">searchlab.eu</a> (temporary)</li>
-	    <li>Twitter Community: <a href="https://twitter.com/yacy_search">@yacy_search</a></li>
-	    <li>Patreon Community: <a href="https://patreon.com/orbiterlab">patreon.com/orbiterlab</a></li>
-	    <li>Github Sponsors: <a href="https://github.com/sponsors/Orbiter">github.com/sponsors/Orbiter</a></li>
-	    <li>YaCy Tutorials: <a href="https://www.youtube.com/YaCyTutorials">youtube.com/YaCyTutorials</a></li>
-	    <li>GitHub: <a href="https://github.com/yacy/searchlab">github.com/yacy/searchlab</a></li>
-	  </ul>
+        <li>Searchlab Community: <a href="https://searchlab.eu/">searchlab.eu</a> (temporary)</li>
+        <li>Twitter Community: <a href="https://twitter.com/yacy_search">@yacy_search</a></li>
+        <li>Patreon Community: <a href="https://patreon.com/orbiterlab">patreon.com/orbiterlab</a></li>
+        <li>Github Sponsors: <a href="https://github.com/sponsors/Orbiter">github.com/sponsors/Orbiter</a></li>
+        <li>YaCy Tutorials: <a href="https://www.youtube.com/YaCyTutorials">youtube.com/YaCyTutorials</a></li>
+        <li>GitHub: <a href="https://github.com/yacy/searchlab">github.com/yacy/searchlab</a></li>
+      </ul>
         </div>
       </div>
 </div>
@@ -130,8 +132,8 @@
         <small>{{ config.copyright }}<br></small>
         {% endif %}
         <!--
-	<small>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p></small>
-	-->
+    <small>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p></small>
+    -->
 
         {% if page and page.meta.revision_date %}<br>
         <small>Revised on: {{ page.meta.revision_date }}</small>
@@ -141,15 +143,15 @@
 
     <script>
     mermaid.initialize({
-	theme: 'dark',
-	// themes: default, forest, dark, neutral
-	// themeCSS: '.node rect { fill: red; }',
-	logLevel: 3,
-	securityLevel: 'loose',
-	flowchart: { curve: 'basis' },
-	gantt: { axisFormat: '%m/%d/%Y' },
-	sequence: { actorMargin: 50 },
-	// sequenceDiagram: { actorMargin: 300 } // deprecated
+    theme: 'dark',
+    // themes: default, forest, dark, neutral
+    // themeCSS: '.node rect { fill: red; }',
+    logLevel: 3,
+    securityLevel: 'loose',
+    flowchart: { curve: 'basis' },
+    gantt: { axisFormat: '%m/%d/%Y' },
+    sequence: { actorMargin: 50 },
+    // sequenceDiagram: { actorMargin: 300 } // deprecated
     });
     </script>
 
