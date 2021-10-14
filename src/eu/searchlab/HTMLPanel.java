@@ -1,6 +1,6 @@
 /**
- *  TabelPanel
- *  Copyright 09.10.2021 by Michael Peter Christen, @orbiterlab
+ *  HTMLPanel
+ *  Copyright 14.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -17,27 +17,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.switchboard;
 
-import eu.searchlab.storage.table.IndexedTable;
-import eu.searchlab.storage.table.PersistentTables;
-import tech.tablesaw.api.StringColumn;
-import tech.tablesaw.api.Table;
+package eu.searchlab;
 
-/**
- * A TablePanel is a static class which holds data available to servlets and other methods.
- *
- *
- */
-public class TabelPanel {
+import java.util.HashMap;
+import java.util.Map;
 
-    public static PersistentTables tables;
+public class HTMLPanel {
+
+    public static Map<String, String> htmls;
 
     static {
-        tables = new PersistentTables();
-
-        Table testTable = Table.create(StringColumn.create("a"), StringColumn.create("b"), StringColumn.create("c"));
-        tables.addTable("test", new IndexedTable(testTable));
+        htmls = new HashMap<>();
     }
-
 }

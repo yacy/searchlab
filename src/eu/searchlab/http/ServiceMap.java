@@ -61,6 +61,13 @@ public class ServiceMap {
         if (html == null) {
             // its possible that the given html is null in case that we don't want to
             // use a template and instead we want to return the JSON only.
+            String tablename = null;
+            int p = path.indexOf("/get/");
+            if (p > 0) {
+                tablename = path.substring(p + 5);
+                p = tablename.indexOf('.');
+                if (p > 0) tablename = tablename.substring(0, p); else tablename = null;
+            }
             if (service.getType() == Service.Type.OBJECT) {
                 final JSONObject json = service.serveObject(post);
                 if (path.endsWith(".json")) {
@@ -72,15 +79,15 @@ public class ServiceMap {
                 }
                 if (path.endsWith(".table")) {
                     try {
-                        return new TableGenerator(json).getTable();
-                    } catch (JSONException e) {
+                        return new TableGenerator(tablename, json).getTable();
+                    } catch (final JSONException e) {
                         throw new IOException(e.getMessage());
                     }
                 }
                 if (path.endsWith(".tablei")) {
                     try {
-                        return new TableGenerator(json).getTableI();
-                    } catch (JSONException e) {
+                        return new TableGenerator(tablename, json).getTableI();
+                    } catch (final JSONException e) {
                         throw new IOException(e.getMessage());
                     }
                 }
@@ -131,20 +138,24 @@ public class ServiceMap {
                 }
                 if (path.endsWith(".table")) {
                     try {
-                        return new TableGenerator(array).getTable();
-                    } catch (JSONException e) {
+                        return new TableGenerator(tablename, array).getTable();
+                    } catch (final JSONException e) {
                         throw new IOException(e.getMessage());
                     }
                 }
                 if (path.endsWith(".tablei")) {
                     try {
-                        return new TableGenerator(array).getTableI();
-                    } catch (JSONException e) {
+                        return new TableGenerator(tablename, array).getTableI();
+                    } catch (final JSONException e) {
                         throw new IOException(e.getMessage());
                     }
                 }
                 new IOException("extension not appropriate for JSONArray");
             }
+        }
+
+        if (service.getType() == Service.Type.STRING) {
+            return service.serveString(post);
         }
 
         // we have an html with handlebars templates

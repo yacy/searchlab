@@ -25,17 +25,24 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import eu.searchlab.TabelPanel;
 import eu.searchlab.http.Service;
 import eu.searchlab.storage.table.PersistentTables;
-import eu.searchlab.switchboard.TabelPanel;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 
 public class TableGetService extends AbstractService implements Service {
 
     @Override
-    public String[] getPaths() {
-        return new String[] {"/api/get/test.json", "/api/get/test.csv", "/api/get/test.table"};
+    public boolean supportsPath(String path) {
+        if (!path.startsWith("api/get/")) return false;
+        path = path.substring(8);
+        final int p = path.indexOf('.');
+        if (p < 0) return false;
+        final String tablename = path.substring(0, p);
+        if (TabelPanel.tables.getTable(tablename) == null) return false;
+        final String ext = path.substring(p + 1);
+        return ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
     }
 
     @Override
@@ -51,7 +58,7 @@ public class TableGetService extends AbstractService implements Service {
         if (p < 0) return array;
         int q = path.indexOf(".", p);
         String tablename = path.substring(p + 5, q);
-        final boolean asObjects = post.optBoolean("asObjects", false);
+        final boolean asObjects = post.optBoolean("asObjects", true);
         final String where = post.optString("where"); // where=col0:val0,col1:val1,...
         final String select = post.optString("select"); // get(column, value), pivot(column, op)
         final int count = post.optInt("count", -1);

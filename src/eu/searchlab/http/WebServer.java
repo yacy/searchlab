@@ -176,6 +176,7 @@ public class WebServer implements Runnable {
 
             // parse query parameters
             final JSONObject json = new JSONObject(true);
+            json.put("PATH", requestPath);
             final int q = requestPath.indexOf('?');
             if (q >= 0) {
                 final String qs = requestPath.substring(q + 1);
@@ -213,7 +214,7 @@ public class WebServer implements Runnable {
         }
 
         boolean isTemplatingFileType(String ext) {
-            return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table");
+            return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
         }
 
         private String ssi(String html) throws Exception {

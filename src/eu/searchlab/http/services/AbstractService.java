@@ -29,6 +29,7 @@ public abstract class AbstractService implements Service {
 
     public static String normalizePath(String path) {
         path = path.trim();
+        if (path.length() == 0) return path;
         if (path.charAt(0) == '/') path = path.substring(1);
         return path;
     }
@@ -36,6 +37,11 @@ public abstract class AbstractService implements Service {
     @Override
     public Type getType() {
         return Service.Type.OBJECT;
+    }
+
+    @Override
+    public String[] getPaths() {
+        return new String[] {};
     }
 
     @Override
@@ -54,6 +60,11 @@ public abstract class AbstractService implements Service {
     @Override
     public JSONArray serveArray(JSONObject post) {
         return new JSONArray();
+    }
+
+    @Override
+    public String serveString(JSONObject post) {
+        return "";
     }
 
 }
