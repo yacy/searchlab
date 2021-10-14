@@ -64,6 +64,7 @@ public class S3IO extends AbstractIO implements GenericIO {
 
     // the connection
     private final MinioClient mc;
+    private final String accessKey, secretKey;
 
     public S3IO(final String endpointURL, final String accessKey, final String secretKey) {
         this.mc =
@@ -71,6 +72,20 @@ public class S3IO extends AbstractIO implements GenericIO {
                 .endpoint(endpointURL)
                 .credentials(accessKey, secretKey)
                 .build();
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+    }
+
+    public String getEndpointURL() {
+        return this.getEndpointURL();
+    }
+
+    public String getAccessKey() {
+        return this.accessKey;
+    }
+
+    public String getSecretKey() {
+        return this.secretKey;
     }
 
     @Override

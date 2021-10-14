@@ -374,7 +374,6 @@ public class IndexedTable {
         try {
             c = this.table.column(columnName);
         } catch (final IllegalStateException e) {
-            assert this.isEmpty();
             return new IndexedTable(this.table.emptyCopy());
         }
         if (c instanceof IntColumn) return this.where(columnName, Integer.parseInt(value));
@@ -403,7 +402,6 @@ public class IndexedTable {
         try {
             c = this.table.column(columnNum);
         } catch (final IllegalStateException e) {
-            assert this.isEmpty();
             return new IndexedTable(this.table.emptyCopy());
         }
         if (c instanceof IntColumn) return this.where(columnNum, Integer.parseInt(value));

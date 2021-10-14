@@ -22,6 +22,7 @@ package eu.searchlab.storage.table;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +76,10 @@ public class PersistentTables {
         this.io = io;
         this.iop = iop;
         return this;
+    }
+
+    public Set<String> getTablenames() {
+        return this.indexes.keySet();
     }
 
     /**
@@ -149,15 +154,9 @@ public class PersistentTables {
         }
 
         // try: load from local copy
-        IndexedTable table = this.indexes.get(tablename);
+        final IndexedTable table = this.indexes.get(tablename);
         if (selects.length == 0) return table;
-
-        // try: load from IO
-
-        // final try: create a new empty table
-        table = new IndexedTable(Table.create());
-        this.indexes.put(tablename, table);
-        return table;
+        return table.whereSelects(selects);
     }
 
 

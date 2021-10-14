@@ -20,49 +20,91 @@
 package net.yacy.grid.io.assets;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.io.S3IO;
 
 public class GenericIOStorageFactory implements StorageFactory<byte[]> {
 
+    private URL url;
+    private String endpointURL, bucketName;
+    private GenericIO io;
+
+    public GenericIOStorageFactory(final String endpointURL, final String bucketName, final String accessKey, final String secretKey) {
+        try {
+            this.url = new URL(endpointURL);
+        } catch (MalformedURLException e) {
+            this.url = null;
+        }
+        this.endpointURL = endpointURL;
+        this.bucketName = bucketName;
+        this.io = new S3IO(endpointURL, accessKey, secretKey);
+    }
+
     @Override
     public String getSystem() {
-        // TODO Auto-generated method stub
-        return null;
+        return "s3";
     }
 
     @Override
     public String getHost() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.url.getHost();
     }
 
     @Override
     public boolean hasDefaultPort() {
-        // TODO Auto-generated method stub
-        return false;
+        return this.url.getPort() == 9000;
     }
 
     @Override
     public int getPort() {
-        // TODO Auto-generated method stub
-        return 0;
+        return this.url.getPort();
     }
 
     @Override
     public String getConnectionURL() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.endpointURL;
     }
 
     @Override
     public Storage<byte[]> getStorage() throws IOException {
         // TODO Auto-generated method stub
-        return null;
+        return new Storage<byte[]>() {
+
+            @Override
+            public void checkConnection() throws IOException {
+                if (!GenericIOStorageFactory.this.io.bucketExists(GenericIOStorageFactory.this.bucketName))
+                    throw new IOException("bucket " + GenericIOStorageFactory.this.bucketName + " does not exist");
+            }
+
+            @Override
+            public StorageFactory<byte[]> store(String path, byte[] asset) throws IOException {
+                IOPath iop = new IOPath(GenericIOStorageFactory.this.bucketName, path);
+                GenericIOStorageFactory.this.io.write(iop, asset);
+                return GenericIOStorageFactory.this;
+            }
+
+            @Override
+            public Asset<byte[]> load(String path) throws IOException {
+                IOPath iop = new IOPath(GenericIOStorageFactory.this.bucketName, path);
+                byte[] b = GenericIOStorageFactory.this.io.readAll(iop);
+                return new Asset<byte[]>(GenericIOStorageFactory.this, b);
+            }
+
+            @Override
+            public void close() {
+                // do nothing
+            }
+
+        };
     }
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
-
+        this.io = null;
     }
 
 }
