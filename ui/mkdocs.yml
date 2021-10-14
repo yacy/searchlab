@@ -10,6 +10,24 @@ theme:
 
 nav:
   - Home: index.md
+  - Applications:
+    - Search: search.md
+    - Data Studio Apps: apps.md
+    - Search Integration: integration.md
+  - Production:
+    - Crawler: production_crawler.md
+    - Network Scanner: production_network_scanner.md
+    - Index Import/Export: production_import_export.md
+    - Data Warehouse: download_upload_assets.md
+  - Monitoring:
+    - System: monitoring_system.md
+    - Crawler: monitoring_crawler.md
+    - Indexing: monitoring_indexing.md
+  - Administration:
+    - Index: admin_index.md
+    - Crawler: admin_crawler.md
+  - Download:
+    - Download and install Searchlab and YaCy Grid: download_installation.md
   - About: about.md
 
 markdown_extensions:
