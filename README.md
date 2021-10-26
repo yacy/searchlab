@@ -81,6 +81,8 @@ mkdocs build
 ./gradlew run
 ```
 
+The searchlab application can then be accessed at http://localhost:8400/
+
 ## Docker Release
 
 A docker release can be produced in one simple step: just run
@@ -93,9 +95,10 @@ docker build -t searchlab .
 docker run -d --rm -p 8400:8400 --name searchlab searchlab
 ```
 
+Then the searchlab application can be accessed at http://localhost:8400/
+
 We publish docker images of the searchlab application also at dockerhub which can be obtained simply with
 
 ```
 docker run -d --rm -p 8400:8400 --name searchlab yacy/searchlab
 ```
-
