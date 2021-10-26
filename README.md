@@ -62,6 +62,10 @@ git clone https://github.com/yacy/searchlab.git
 If you just want to download a zip file with all source,
 use this link: https://github.com/yacy/searchlab/archive/refs/heads/master.zip
 
+To build the searchlab, you need the following components:
+- python 3 and mkdocs which can simply be installed with `pip install mkdocs`
+- java 8 (or higher) which can be obtained i.e. from https://adoptium.net/
+
 The application is build in two steps:
 - first, the static web pages must be created:
 ```
