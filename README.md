@@ -62,6 +62,10 @@ git clone https://github.com/yacy/searchlab.git
 If you just want to download a zip file with all source,
 use this link: https://github.com/yacy/searchlab/archive/refs/heads/master.zip
 
+To build the searchlab, you need the following components:
+- python 3 and mkdocs which can simply be installed with `pip install mkdocs`
+- java 8 (or higher) which can be obtained i.e. from https://adoptium.net/
+
 The application is build in two steps:
 - first, the static web pages must be created:
 ```
@@ -77,6 +81,8 @@ mkdocs build
 ./gradlew run
 ```
 
+The searchlab application can then be accessed at http://localhost:8400/
+
 ## Docker Release
 
 A docker release can be produced in one simple step: just run
@@ -89,9 +95,10 @@ docker build -t searchlab .
 docker run -d --rm -p 8400:8400 --name searchlab searchlab
 ```
 
+Then the searchlab application can be accessed at http://localhost:8400/
+
 We publish docker images of the searchlab application also at dockerhub which can be obtained simply with
 
 ```
 docker run -d --rm -p 8400:8400 --name searchlab yacy/searchlab
 ```
-
