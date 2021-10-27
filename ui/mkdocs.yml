@@ -10,25 +10,27 @@ theme:
 
 nav:
   - Home: index.md
+  - Software:
+    - About the Searchlab: software/about.md
+    - Architecture: software/architecture.md
+    - Download and install Searchlab and YaCy Grid: software/download.md
+    - Imprint/Impressum: software/imprint.md
   - Applications:
-    - Search: search.md
-    - Data Studio Apps: apps.md
-    - Search Integration: integration.md
+    - Search: apps/search.md
+    - Data Studio Apps: apps/data_studio.md
+    - Search Integration: apps/integration.md
   - Production:
-    - Crawler: production_crawler.md
-    - Network Scanner: production_network_scanner.md
-    - Index Import/Export: production_import_export.md
-    - Data Warehouse: download_upload_assets.md
+    - Crawler: production/crawler.md
+    - Network Scanner: production/network_scanner.md
+    - Index Import/Export: production/import_export.md
+    - Data Warehouse: production/data.md
   - Monitoring:
-    - System: monitoring_system.md
-    - Crawler: monitoring_crawler.md
-    - Indexing: monitoring_indexing.md
+    - System: monitoring/system.md
+    - Crawler: monitoring/crawler.md
+    - Indexing: monitoring/indexing.md
   - Administration:
-    - Index: admin_index.md
-    - Crawler: admin_crawler.md
-  - Download:
-    - Download and install Searchlab and YaCy Grid: download_installation.md
-  - About: about.md
+    - Index: admin/search_index.md
+    - Crawler: admin/crawler.md
 
 markdown_extensions:
   - admonition

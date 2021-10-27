@@ -3,6 +3,16 @@
 This is a guide for developers of this platform. It explains frameworks and libraries for this application
 together with sample use cases. 
 
+## <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> This is Work-In-Progress
+
+This is a placeholder page that will migrate into the actual application as soon as it is finished.
+What we want to implemted is described in the [milestones M1-M6](https://github.com/yacy/searchlab/issues).
+
+<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Follow messages from YaCy maitainer [@orbiterlab](https://twitter.com/orbiterlab) and the project updates from [@yacy_search](https://twitter.com/yacy_search) to get news about the project milestones. Please share and <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> like to help building this page!
+
+<div class="alert alert-warning" role="alert">everything below is work-in-progress</div>
+
+
 ## Application Server
 
 For this application server we combine [MKDocs](https://www.mkdocs.org) for static web pages with [Undertow](https://undertow.io/) as web server.
@@ -14,10 +24,10 @@ a CDN.
 
 <table>
 <tr>
-<td style="background: transparent; border: none;"><img src="../img/tile_MkDocs.png" width="224"><br/>MkDocs</td>
-<td style="background: transparent; border: none;"><img src="../img/tile_Cinder.png" width="224"><br/>Cinder</td>
-<td style="background: transparent; border: none;"><img src="../img/tile_Superhero.png" width="224"><br/>Superhero</td>
-<td style="background: transparent; border: none;"><img src="../img/tile_Undertow.png" width="224"><br/>Undertow</td>
+<td style="background: transparent; border: none;"><img src="../../img/tile_MkDocs.png" width="224"><br/>MkDocs</td>
+<td style="background: transparent; border: none;"><img src="../../img/tile_Cinder.png" width="224"><br/>Cinder</td>
+<td style="background: transparent; border: none;"><img src="../../img/tile_Superhero.png" width="224"><br/>Superhero</td>
+<td style="background: transparent; border: none;"><img src="../../img/tile_Undertow.png" width="224"><br/>Undertow</td>
 </tr>
 
 </table>
@@ -30,6 +40,7 @@ The following elements are added to the undertow server:
 - [Bootstrap Table](https://bootstrap-table.com/) for extended table visualization
 - [Mermaid](https://mermaid-js.github.io/mermaid/#/) for diagrams using text and code inside the MKDown.
 
+<!--
   <div class="mermaid">
     graph LR
     subgraph static html generator
@@ -44,6 +55,7 @@ The following elements are added to the undertow server:
       C -->|Three| F[Car]
     end
   </div>
+-->
 
 ## Storage
 
