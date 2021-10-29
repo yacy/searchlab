@@ -2,5 +2,6 @@ bin
 .gradle
 .class
 .DS_Store
+.build
 ui/site
 ui/.DS_Store

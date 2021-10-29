@@ -3,15 +3,6 @@
 This is a guide for developers of this platform. It explains frameworks and libraries for this application
 together with sample use cases. 
 
-## <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> This is Work-In-Progress
-
-This is a placeholder page that will migrate into the actual application as soon as it is finished.
-What we want to implemted is described in the [milestones M1-M6](https://github.com/yacy/searchlab/issues).
-
-<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Follow messages from YaCy maitainer [@orbiterlab](https://twitter.com/orbiterlab) and the project updates from [@yacy_search](https://twitter.com/yacy_search) to get news about the project milestones. Please share and <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> like to help building this page!
-
-<div class="alert alert-warning" role="alert">everything below is work-in-progress</div>
-
 
 ## Application Server
 
@@ -40,24 +31,20 @@ The following elements are added to the undertow server:
 - [Bootstrap Table](https://bootstrap-table.com/) for extended table visualization
 - [Mermaid](https://mermaid-js.github.io/mermaid/#/) for diagrams using text and code inside the MKDown.
 
-<!--
-  <div class="mermaid">
-    graph LR
-    subgraph static html generator
-      direction TB
-      A[MKDocs] -->|provides html to| B(tablesaw)
-      G[bootstrap table] -->|integrated| A
-    end
-    subgraph server
-      B --> C{Let me thinkss}
-      C -->|One| D[Laptop]
-      C -->|Two| E[iPhone]
-      C -->|Three| F[Car]
-    end
-  </div>
--->
 
 ## Storage
+
+We will use two external storage systems: a S3 Bucket Store and an Elasticsearch search index. Both storage systems can be hosted with free software and we will use min.io for S3 storage and opensearch.org for Elasticsearch storage. You may choose other (also: cloud-hosted) services if you host the Searchlab yourself.
+
+
+## <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> This is Work-In-Progress
+
+This is a placeholder page that will migrate into the actual application as soon as it is finished.
+What we want to implemted is described in the [milestones M1-M6](https://github.com/yacy/searchlab/issues).
+
+<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Follow messages from YaCy maitainer [@orbiterlab](https://twitter.com/orbiterlab) and the project updates from [@yacy_search](https://twitter.com/yacy_search) to get news about the project milestones. Please share and <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> like to help building this page!
+
+<div class="alert alert-warning" role="alert">everything below is work-in-progress</div>
 
 
 ## Servlets and Document Types

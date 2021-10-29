@@ -1,24 +1,15 @@
 # About the Searchlab
 
-YaCy Searchlab is an extension to the existing YaCy Grid Crawler technology. That technology has no user GUI interface and no service management integrated so far. The YaCy Grid Searchlab concept is extending that software with the required elements which makes it possible that users can sign up for web crawling tasks, do monitoring, using search applications and other tasks that are required for such a platform like user self-care and subscription management.
+YaCy Searchlab is an extension to the existing YaCy Grid Crawler technology. YaCy Grid has no user GUI interface and no service management integrated so far. Searchlab is extending that software with the required elements to make it possible for users to sign up for web crawling tasks, do monitoring, using search applications and other tasks that are required for such a platform like user self-care and subscription management.
 
-## <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> This is Work-In-Progress
 
-The following is planned, but not implemented so far. 
-This is a placeholder page that will migrate into the actual application as soon as it is finished.
-What we want to implemted is described in the [milestones M1-M6](https://github.com/yacy/searchlab/issues).
-
-<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Follow messages from YaCy maitainer [@orbiterlab](https://twitter.com/orbiterlab) and the project updates from [@yacy_search](https://twitter.com/yacy_search) to get news about the project milestones. Please share and <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> like to help building this page!
-
-<div class="alert alert-warning" role="alert">everything below is work-in-progress</div>
-
-## The Searchlab Portal - A SaaS Platform
+## The Searchlab Portal
 
 The concept requires that existing open source software (the YaCy Grid stack) is integrated with other FOSS elements (like storage technology) and extended with new elements. Those are marked as “to be implemented” in the picture above.
 
 ![Architecture](../img/searchlab_architecture.png)
 
-This portal was designed as Search-as-a-service Platform using YaCy Grid. We call it not the "Searchlab" and it is also the searchlab application which you can download yourself. All elements of the application can be used within your home or an intranet or as a cloud service that you set up yourself.
+This portal was designed as Search-as-a-service Platform using YaCy Grid. We call it the "Searchlab" and it is also the searchlab application which you can download yourself. All elements of the application can be used within your home or an intranet or as a cloud service that you set up yourself.
 
 However, the construction of this application is done in such a way that you don't need to set-up anything yourself and use this portal instead.
 

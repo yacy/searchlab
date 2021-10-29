@@ -10,12 +10,12 @@ theme:
 
 nav:
   - Home: index.md
-  - Software:
-    - About the Searchlab: software/about.md
-    - Architecture: software/architecture.md
-    - Download and install Searchlab and YaCy Grid: software/download.md
-    - Imprint/Impressum: software/imprint.md
-  - Applications:
+  - Access:
+    - About the Searchlab: access/about.md
+    - Searchlab Architecture: access/architecture.md
+    - Download and install Searchlab and YaCy Grid: access/download.md
+    - Who made Searchlab - Impressum: access/imprint.md
+  - Apps:
     - Search: apps/search.md
     - Data Studio Apps: apps/data_studio.md
     - Search Integration: apps/integration.md
@@ -28,7 +28,7 @@ nav:
     - System: monitoring/system.md
     - Crawler: monitoring/crawler.md
     - Indexing: monitoring/indexing.md
-  - Administration:
+  - Admin:
     - Index: admin/search_index.md
     - Crawler: admin/crawler.md
 
