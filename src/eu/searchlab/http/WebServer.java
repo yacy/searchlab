@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import eu.searchlab.http.services.MirrorService;
 import eu.searchlab.http.services.TableGetService;
 import eu.searchlab.http.services.TablePutService;
+import eu.searchlab.http.services.YaCySearchService;
 import eu.searchlab.storage.io.AbstractIO;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -54,6 +55,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
+import io.undertow.util.StatusCodes;
 
 public class WebServer implements Runnable {
 
@@ -80,6 +82,7 @@ public class WebServer implements Runnable {
         ServiceMap.register(new MirrorService());
         ServiceMap.register(new TableGetService());
         ServiceMap.register(new TablePutService());
+        ServiceMap.register(new YaCySearchService());
     }
 
     private static String stream2string(InputStream is) {
@@ -95,7 +98,9 @@ public class WebServer implements Runnable {
     }
 
     private static ByteBuffer file2bytebuffer(File f) throws IOException {
-        final RandomAccessFile raf = new RandomAccessFile(f,"r");
+        if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
+        if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
+        final RandomAccessFile raf = new RandomAccessFile(f, "r");
         final FileChannel fc = raf.getChannel();
         final long fileSize = fc.size();
         final ByteBuffer bb = ByteBuffer.allocate((int) fileSize);
@@ -163,12 +168,21 @@ public class WebServer implements Runnable {
 
                 // send html to client
                 if (html == null) {
-                    exchange.setStatusCode(404).setReasonPhrase("not found").getResponseSender().send("");
+                    exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                 } else {
                     exchange.getResponseSender().send(html);
                 }
             } else {
-                exchange.getResponseSender().send(file2bytebuffer(f));
+                try {
+                    ByteBuffer bb = file2bytebuffer(f);
+                    exchange.getResponseSender().send(bb);
+                } catch (IOException e) {
+                    // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
+                    exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
+                    exchange.getResponseHeaders().put(Headers.LOCATION, "https://community.searchlab.eu" + requestPath);
+                    exchange.getResponseSender().send("");
+                    exchange.endExchange();
+                }
             }
         }
 

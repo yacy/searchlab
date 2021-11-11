@@ -30,6 +30,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 // Note: this class was written without inspecting the non-free org.json sourcecode.
 
@@ -654,5 +655,21 @@ public class JSONArray implements Iterable<Object> {
     @Override
     public Iterator<Object> iterator() {
         return this.values.iterator();
+    }
+
+    public List<Object> toList() {
+        List<Object> list = new ArrayList<Object>(this.values.size());
+        for (Object entry: this.values) {
+            if (entry == null || JSONObject.NULL.equals(entry)) {
+                list.add(null);
+            } else if (entry instanceof JSONArray) {
+                list.add(((JSONArray) entry).toList());
+            } else if (entry instanceof JSONObject) {
+                list.add(((JSONObject) entry).toMap());
+            } else {
+                list.add(entry);
+            }
+        }
+        return list;
     }
 }
