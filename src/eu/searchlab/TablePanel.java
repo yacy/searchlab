@@ -29,7 +29,7 @@ import tech.tablesaw.api.Table;
  *
  *
  */
-public class TabelPanel {
+public class TablePanel {
 
     public static PersistentTables tables;
 

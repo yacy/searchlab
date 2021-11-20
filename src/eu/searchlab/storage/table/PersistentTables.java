@@ -20,10 +20,14 @@
 package eu.searchlab.storage.table;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,13 +110,44 @@ public class PersistentTables {
     }
 
     /**
+     * Add a non-hosted table
+     * @param tablename
+     * @param table
+     * @return this
+     */
+    public PersistentTables extendTable(String tablename, IndexedTable table) {
+        final IndexedTable t = this.indexes.get(tablename);
+        if (t == null) {
+            this.indexes.put(tablename, table);
+        } else {
+            t.append(table);
+            this.indexes.put(tablename, t);
+        }
+        return this;
+    }
+
+    public void storeTable(String tablename) throws IOException {
+        final IndexedTable t = this.indexes.get(tablename);
+        if (t == null) return;
+        if (this.io == null) throw new IOException("no io defined");
+        if (this.iop == null) throw new IOException("no io path defined");
+        final IOPath key = this.iop.append(tablename + ".json");
+        try {
+            this.io.write(key, t.toJSON(true).toString(2).getBytes(StandardCharsets.UTF_8));
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
+
+    /**
      * Retrieve named table from index
      * In case the index is hosted, the resulting table may be altered but it would not alter the hosted table.
      * If the table is not hosted, altering the table will alter the table for all other requests as well.
      * @param tablename
      * @return
      */
-    public IndexedTable getTable(String tablename) {
+    public IndexedTable getTable(String tablename) throws IOException {
         return where(tablename);
     }
 
@@ -135,7 +170,7 @@ public class PersistentTables {
      * @param selects a list of strings where each string is a "key:value" pair - or one string with such pairs concatenated with ','
      * @return
      */
-    public IndexedTable where(String tablename, String... selects) {
+    public IndexedTable where(String tablename, String... selects) throws IOException {
         if (selects.length == 1 && selects[0].contains(",")) selects = selects[0].split(",");
 
         // try: load from remote server
@@ -154,7 +189,19 @@ public class PersistentTables {
         }
 
         // try: load from local copy
-        final IndexedTable table = this.indexes.get(tablename);
+        IndexedTable table = this.indexes.get(tablename);
+        // in case the table is not inside the index, load it now
+        if (table == null) {
+            final IOPath key = this.iop.append(tablename + ".json");
+            final byte[] b = this.io.readAll(key);
+            try {
+                final JSONArray a = new JSONArray(new JSONTokener(new String(b, StandardCharsets.UTF_8)));
+                table = new IndexedTable(a);
+            } catch (final JSONException e) {
+                throw new IOException(e.getMessage());
+            }
+        }
+        // process where statements
         if (selects.length == 0) return table;
         return table.whereSelects(selects);
     }

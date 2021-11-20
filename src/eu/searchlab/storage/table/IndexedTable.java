@@ -24,20 +24,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import tech.tablesaw.api.BooleanColumn;
 import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.api.DateColumn;
+import tech.tablesaw.api.DateTimeColumn;
+import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.IntColumn;
 import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.NumericColumn;
@@ -48,7 +63,6 @@ import tech.tablesaw.columns.Column;
 import tech.tablesaw.index.LongIndex;
 import tech.tablesaw.index.StringIndex;
 import tech.tablesaw.io.csv.CsvReadOptions;
-import tech.tablesaw.io.json.JsonWriteOptions;
 
 /**
  * TableIndex
@@ -57,14 +71,16 @@ import tech.tablesaw.io.json.JsonWriteOptions;
  * - provide a microservice which hosts the tables (using undertow)
  * - integrate a client for hosted tables that provide access transparently for hosted and non-hosted tables
  */
-public class IndexedTable {
+public class IndexedTable implements Iterable<JSONObject> {
+
+    public final static String PATTERN_ISO8601_MINUTE = "yyyy-MM-dd'T'HH:mm";
+    public final static SimpleDateFormat iso8601minute = new SimpleDateFormat(PATTERN_ISO8601_MINUTE, Locale.US);
 
     protected final Table table; // it is essential that this is final
     private final Map<String, StringIndex> namedStringIndex;
     private final Map<Integer, StringIndex> intrfStringIndex;
     private final Map<String, LongIndex> namedLongIndex;
     private final Map<Integer, LongIndex> intrfLongIndex;
-
 
     /**
      * Create a table with indexing of given columns
@@ -130,8 +146,243 @@ public class IndexedTable {
         this.intrfLongIndex = new HashMap<>();
     }
 
+    /**
+     * Initialize an indexed table from a json.
+     * This is the reverse method from toJSON() in this class.
+     * @param array
+     * @throws IOException
+     */
+    public IndexedTable(JSONArray array) throws IOException {
+        if (array == null || array.length() == 0) throw new IOException("Initializing an inexed table with an array works only if at least one data record is present. This is required for a schema generation");
+        this.table = Table.create();
+        this.namedStringIndex = new HashMap<>();
+        this.intrfStringIndex = new HashMap<>();
+        this.namedLongIndex = new HashMap<>();
+        this.intrfLongIndex = new HashMap<>();
+
+
+        try {
+            // identify column types using first row in array
+            final Object obj = array.get(0);
+            if (obj instanceof JSONObject) {
+                // table was exported with asObjects = true
+                // read column schema
+                final JSONObject json = (JSONObject) obj;
+                final Iterator<String> keyi = json.keys();
+                while (keyi.hasNext()) {
+                    final String key = keyi.next();
+                    final Object value = json.opt(key);
+                    assert value != null;
+                    final Column<?> column = getColumn(key, value);
+                    this.table.addColumns(column);
+                }
+
+                // add values
+                loop: for (int i = 0; i < array.length(); i++) {
+                    final JSONObject j = array.getJSONObject(i);
+                    for (final String key: j.keySet()) {
+                        try {
+                            addValue(this.table.column(key), j.opt(key));
+                        } catch (final ParseException e) {
+                            e.printStackTrace();
+                            continue loop;
+                        }
+                    }
+                }
+            } else {
+                // table was exported with asObjects = false
+                // read column schema
+                final JSONArray header = (JSONArray) obj;
+                JSONArray values = array.getJSONArray(1);
+                assert header.length() == values.length();
+                for (int i = 0; i < header.length(); i++) {
+                    final String key = header.getString(i);
+                    final Object value = values.get(i);
+                    assert value != null;
+                    final Column<?> column = getColumn(key, value);
+                    this.table.addColumns(column);
+                }
+
+                // add values
+                loop: for (int i = 0; i < array.length(); i++) {
+                    values = array.getJSONArray(i);
+                    for (int j = 0; j < header.length(); j++) {
+                        try {
+                            addValue(this.table.column(header.getString(j)), values.get(j));
+                        } catch (final ParseException e) {
+                            e.printStackTrace();
+                            continue loop;
+                        }
+                    }
+                }
+
+            }
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
+    public IndexedTable emptyCopy() {
+        final Table e = this.table.emptyCopy();
+        return new IndexedTable(e);
+    }
+
+    private void addValue(Column<?> column, Object object) throws ParseException {
+        if (column instanceof LongColumn) {
+            if (object instanceof Integer) {((LongColumn) column).append(((Integer) object).longValue()); return;}
+            if (object instanceof Long)  {((LongColumn) column).append(((Long) object).longValue()); return;}
+            if (object instanceof Float)  {((LongColumn) column).append(((Float) object).longValue()); return;}
+            if (object instanceof Double) {((LongColumn) column).append(((Double) object).longValue()); return;}
+            if (object instanceof Boolean) {((LongColumn) column).append(((Boolean) object).booleanValue() ? 1L : 0L); return;}
+            if (object instanceof String) {((LongColumn) column).append(Long.parseLong((String) object)); return;}
+        }
+        if (column instanceof DoubleColumn) {
+            if (object instanceof Integer) {((DoubleColumn) column).append(((Integer) object).doubleValue()); return;}
+            if (object instanceof Long)  {((DoubleColumn) column).append(((Long) object).doubleValue()); return;}
+            if (object instanceof Float)  {((DoubleColumn) column).append(((Float) object).doubleValue()); return;}
+            if (object instanceof Double) {((DoubleColumn) column).append(((Double) object).doubleValue()); return;}
+            if (object instanceof Boolean) {((DoubleColumn) column).append(((Boolean) object).booleanValue() ? 1.0d : 0.0d); return;}
+            if (object instanceof String) {((DoubleColumn) column).append(Double.parseDouble((String) object)); return;}
+        }
+        if (column instanceof BooleanColumn) {
+            if (object instanceof Integer) {((BooleanColumn) column).append(((Integer) object).intValue() != 0); return;}
+            if (object instanceof Long)  {((BooleanColumn) column).append(((Long) object).longValue() != 0); return;}
+            if (object instanceof Float)  {((BooleanColumn) column).append(((Float) object).floatValue() != 0.0); return;}
+            if (object instanceof Double) {((BooleanColumn) column).append(((Double) object).doubleValue() != 0.0); return;}
+            if (object instanceof Boolean) {((BooleanColumn) column).append(((Boolean) object).booleanValue()); return;}
+            if (object instanceof String) {((BooleanColumn) column).append(((String) object).toLowerCase().equals("true")); return;}
+        }
+        if (column instanceof StringColumn) {
+            if (object instanceof Integer) {((StringColumn) column).append(((Integer) object).toString()); return;}
+            if (object instanceof Long)  {((StringColumn) column).append(((Long) object).toString()); return;}
+            if (object instanceof Float)  {((StringColumn) column).append(((Float) object).toString()); return;}
+            if (object instanceof Double) {((StringColumn) column).append(((Double) object).toString()); return;}
+            if (object instanceof Boolean) {((StringColumn) column).append(((Boolean) object).toString()); return;}
+            if (object instanceof String) {((StringColumn) column).append(((String) object)); return;}
+        }
+        if (column instanceof DateTimeColumn) {
+            if (object instanceof String) {
+                String date = (String) object; // shape: "2018-07-08T00:00"
+                final int p = date.indexOf(":");
+                if (p > 0 && date.length() > p + 3) date = date.substring(0, p + 3);
+                final Date d = iso8601minute.parse(date);
+                final DateTimeColumn dtc = (DateTimeColumn) column;
+                final LocalDateTime dateTime = LocalDateTime.ofEpochSecond(d.getTime() / 1000, 0, ZoneOffset.UTC);
+                dtc.append(dateTime);
+                return;
+            }
+        }
+    }
+
+    private Column<?> getColumn(String name, Object object) {
+        // attribute definitions in time-series data tables
+        if (name.startsWith("view.")) return StringColumn.create(name);
+        if (name.startsWith("meta.")) return StringColumn.create(name);
+        if (name.startsWith("data.")) return DoubleColumn.create(name);
+        if (name.startsWith("unit.")) return StringColumn.create(name);
+
+        // time definitions in time-series data tables
+        if (name.endsWith(".date")) return DateTimeColumn.create(name);
+        if (name.endsWith(".time")) return LongColumn.create(name);
+        if (name.endsWith(".year")) return LongColumn.create(name);
+        if (name.endsWith(".week")) return LongColumn.create(name);
+
+        // all other tables: they would possible require a full table scan for this decision
+        if (object instanceof Integer) {
+            return LongColumn.create(name);
+        }
+        if (object instanceof Long) {
+            return LongColumn.create(name);
+        }
+        if (object instanceof Float) {
+            return DoubleColumn.create(name);
+        }
+        if (object instanceof Double) {
+            return DoubleColumn.create(name);
+        }
+        if (object instanceof Boolean) {
+            return BooleanColumn.create(name);
+        }
+        if (object instanceof String && (name.equals("tscw.date") || name.equals("tsd.date") || name.endsWith(".date"))) {
+            return DateTimeColumn.create(name);
+        }
+        return StringColumn.create(name);
+    }
+
+    public JSONArray toJSON(boolean asObjects) {
+        final JSONArray array = new JSONArray();
+
+        if (asObjects) {
+            for (int row = 0; row < this.table.rowCount(); row++) {
+                array.put(row2JSON(row));
+            }
+        } else {
+            final List<String> colnames = this.table.columnNames();
+            JSONArray a = new JSONArray();
+            for (final String name: colnames) a.put(name);
+            array.put(a);
+
+            for (int row = 0; row < this.table.rowCount(); row++) {
+                a = new JSONArray();
+                for (int column = 0; column < colnames.size(); column++) {
+                    final Column<?> c = this.table.column(colnames.get(column));
+                    final Object val = c.get(row);
+                    a.put(val);
+                }
+                array.put(a);
+            }
+        }
+
+        return array;
+    }
+
+    public JSONObject row2JSON(int row) {
+        final JSONObject json = new JSONObject(true);
+        for (int column = 0; column < this.table.columnCount(); column++) {
+            final Column<?> c = this.table.column(column);
+            final Object val = c.get(row);
+            try {json.put(c.name(), val);} catch (final JSONException e) {}
+        }
+        return json;
+    }
+
+    @Override
+    public Iterator<JSONObject> iterator() {
+        final AtomicInteger row = new AtomicInteger();
+        return new Iterator<JSONObject>() {
+
+            @Override
+            public boolean hasNext() {
+                return row.get() < eu.searchlab.storage.table.IndexedTable.this.table.rowCount();
+            }
+
+            @Override
+            public JSONObject next() {
+                if (row.get() >= eu.searchlab.storage.table.IndexedTable.this.table.rowCount()) throw new NoSuchElementException();
+                return row2JSON(row.incrementAndGet() - 1);
+            }
+        };
+    }
+
+    private void clearIndex() {
+        this.namedStringIndex.clear();
+        this.intrfStringIndex.clear();
+        this.namedLongIndex.clear();
+        this.intrfLongIndex.clear();
+    }
+
     public int size() {
         return this.table.rowCount();
+    }
+
+    public List<String> columnNames() {
+        return this.table.columnNames();
+    }
+
+    public IndexedTable append(IndexedTable i) {
+        clearIndex();
+        this.table.append(i.table);
+        return this;
     }
 
     /**
@@ -332,6 +583,11 @@ public class IndexedTable {
         return rtable;
     }
 
+    public IndexedTable whereSelects(List<String> selects) {
+        if (selects.size() == 0) return this;
+        return whereSelects(selects.toArray(new String[selects.size()]));
+    }
+
     public IndexedTable whereList(String selects) {
         return this.whereSelects(selects.split(","));
     }
@@ -344,19 +600,11 @@ public class IndexedTable {
         return this.table.print();
     }
 
-    public String toJSON(boolean asObjects) throws IOException {
-        final StringWriter writer = new StringWriter();
-        this.table.write().usingOptions(JsonWriteOptions.builder(writer).asObjects(asObjects).header(true).build());
-        return writer.getBuffer().toString();
-    }
-
-
-
     @Override
     public String toString() {
         try {
-            return this.toJSON(true);
-        } catch (final IOException e) {
+            return this.toJSON(true).toString(2);
+        } catch (final JSONException e) {
             return this.print();
         }
     }
@@ -565,4 +813,60 @@ public class IndexedTable {
         if (row == null || row.isEmpty()) return null;
         return row.intColumn(select).get(0);
     }
+
+    public final static long getCellLong(final Row row, final String columnName) {
+        final ColumnType columnType = row.getColumnType(columnName);
+        if (columnType == ColumnType.STRING) {
+            final String as = row.getString(columnName);
+            final long a = as == null || as.length() == 0 ? 0 : Long.parseLong(as);
+            return a;
+        } else if (columnType == ColumnType.LONG) {
+            final long a = row.getLong(columnName);
+            return a;
+        } else if (columnType == ColumnType.INTEGER) {
+            final int a = row.getInt(columnName);
+            return a;
+        } else if (columnType == ColumnType.DOUBLE) {
+            final double a = row.getDouble(columnName);
+            return (long) a;
+        } else if (columnType == ColumnType.FLOAT) {
+            final float a = row.getFloat(columnName);
+            return (long) a;
+        }
+        return 0;
+    }
+
+    public final static double getCellDouble(final Row row, final String columnName) {
+        final ColumnType columnType = row.getColumnType(columnName);
+        if (columnType == ColumnType.STRING) {
+            final String as = row.getString(columnName);
+            final double a = as == null || as.length() == 0 ? 0.0d : Double.parseDouble(as);
+            return a;
+        } else if (columnType == ColumnType.LONG) {
+            final long a = row.getLong(columnName);
+            return (double) a;
+        } else if (columnType == ColumnType.INTEGER) {
+            final int a = row.getInt(columnName);
+            return (double) a;
+        } else if (columnType == ColumnType.DOUBLE) {
+            final double a = row.getDouble(columnName);
+            return a;
+        } else if (columnType == ColumnType.FLOAT) {
+            final float a = row.getFloat(columnName);
+            return a;
+        }
+        return 0.0d;
+    }
+
+    public Map<String, Integer> facet(String column) {
+        final Map<String, Integer> facet = new LinkedHashMap<>();
+        final StringColumn c = this.table.stringColumn(column);
+        final Set<String> s = c.asSet();
+        for (final String a: s) {
+            final int o = c.countOccurrences(a);
+            facet.put(a, o);
+        }
+        return facet;
+    }
+
 }

@@ -161,7 +161,7 @@ public class WebServer implements Runnable {
                 // generate response (handle servlets + handlebars)
                 String html = null;
                 try {html = file2tring(f);} catch (final FileNotFoundException e) {}
-                html = ServiceMap.propose(requestPath, html, json);
+                html = ServiceMap.serviceDispatcher(requestPath, html, json);
 
                 // apply server-side includes
                 if (html != null) html = ssi(html);
@@ -216,7 +216,7 @@ public class WebServer implements Runnable {
                 // generate response (handle servlets + handlebars)
                 String html = null;
                 try {html = file2tring(f);} catch (final FileNotFoundException e) {}
-                html = ServiceMap.propose(requestPath, html, json);
+                html = ServiceMap.serviceDispatcher(requestPath, html, json);
 
                 // apply server-side includes
                 if (html != null) html = ssi(html);

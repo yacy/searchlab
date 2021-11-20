@@ -32,6 +32,7 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.http.services.AbstractService;
+import eu.searchlab.storage.table.IndexedTable;
 
 
 public class ServiceMap {
@@ -42,8 +43,24 @@ public class ServiceMap {
         services.add(service);
     }
 
-
-    public static String propose(String path, String html, JSONObject post) throws IOException {
+    /**
+     * Handle services defined for given paths: generate html.
+     * This method combines existing html with defined services. In most cases the existence of html and services
+     * is exclusive, but in case of handlebars templates both, the path-oriented service and html can exist.
+     * Depending on the path extension, the method may generate html..
+     * - ".json": from JSON (either Object or Array)
+     * - ".table": from a table-generator, which again requires a JSON/Array delivering service
+     * - ".tablei": like for ".table" but without table-rendering framework (css,js) to be used within iframes
+     * - ".graph": a time-series graph generator, which requires a
+     * - ".csv": a different style of table generator which outputs plain text csv
+     * - all other extensions: from plain text, which must be service-pre-rendered html
+     * @param path request path in URI
+     * @param html given html which may be provided by CMS (mkdocs)
+     * @param post post requests, i.e. query attributes
+     * @return
+     * @throws IOException
+     */
+    public static String serviceDispatcher(String path, String html, JSONObject post) throws IOException {
 
         path = AbstractService.normalizePath(path);
         Service service = null;
@@ -152,9 +169,24 @@ public class ServiceMap {
                 }
                 new IOException("extension not appropriate for JSONArray");
             }
-        }
-
-        if (service.getType() == Service.Type.STRING) {
+        } else if (service.getType() == Service.Type.TABLE) {
+            final IndexedTable table = service.serveTable(post);
+            if (path.endsWith(".table")) {
+                try {
+                    return new TableGenerator(path, table.toJSON(true)).getTable();
+                } catch (final JSONException e) {
+                    throw new IOException(e.getMessage());
+                }
+            }
+            if (path.endsWith(".tablei")) {
+                try {
+                    return new TableGenerator(path, table.toJSON(true)).getTableI();
+                } catch (final JSONException e) {
+                    throw new IOException(e.getMessage());
+                }
+            }
+            new IOException("extension not appropriate for JSONArray");
+        } else if (service.getType() == Service.Type.STRING) {
             return service.serveString(post);
         }
 
@@ -168,6 +200,7 @@ public class ServiceMap {
                 .build();
         final Template template = handlebars.compileInline(html);
         html = template.apply(context);
+
         return html;
     }
 }

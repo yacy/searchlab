@@ -19,17 +19,14 @@
 
 package eu.searchlab.http.services;
 
-import java.util.List;
+import java.io.IOException;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.TabelPanel;
+import eu.searchlab.TablePanel;
 import eu.searchlab.http.Service;
-import eu.searchlab.storage.table.PersistentTables;
-import tech.tablesaw.api.Table;
-import tech.tablesaw.columns.Column;
+import eu.searchlab.storage.table.IndexedTable;
 
 public class TableGetService extends AbstractService implements Service {
 
@@ -40,7 +37,12 @@ public class TableGetService extends AbstractService implements Service {
         final int p = path.indexOf('.');
         if (p < 0) return false;
         final String tablename = path.substring(0, p);
-        if (TabelPanel.tables.getTable(tablename) == null) return false;
+        try {
+            if (TablePanel.tables.getTable(tablename) == null) return false;
+        } catch (final IOException e) {
+            e.printStackTrace();
+            return false;
+        }
         final String ext = path.substring(p + 1);
         return ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
     }
@@ -51,11 +53,10 @@ public class TableGetService extends AbstractService implements Service {
     }
 
     @Override
-    public JSONArray serveArray(JSONObject post) {
-        JSONArray array = new JSONArray();
+    public JSONArray serveArray(JSONObject post) throws IOException {
         String path = post.optString("PATH", "");
         int p = path.lastIndexOf("/get/");
-        if (p < 0) return array;
+        if (p < 0) return new JSONArray();
         int q = path.indexOf(".", p);
         String tablename = path.substring(p + 5, q);
         final boolean asObjects = post.optBoolean("asObjects", true);
@@ -63,46 +64,29 @@ public class TableGetService extends AbstractService implements Service {
         final String select = post.optString("select"); // get(column, value), pivot(column, op)
         final int count = post.optInt("count", -1);
 
-        Table table = null;
+        return selectArray(tablename, where, select, count, asObjects).toJSON(asObjects);
+    }
+
+    public static IndexedTable selectArray(String tablename, String where, String select, int count, boolean asObjects) throws IOException {
+
+        // get table from panel
+        IndexedTable it;
         // where
         if (where.length() > 0) {
-            table = TabelPanel.tables.where(tablename, where.split(",")).table();
+            it = TablePanel.tables.where(tablename, where.split(","));
         } else {
-            table = TabelPanel.tables.getTable(tablename).table();
+            it = TablePanel.tables.getTable(tablename);
         }
 
+        // execute constraints
         // sort
         // segment
+        if (it.rowCount() > 100000) {count = count <= 0 ? 100000 : Math.min(100000, count); select = "head";}
         if ("head".equals(select) && count > 0) {
-            table = PersistentTables.head(table, count);
+            it = it.head(count);
         }
-        if (table.rowCount() > 100000) table = PersistentTables.head(table, 100000);
 
-        if (asObjects) {
-            for (int i = 0; i < table.rowCount(); i++) {
-                JSONObject json = new JSONObject();
-                for (int j = 0; j < table.columnCount(); j++) {
-                    Column<?> c = table.column(j);
-                    try {json.put(c.name(), c.get(i));} catch (JSONException e) {}
-                }
-                array.put(json);
-            }
-        } else {
-            List<String> colnames = table.columnNames();
-            JSONArray a = new JSONArray();
-            for (String name: colnames) a.put(name);
-            array.put(a);
-
-            for (int i = 0; i < table.rowCount(); i++) {
-                a = new JSONArray();
-                for (int j = 0; j < colnames.size(); j++) {
-                    Column<?> c = table.column(colnames.get(j));
-                    a.put(c.get(i));
-                }
-                array.put(a);
-            }
-        }
-        return array;
+        return it;
     }
 
 }

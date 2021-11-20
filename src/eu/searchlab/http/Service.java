@@ -19,13 +19,17 @@
 
 package eu.searchlab.http;
 
+import java.io.IOException;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import eu.searchlab.storage.table.IndexedTable;
 
 public interface Service {
 
     public enum Type {
-        OBJECT, ARRAY, STRING;
+        OBJECT, ARRAY, STRING, TABLE;
     }
 
     public boolean supportsPath(String path);
@@ -34,9 +38,11 @@ public interface Service {
 
     public Type getType();
 
-    public JSONObject serveObject(JSONObject post);
+    public JSONObject serveObject(JSONObject post) throws IOException;
 
-    public JSONArray serveArray(JSONObject post);
+    public JSONArray serveArray(JSONObject post) throws IOException;
 
-    public String serveString(JSONObject post);
+    public String serveString(JSONObject post) throws IOException;
+
+    public IndexedTable serveTable(JSONObject post) throws IOException;
 }

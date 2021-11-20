@@ -31,7 +31,6 @@ public class TableGenerator {
     private final JSONArray table;
     private final String tablehash, tablename;
 
-    @Deprecated
     public TableGenerator(String tablename, JSONObject json) throws JSONException {
         this(tablename, firstArrayToFind(json));
     }
@@ -44,7 +43,6 @@ public class TableGenerator {
         return null;
     }
 
-    @Deprecated
     public TableGenerator(String tablename, JSONArray array) throws JSONException {
         this.tablename = tablename;
         this.keys = new LinkedHashSet<>();

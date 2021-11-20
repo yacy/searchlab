@@ -20,10 +20,14 @@
 
 package eu.searchlab.http.services;
 
+import java.io.IOException;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.storage.table.IndexedTable;
+import tech.tablesaw.api.Table;
 
 public abstract class AbstractService implements Service {
 
@@ -53,18 +57,23 @@ public abstract class AbstractService implements Service {
     }
 
     @Override
-    public JSONObject serveObject(JSONObject post) {
+    public JSONObject serveObject(JSONObject post) throws IOException {
         return new JSONObject();
     }
 
     @Override
-    public JSONArray serveArray(JSONObject post) {
+    public JSONArray serveArray(JSONObject post) throws IOException {
         return new JSONArray();
     }
 
     @Override
-    public String serveString(JSONObject post) {
+    public String serveString(JSONObject post) throws IOException {
         return "";
+    }
+
+    @Override
+    public IndexedTable serveTable(JSONObject post) throws IOException {
+        return new IndexedTable(Table.create());
     }
 
 }
