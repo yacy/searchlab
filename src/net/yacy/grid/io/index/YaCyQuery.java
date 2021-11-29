@@ -80,16 +80,20 @@ public class YaCyQuery {
     private final static Pattern term4ORPattern = Pattern.compile("(?:^| )(\\S*(?: OR \\S*)+)(?: |$)"); // Pattern.compile("(^\\s*(?: OR ^\\s*+)+)");
     private final static Pattern tokenizerPattern = Pattern.compile("([^\"]\\S*|\".+?\")\\s*"); // tokenizes Strings into terms respecting quoted parts
 
-    public QueryBuilder queryBuilder;
-    public Date since;
-    public Date until;
+    public final String q;
+    public final List<String> orGroupTerms;
+    public Date since, until;
     public String[] collections;
-    public Boosts boosts;
-    public HashSet<String> yacyModifiers;
-    public HashSet<String> positiveBag, negativeBag;
+    public final Boosts boosts;
+    public final HashSet<String> yacyModifiers;
+    public final HashSet<String> positiveBag, negativeBag;
+    private final Classification.ContentDomain contentdom;
+    private final int timezoneOffset;
 
     public YaCyQuery(String q, String[] collections, Classification.ContentDomain contentdom, int timezoneOffset) {
         // default values for since and util
+        this.q = fixQueryMistakes(q);
+        this.orGroupTerms = splitIntoORGroups(this.q); // OR binds stronger than AND
         this.since = new Date(0);
         this.until = new Date(Long.MAX_VALUE);
         this.collections = collections;
@@ -97,14 +101,40 @@ public class YaCyQuery {
         this.yacyModifiers = new HashSet<>();
         this.positiveBag = new HashSet<>();
         this.negativeBag = new HashSet<>();
+        this.contentdom = contentdom;
+        this.timezoneOffset = timezoneOffset;
 
-        // parse the query string
-        this.queryBuilder = preparse(q, timezoneOffset);
+        // ready
+        //Data.logger.info("YaCyQuery: " + this.queryBuilder.toString());
+        log.info("YaCyQuery: " + q);
+    }
+
+    /**
+     * parse the query string
+     * @return an elasticsearch QueryBuilder
+     */
+    public QueryBuilder getQueryBuilder() {
+        // detect usage of OR connector usage.
+        //if (terms.size() == 0) QueryBuilders.constantScoreQuery(QueryBuilders.matchAllQuery());
+
+        QueryBuilder aquery;
+        if (this.orGroupTerms.size() == 1) {
+            // special handling: we don't need a boolean query builder on top; just return one parse object
+            aquery = parse(this.orGroupTerms.get(0), this.timezoneOffset);
+        } else {
+            // generic handling: all of those OR groups MUST match. That is done with the must query
+            aquery = QueryBuilders.boolQuery();
+            for (String t: this.orGroupTerms) {
+                QueryBuilder partial = parse(t, this.timezoneOffset);
+                ((BoolQueryBuilder) aquery).must(partial);
+            }
+        }
+        QueryBuilder queryBuilder = aquery;
 
         // handle constraints and document types
         if (this.collections != null && this.collections.length > 0) {
             // attach collection constraint
-            BoolQueryBuilder qb = QueryBuilders.boolQuery().must(this.queryBuilder);
+            BoolQueryBuilder qb = QueryBuilders.boolQuery().must(queryBuilder);
             BoolQueryBuilder collectionQuery = QueryBuilders.boolQuery();
             for (String s: this.collections) {
                 int p = s.indexOf('^');
@@ -118,24 +148,21 @@ public class YaCyQuery {
                 collectionQuery.should(tq);
             }
             qb.must(QueryBuilders.constantScoreQuery(collectionQuery));
-            this.queryBuilder = qb;
+            queryBuilder = qb;
         }
 
         // add content domain
-        if (contentdom == Classification.ContentDomain.IMAGE) {
-            BoolQueryBuilder qb = QueryBuilders.boolQuery().must(this.queryBuilder);
+        if (this.contentdom == Classification.ContentDomain.IMAGE) {
+            BoolQueryBuilder qb = QueryBuilders.boolQuery().must(queryBuilder);
             qb.must(QueryBuilders.rangeQuery(WebMapping.imagescount_i.getMapping().name()).gt(new Integer(0)));
-            this.queryBuilder = qb;
+            queryBuilder = qb;
         }
-        if (contentdom == Classification.ContentDomain.VIDEO) {
-            BoolQueryBuilder qb = QueryBuilders.boolQuery().must(this.queryBuilder);
+        if (this.contentdom == Classification.ContentDomain.VIDEO) {
+            BoolQueryBuilder qb = QueryBuilders.boolQuery().must(queryBuilder);
             qb.must(QueryBuilders.rangeQuery(WebMapping.videolinkscount_i.getMapping().name()).gt(new Integer(0)));
-            this.queryBuilder = qb;
+            queryBuilder = qb;
         }
-
-        // ready
-        //Data.logger.info("YaCyQuery: " + this.queryBuilder.toString());
-        log.info("YaCyQuery: " + q);
+        return queryBuilder;
     }
 
     private static List<String> splitIntoORGroups(String q) {
@@ -167,24 +194,6 @@ public class YaCyQuery {
         return q;
     }
 
-
-    private QueryBuilder preparse(String q, int timezoneOffset) {
-        // detect usage of OR connector usage.
-        q = fixQueryMistakes(q);
-        List<String> terms = splitIntoORGroups(q); // OR binds stronger than AND
-        //if (terms.size() == 0) QueryBuilders.constantScoreQuery(QueryBuilders.matchAllQuery());
-
-        // special handling: we don't need a boolean query builder on top; just return one parse object
-        if (terms.size() == 1) return parse(terms.get(0), timezoneOffset);
-
-        // generic handling: all of those OR groups MUST match. That is done with the must query
-        BoolQueryBuilder aquery = QueryBuilders.boolQuery();
-        for (String t: terms) {
-            QueryBuilder partial = parse(t, timezoneOffset);
-            aquery.must(partial);
-        }
-        return aquery;
-    }
 
     private final static String[][] modifierTypes = new String[][] {
         new String[] {"id", "_id"},

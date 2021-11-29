@@ -24,8 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +53,7 @@ public class GridIndex implements Index {
     // STARTING WITH ELASTICSEARCH 8.x
     public final static String DEFAULT_TYPENAME             = "web";
 
-    private ElasticIndexFactory elasticIndexFactory;
+    private FulltextIndexFactory elasticIndexFactory;
 
     private String elastic_address;
     private boolean shallRun;
@@ -71,8 +69,8 @@ public class GridIndex implements Index {
     }
 
     public boolean connectElasticsearch(String address) {
-        if (!address.startsWith(ElasticIndexFactory.PROTOCOL_PREFIX)) return false;
-        address = address.substring(ElasticIndexFactory.PROTOCOL_PREFIX.length());
+        if (!address.startsWith(FulltextIndexFactory.PROTOCOL_PREFIX)) return false;
+        address = address.substring(FulltextIndexFactory.PROTOCOL_PREFIX.length());
         int p = address.indexOf('/');
         String cluster = "";
         if (p >= 0) {
@@ -84,7 +82,7 @@ public class GridIndex implements Index {
         // if we reach this point, we try (forever) until we get a connection to elasticsearch
         loop: while (this.shallRun) {
             try {
-                this.elasticIndexFactory = new ElasticIndexFactory(address, cluster);
+                this.elasticIndexFactory = new FulltextIndexFactory(address, cluster);
                 log.info("Index/Client: connected to elasticsearch at " + address);
                 this.elastic_address = address;
                 return true;
@@ -249,12 +247,12 @@ public class GridIndex implements Index {
     }
 
     @Override
-    public JSONObject query(final String indexName, final QueryBuilder queryBuilder, final QueryBuilder postFilter, final Sort sort, final HighlightBuilder hb, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) throws IOException {
+    public JSONObject query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) throws IOException {
         if (this.elasticIndexFactory == null && this.elastic_address != null) {
             connectElasticsearch(this.elastic_address); // try to connect again..
         }
         if (this.elasticIndexFactory != null) try {
-        	JSONObject queryResult = this.elasticIndexFactory.getIndex().query(indexName, queryBuilder, postFilter, sort, hb, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
+        	JSONObject queryResult = this.elasticIndexFactory.getIndex().query(indexName, yq, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
             //Data.logger.info("Index/Client: query elastic service '" + this.elasticIndexFactory.getConnectionURL() + "', object with query:" + query);
             return queryResult;
         } catch (IOException e) {

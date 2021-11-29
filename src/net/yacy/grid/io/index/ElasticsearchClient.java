@@ -29,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,7 +92,7 @@ import org.slf4j.LoggerFactory;
  * http://localhost:9200/crawler/_search?q=*:*
  *
  */
-public class ElasticsearchClient {
+public class ElasticsearchClient implements FulltextIndex {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchClient.class);
 
@@ -199,6 +197,13 @@ public class ElasticsearchClient {
         return is_ready;
     }
 
+    /**
+     * A refresh request making all operations performed since the last refresh available for search. The (near) real-time
+     * capabilities depends on the index engine used. For example, the internal one requires refresh to be called, but by
+     * default a refresh is scheduled periodically.
+     * If previous indexing steps had been done, it is required to call this method to get most recent documents into the search results.
+     */
+    @Override
     public void refresh(String indexName) {
         new RefreshRequest(indexName);
     }
@@ -222,6 +227,7 @@ public class ElasticsearchClient {
      * @param replicas
      * @throws NoNodeAvailableException | IllegalStateException in case that no elasticsearch server can be contacted.
      */
+    @Override
     public void createIndexIfNotExists(String indexName, final int shards, final int replicas) {
         // create an index if not existent
         if (!this.elasticsearchClient.admin().indices().prepareExists(indexName).execute().actionGet().isExists()) {
@@ -236,6 +242,7 @@ public class ElasticsearchClient {
         }
     }
 
+    @Override
     public void setMapping(String indexName, String mapping) {
         try {
             this.elasticsearchClient.admin().indices().preparePutMapping(indexName)
@@ -254,6 +261,7 @@ public class ElasticsearchClient {
      * as soon this was called the first time. This is needed because the finalize method calls this
      * method as well.
      */
+    @Override
     public void close() {
         if (this.elasticsearchClient != null) {
             this.elasticsearchClient.close();
@@ -290,17 +298,7 @@ public class ElasticsearchClient {
      * @return the count of all documents in the index
      */
     private long count(String indexName) {
-        return count(QueryBuilders.constantScoreQuery(QueryBuilders.matchAllQuery()), indexName);
-    }
-
-    /**
-     * Get the number of documents in the search index for a given search query
-     *
-     * @param q
-     *            the query
-     * @return the count of all documents in the index which matches with the query
-     */
-    public long count(final QueryBuilder q, final String indexName) {
+        QueryBuilder q = QueryBuilders.constantScoreQuery(QueryBuilders.matchAllQuery());
         while (true) try {
             return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -310,7 +308,26 @@ public class ElasticsearchClient {
         }
     }
 
-    public long countInternal(final QueryBuilder q, final String indexName) {
+    /**
+     * Get the number of documents in the search index for a given search query
+     *
+     * @param q
+     *            the query
+     * @return the count of all documents in the index which matches with the query
+     */
+    @Override
+    public long count(final String indexName, final YaCyQuery yq) {
+        QueryBuilder q = yq.getQueryBuilder();
+        while (true) try {
+            return countInternal(q, indexName);
+        } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
+            log.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
+            try {Thread.sleep(1000);} catch (InterruptedException ee) {}
+            connect();
+        }
+    }
+
+    private long countInternal(final QueryBuilder q, final String indexName) {
         SearchResponse response = this.elasticsearchClient.prepareSearch(indexName).setQuery(q).setSize(0).execute().actionGet();
         return response.getHits().getTotalHits();
     }
@@ -321,6 +338,7 @@ public class ElasticsearchClient {
      * @param id the unique identifier of a document
      * @return the document, if it exists or null otherwise;
      */
+    @Override
     public boolean exist(String indexName, final String id) {
         while (true) try {
             return existInternal(indexName, id);
@@ -331,7 +349,7 @@ public class ElasticsearchClient {
         }
     }
 
-    public boolean existInternal(String indexName, final String id) {
+    private boolean existInternal(String indexName, final String id) {
         GetResponse getResponse = this.elasticsearchClient
                 .prepareGet(indexName, null, id)
                 .setFetchSource(false)
@@ -341,6 +359,7 @@ public class ElasticsearchClient {
         return getResponse.isExists();
     }
 
+    @Override
     public Set<String> existBulk(String indexName, final Collection<String> ids) {
         while (true) try {
             return existBulkInternal(indexName, ids);
@@ -396,6 +415,7 @@ public class ElasticsearchClient {
      *            the unique identifier of a document
      * @return true if the document existed and was deleted, false otherwise
      */
+    @Override
     public boolean delete(String indexName, String typeName, final String id) {
         while (true) try {
             return deleteInternal(indexName, typeName, id);
@@ -422,7 +442,9 @@ public class ElasticsearchClient {
      * @param q
      * @return delete document count
      */
-    public int deleteByQuery(String indexName, final QueryBuilder q) {
+    @Override
+    public int deleteByQuery(String indexName, final YaCyQuery yq) {
+        QueryBuilder q = yq.getQueryBuilder();
         while (true) try {
             return deleteByQueryInternal(indexName, q);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -500,6 +522,7 @@ public class ElasticsearchClient {
      *            the unique identifier of a document
      * @return the document as json, matched on a Map<String, Object> object instance
      */
+    @Override
     public Map<String, Object> readMap(final String indexName, final String id) {
         while (true) try {
             return readMapInternal(indexName, id);
@@ -517,6 +540,7 @@ public class ElasticsearchClient {
         return map;
     }
 
+    @Override
     public Map<String, Map<String, Object>> readMapBulk(final String indexName, final Collection<String> ids) {
         while (true) try {
             return readMapBulkInternal(indexName, ids);
@@ -563,6 +587,7 @@ public class ElasticsearchClient {
      * @param jsonMap the json document to be indexed in elasticsearch
      * @return true if the document with given id did not exist before, false if it existed and was overwritten
      */
+    @Override
     public boolean writeMap(String indexName, String typeName, String id, final Map<String, Object> jsonMap) {
         while (true) try {
             return writeMapInternal(indexName, typeName, id, jsonMap);
@@ -611,6 +636,7 @@ public class ElasticsearchClient {
      *            The method was only successful if this list is empty.
      *            This must be a list, because keys may appear several times.
      */
+    @Override
     public BulkWriteResult writeMapBulk(final String indexName, final List<BulkEntry> jsonMapList) {
         while (true) try {
             return writeMapBulkInternal(indexName, jsonMapList);
@@ -658,51 +684,106 @@ public class ElasticsearchClient {
         return result;
     }
 
-    public static class BulkWriteResult {
-        private Map<String, String> errors;
-        private Set<String> created;
-        public BulkWriteResult() {
-            this.errors = new LinkedHashMap<>();
-            this.created = new LinkedHashSet<>();
-        }
-        public Map<String, String> getErrors() {
-            return this.errors;
-        }
-        public Set<String> getCreated() {
-            return this.created;
-        }
-    }
-
     private final static DateTimeFormatter utcFormatter = ISODateTimeFormat.dateTime().withZoneUTC();
 
-    public static class BulkEntry {
-        private String id;
-        private String type;
-        //private Long version;
-        private Map<String, Object> jsonMap;
-
-        /**
-         * initialize entry for bulk writes
-         * @param id the id of the entry
-         * @param type the type name
-         * @param timestamp_fieldname the name of the timestamp field, null for unused. If a name is given here, then this field is filled with the current time
-         * @param version the version number >= 0 for external versioning or null for forced updates without versioning
-         * @param jsonMap the payload object
-         */
-        public BulkEntry(final String id, final String type, final String timestamp_fieldname, final Map<String, Object> jsonMap) {
-            this.id = id;
-            this.type = type;
-            //this.version = version;
-            this.jsonMap = jsonMap;
-            if (timestamp_fieldname != null && !this.jsonMap.containsKey(timestamp_fieldname)) this.jsonMap.put(timestamp_fieldname, utcFormatter.print(System.currentTimeMillis()));
-        }
-    }
-
-    public Query query(final String indexName, final QueryBuilder queryBuilder, final QueryBuilder postFilter, final Sort sort, final HighlightBuilder hb, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) {
+    /**
+     * Searches using a elasticsearch query.
+     * @param indexName the name of the search index
+     * @param queryBuilder a query for the search
+     * @param postFilter a filter that does not affect aggregations
+     * @param timezoneOffset - an offset in minutes that is applied on dates given in the query of the form since:date until:date
+     * @param from - a filter that is applied on the document date and excludes all documents older than from
+     * @param resultCount - the number of messages in the result; can be zero if only aggregations are wanted
+     * @param aggregationLimit - the maximum count of facet entities, not search results
+     * @param aggregationFields - names of the aggregation fields. If no aggregation is wanted, pass no (zero) field(s)
+     */
+    @Override
+    public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) {
+        QueryBuilder queryBuilder = yq.getQueryBuilder();
         Exception ee = null;
         while (true) {
             for (int t = 0; t < 10; t++) try {
-                return new Query(indexName,  queryBuilder, postFilter, sort, hb, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
+                FulltextIndex.Query query = new FulltextIndex.Query();
+
+                // prepare request
+                SearchRequestBuilder request = ElasticsearchClient.this.elasticsearchClient.prepareSearch(indexName);
+                request
+                        .setExplain(explain)
+                        .setSearchType(SearchType.QUERY_THEN_FETCH)
+                        .setQuery(queryBuilder)
+                        .setSearchType(SearchType.DFS_QUERY_THEN_FETCH) // DFS_QUERY_THEN_FETCH is slower but provides stability of search results
+                        .setFrom(from)
+                        .setSize(resultCount);
+                if (highlightField != null) {
+                    HighlightBuilder hb = new HighlightBuilder().field(highlightField.getMapping().name()).preTags("").postTags("").fragmentSize(140);
+                    request.highlighter(hb);
+                }
+                //HighlightBuilder hb = new HighlightBuilder().field("message").preTags("<foo>").postTags("<bar>");
+                if (postFilter != null) request.setPostFilter(postFilter.getQueryBuilder());
+                request.clearRescorers();
+                for (WebMapping field: aggregationFields) {
+                    request.addAggregation(AggregationBuilders.terms(field.getMapping().name()).field(field.getMapping().name()).minDocCount(1).size(aggregationLimit));
+                }
+                // apply sort
+                request = sort.sort(request);
+                // get response
+                SearchResponse response = request.execute().actionGet();
+                SearchHits searchHits = response.getHits();
+                query.hitCount = (int) searchHits.getTotalHits();
+
+                // evaluate search result
+                //long totalHitCount = response.getHits().getTotalHits();
+                SearchHit[] hits = searchHits.getHits();
+                query.results = new ArrayList<Map<String, Object>>(query.hitCount);
+                query.explanations = new ArrayList<String>(query.hitCount);
+                query.highlights = new ArrayList<Map<String, HighlightField>>(query.hitCount);
+                for (SearchHit hit: hits) {
+                    Map<String, Object> map = hit.getSourceAsMap();
+                    if (!map.containsKey("id")) map.put("id", hit.getId());
+                    if (!map.containsKey("type")) map.put("type", hit.getType());
+                    query.results.add(map);
+                    query.highlights.add(hit.getHighlightFields());
+                    if (explain) {
+                        Explanation explanation = hit.getExplanation();
+                        query.explanations.add(explanation.toString());
+                    } else {
+                        query.explanations.add("");
+                    }
+                }
+
+                // evaluate aggregation
+                // collect results: fields
+                query.aggregations = new HashMap<>();
+                for (WebMapping field: aggregationFields) {
+                    Terms fieldCounts = response.getAggregations().get(field.getMapping().name());
+                    List<? extends Bucket> buckets = fieldCounts.getBuckets();
+                    // aggregate double-tokens (matching lowercase)
+                    Map<String, Long> checkMap = new HashMap<>();
+                    for (Bucket bucket: buckets) {
+                        String key = bucket.getKeyAsString().trim();
+                        if (key.length() > 0) {
+                            String k = key.toLowerCase();
+                            Long v = checkMap.get(k);
+                            checkMap.put(k, v == null ? bucket.getDocCount() : v + bucket.getDocCount());
+                        }
+                    }
+                    ArrayList<Map.Entry<String, Long>> list = new ArrayList<>(buckets.size());
+                    for (Bucket bucket: buckets) {
+                        String key = bucket.getKeyAsString().trim();
+                        if (key.length() > 0) {
+                            Long v = checkMap.remove(key.toLowerCase());
+                            if (v == null) continue;
+                            list.add(new AbstractMap.SimpleEntry<String, Long>(key, v));
+                        }
+                    }
+                    query.aggregations.put(field.getMapping().name(), list);
+                    //if (field.equals("place_country")) {
+                        // special handling of country aggregation: add the country center as well
+                    //}
+
+                    return query;
+                }
+
             } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
                 ee = e;
                 log.info("ElasticsearchClient query failed with " + e.getMessage() + ", retrying attempt " + t + " ...");
@@ -713,101 +794,6 @@ public class ElasticsearchClient {
             try {Thread.sleep(1000);} catch (InterruptedException eee) {}
             connect();
             continue;
-        }
-    }
-
-    public class Query {
-        public List<Map<String, Object>> results;
-        public List<String> explanations;
-        public List<Map<String, HighlightField>> highlights;
-        public int hitCount;
-        public Map<String, List<Map.Entry<String, Long>>> aggregations;
-
-        /**
-         * Searches using a elasticsearch query.
-         * @param indexName the name of the search index
-         * @param queryBuilder a query for the search
-         * @param postFilter a filter that does not affect aggregations
-         * @param timezoneOffset - an offset in minutes that is applied on dates given in the query of the form since:date until:date
-         * @param from - a filter that is applied on the document date and excludes all documents older than from
-         * @param resultCount - the number of messages in the result; can be zero if only aggregations are wanted
-         * @param aggregationLimit - the maximum count of facet entities, not search results
-         * @param aggregationFields - names of the aggregation fields. If no aggregation is wanted, pass no (zero) field(s)
-         */
-        private Query(final String indexName, final QueryBuilder queryBuilder, final QueryBuilder postFilter, final Sort sort, final HighlightBuilder hb, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) {
-            // prepare request
-            SearchRequestBuilder request = ElasticsearchClient.this.elasticsearchClient.prepareSearch(indexName);
-            request
-                    .setExplain(explain)
-                    .setSearchType(SearchType.QUERY_THEN_FETCH)
-                    .setQuery(queryBuilder)
-                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH) // DFS_QUERY_THEN_FETCH is slower but provides stability of search results
-                    .setFrom(from)
-                    .setSize(resultCount);
-            if (hb != null) request.highlighter(hb);
-            //HighlightBuilder hb = new HighlightBuilder().field("message").preTags("<foo>").postTags("<bar>");
-            if (postFilter != null) request.setPostFilter(postFilter);
-            request.clearRescorers();
-            for (WebMapping field: aggregationFields) {
-                request.addAggregation(AggregationBuilders.terms(field.getMapping().name()).field(field.getMapping().name()).minDocCount(1).size(aggregationLimit));
-            }
-            // apply sort
-            request = sort.sort(request);
-            // get response
-            SearchResponse response = request.execute().actionGet();
-            SearchHits searchHits = response.getHits();
-            this.hitCount = (int) searchHits.getTotalHits();
-
-            // evaluate search result
-            //long totalHitCount = response.getHits().getTotalHits();
-            SearchHit[] hits = searchHits.getHits();
-            this.results = new ArrayList<Map<String, Object>>(this.hitCount);
-            this.explanations = new ArrayList<String>(this.hitCount);
-            this.highlights = new ArrayList<Map<String, HighlightField>>(this.hitCount);
-            for (SearchHit hit: hits) {
-                Map<String, Object> map = hit.getSourceAsMap();
-                if (!map.containsKey("id")) map.put("id", hit.getId());
-                if (!map.containsKey("type")) map.put("type", hit.getType());
-                this.results.add(map);
-                this.highlights.add(hit.getHighlightFields());
-                if (explain) {
-                    Explanation explanation = hit.getExplanation();
-                    this.explanations.add(explanation.toString());
-                } else {
-                    this.explanations.add("");
-                }
-            }
-
-            // evaluate aggregation
-            // collect results: fields
-            this.aggregations = new HashMap<>();
-            for (WebMapping field: aggregationFields) {
-                Terms fieldCounts = response.getAggregations().get(field.getMapping().name());
-                List<? extends Bucket> buckets = fieldCounts.getBuckets();
-                // aggregate double-tokens (matching lowercase)
-                Map<String, Long> checkMap = new HashMap<>();
-                for (Bucket bucket: buckets) {
-                    String key = bucket.getKeyAsString().trim();
-                    if (key.length() > 0) {
-                        String k = key.toLowerCase();
-                        Long v = checkMap.get(k);
-                        checkMap.put(k, v == null ? bucket.getDocCount() : v + bucket.getDocCount());
-                    }
-                }
-                ArrayList<Map.Entry<String, Long>> list = new ArrayList<>(buckets.size());
-                for (Bucket bucket: buckets) {
-                    String key = bucket.getKeyAsString().trim();
-                    if (key.length() > 0) {
-                        Long v = checkMap.remove(key.toLowerCase());
-                        if (v == null) continue;
-                        list.add(new AbstractMap.SimpleEntry<String, Long>(key, v));
-                    }
-                }
-                this.aggregations.put(field.getMapping().name(), list);
-                //if (field.equals("place_country")) {
-                    // special handling of country aggregation: add the country center as well
-                //}
-            }
         }
     }
 
@@ -855,4 +841,5 @@ public class ElasticsearchClient {
 
         client.close();
     }
+
 }

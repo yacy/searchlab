@@ -24,8 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.json.JSONObject;
 
 import eu.searchlab.tools.JSONList;
@@ -56,7 +54,7 @@ public interface Index {
 
     public JSONList query(String indexName, QueryLanguage language, String query, int start, int count) throws IOException;
 
-    public JSONObject query(final String indexName, final QueryBuilder queryBuilder, final QueryBuilder postFilter, final Sort sort, final HighlightBuilder hb, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) throws IOException;
+    public JSONObject query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) throws IOException;
 
     public boolean delete(String indexName, String typeName, String id) throws IOException;
 

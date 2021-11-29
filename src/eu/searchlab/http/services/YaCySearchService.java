@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,7 +45,7 @@ public class YaCySearchService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/yacysearch.json"};
+        return new String[] {"/api/yacysearch.json", ""};
     }
 
     @Override
@@ -83,10 +82,9 @@ public class YaCySearchService extends AbstractService implements Service {
         Sort sort = new Sort(call.optString("sort", ""));
 
         YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
-        HighlightBuilder hb = new HighlightBuilder().field(WebMapping.text_t.getMapping().name()).preTags("").postTags("").fragmentSize(140);
         ElasticsearchClient.Query query = Searchlab.ec.query(
                 System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
-                yq.queryBuilder, null, sort, hb, timezoneOffset, startRecord, maximumRecords, facetLimit, explain,
+                yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, maximumRecords, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 
         JSONObject json = new JSONObject(true);
