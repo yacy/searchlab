@@ -43,7 +43,7 @@ repositories {
 
 dependencies {
   implementation 'org.elasticsearch.client:transport:6.8.+'
-  implementation 'org.apache.logging.log4j:log4j-core:2.14.1'
+  implementation 'org.apache.logging.log4j:log4j-core:2.15.+'
   implementation 'io.swagger.core.v3:swagger-jaxrs2:2.1.2'
   implementation 'io.undertow:undertow-core:2.2.2.Final'
   implementation 'tech.tablesaw:tablesaw-jsplot:0.38.+'
