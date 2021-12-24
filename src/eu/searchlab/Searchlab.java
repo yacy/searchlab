@@ -52,7 +52,7 @@ public class Searchlab {
     public static ElasticsearchClient ec;
 
     public static String getHost(String address) {
-        String hp = t(address, '@', address);
+        final String hp = t(address, '@', address);
         return h(hp, ':', hp);
     }
     public static int getPort(String address, String defaultPort) {
@@ -66,12 +66,12 @@ public class Searchlab {
     }
 
     private static String h(String a, char s, String d) {
-        int p = a.indexOf(s);
+        final int p = a.indexOf(s);
         return p < 0 ? d : a.substring(0,  p);
     }
 
     private static String t(String a, char s, String d) {
-        int p = a.indexOf(s);
+        final int p = a.indexOf(s);
         return p < 0 ? d : a.substring(p + 1);
     }
 
@@ -82,7 +82,6 @@ public class Searchlab {
         console.setLayout(new PatternLayout("%d [%p|%c|%C{1}] %m%n"));
         console.setThreshold(Level.DEBUG);
         console.activateOptions();
-        org.apache.log4j.Logger.getRootLogger().addAppender(console);
 
         // prepare configuration
         final Properties sysprops = System.getProperties(); // system properties
@@ -99,7 +98,7 @@ public class Searchlab {
 
 
         // initialize data services (in the backgound)
-        Thread t = new Thread() {
+        final Thread t = new Thread() {
             @Override
             public void run() {
 
@@ -120,11 +119,11 @@ public class Searchlab {
                 // get connection to minio
                 final String s3address = System.getProperty("grid.s3.address", "admin:12345678@searchlab.b00:9000");
                 final String s3SettingsPath = System.getProperty("grid.s3.path", "data/settings");
-                String bucket_endpoint = getHost(s3address);
-                int p = bucket_endpoint.indexOf('.');
+                final String bucket_endpoint = getHost(s3address);
+                final int p = bucket_endpoint.indexOf('.');
                 assert p > 0;
-                String bucket = bucket_endpoint.substring(0, p);
-                String endpoint = bucket_endpoint.substring(p + 1);
+                final String bucket = bucket_endpoint.substring(0, p);
+                final String endpoint = bucket_endpoint.substring(p + 1);
                 io = new S3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
                 settingsIop = new IOPath(bucket, s3SettingsPath);
 
@@ -140,7 +139,7 @@ public class Searchlab {
         // Start webserver
         final String port = System.getProperty("PORT", "8400");
         log.info("starting server at port " + port);
-        WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0");
+        final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0");
         webserver.run();
     }
 
