@@ -23,12 +23,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.PatternLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
@@ -40,11 +34,11 @@ import eu.searchlab.http.WebServer;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.io.S3IO;
+import eu.searchlab.tools.Logger;
 import net.yacy.grid.io.index.ElasticsearchClient;
 
 public class Searchlab {
 
-    private static final Logger log = LoggerFactory.getLogger(Searchlab.class);
     public static HazelcastInstance hzInstance;
     public static Map<String, String> hzMap;
     public static GenericIO io;
@@ -77,12 +71,6 @@ public class Searchlab {
 
     public static void main(final String[] args) {
 
-        // prepare logging
-        final ConsoleAppender console = new ConsoleAppender();
-        console.setLayout(new PatternLayout("%d [%p|%c|%C{1}] %m%n"));
-        console.setThreshold(Level.DEBUG);
-        console.activateOptions();
-
         // prepare configuration
         final Properties sysprops = System.getProperties(); // system properties
         System.getenv().forEach((k,v) -> {
@@ -94,7 +82,7 @@ public class Searchlab {
         //ClassLoader.getSystemClassLoader().setDefaultAssertionStatus(true);
         boolean assertionenabled = false;
         assert (assertionenabled = true) == true; // compare to true to remove warning: "Possible accidental assignement"
-        if (assertionenabled) log.info("Asserts are enabled");
+        if (assertionenabled) Logger.info("Asserts are enabled");
 
 
         // initialize data services (in the backgound)
@@ -106,7 +94,7 @@ public class Searchlab {
                 final Config hzConfig = new Config().setClusterName("Searchlab");//.setNetworkConfig(new NetworkConfig())
                 // hzConfig.setLiteMember(true); // lite members do not store data
                 hzConfig.setProperty("hazelcast.initial.min.cluster.size", "1"); // lazily accepting that the cluster might have no redundancy
-                hzConfig.setProperty("hazelcast.logging.type", "log4j");
+                hzConfig.setProperty("hazelcast.logging.type", "jdk");
                 final NetworkConfig network = hzConfig.getNetworkConfig();
                 network.setPort(5701).setPortCount(20);
                 network.setPortAutoIncrement(true);
@@ -138,7 +126,7 @@ public class Searchlab {
 
         // Start webserver
         final String port = System.getProperty("PORT", "8400");
-        log.info("starting server at port " + port);
+        Logger.info("starting server at port " + port);
         final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0");
         webserver.run();
     }
