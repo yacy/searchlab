@@ -33,6 +33,7 @@ import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.http.services.AbstractService;
 import eu.searchlab.storage.table.IndexedTable;
+import eu.searchlab.tools.Logger;
 
 
 public class ServiceMap {
@@ -86,6 +87,9 @@ public class ServiceMap {
                 if (p > 0) tablename = tablename.substring(0, p); else tablename = null;
             }
             if (service.getType() == Service.Type.OBJECT) {
+
+                Logger.info(post.toString());
+
                 final JSONObject json = service.serveObject(post);
                 if (path.endsWith(".json")) {
                     try {

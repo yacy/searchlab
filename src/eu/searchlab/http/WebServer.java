@@ -54,6 +54,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 
@@ -120,6 +121,15 @@ public class WebServer implements Runnable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
 
+            String method = exchange.getRequestMethod().toString();
+
+            if (method.toLowerCase().equals("options")) {
+                exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
+                exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+                exchange.getResponseSender().send("");
+                return;
+            }
+
             if (exchange.isInIoThread()) {
                 // dispatch to a worker thread, see
                 // https://undertow.io/undertow-docs/undertow-docs-2.0.0/undertow-handler-guide.html#dispatch-code
@@ -170,6 +180,8 @@ public class WebServer implements Runnable {
                 if (html == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                 } else {
+                    exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
+                    exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
                     exchange.getResponseSender().send(html);
                 }
             } else {

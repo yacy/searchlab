@@ -42,8 +42,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.search.MatchQuery.ZeroTermsQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -53,8 +51,6 @@ import eu.searchlab.tools.DateParser;
 import net.yacy.grid.io.index.BoostsFactory.Boosts;
 
 public class YaCyQuery {
-
-    private static final Logger log = LoggerFactory.getLogger(YaCyQuery.class);
 
     private static char space = ' ';
     private static char sq = '\'';
@@ -103,10 +99,6 @@ public class YaCyQuery {
         this.negativeBag = new HashSet<>();
         this.contentdom = contentdom;
         this.timezoneOffset = timezoneOffset;
-
-        // ready
-        //Data.logger.info("YaCyQuery: " + this.queryBuilder.toString());
-        log.info("YaCyQuery: " + q);
     }
 
     /**

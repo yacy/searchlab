@@ -692,7 +692,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @param queryBuilder a query for the search
      * @param postFilter a filter that does not affect aggregations
      * @param timezoneOffset - an offset in minutes that is applied on dates given in the query of the form since:date until:date
-     * @param from - a filter that is applied on the document date and excludes all documents older than from
+     * @param from - from index to start the search from, 1st entry has from-index 0.
      * @param resultCount - the number of messages in the result; can be zero if only aggregations are wanted
      * @param aggregationLimit - the maximum count of facet entities, not search results
      * @param aggregationFields - names of the aggregation fields. If no aggregation is wanted, pass no (zero) field(s)
@@ -780,9 +780,8 @@ public class ElasticsearchClient implements FulltextIndex {
                     //if (field.equals("place_country")) {
                         // special handling of country aggregation: add the country center as well
                     //}
-
-                    return query;
                 }
+                return query;
 
             } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
                 ee = e;
