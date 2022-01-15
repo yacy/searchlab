@@ -187,7 +187,7 @@ public class YaCySearchService extends AbstractService implements Service {
             nave.put("style", "default");
             nave.put("same", false);
             pagenav.put(nave);
-            json.put("pagenav", pagenav);
+            channel.put("pagenav", pagenav);
         } catch (final JSONException e) {e.printStackTrace();}
         return json;
     }
