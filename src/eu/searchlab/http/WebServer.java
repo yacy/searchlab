@@ -113,8 +113,8 @@ public class WebServer implements Runnable {
     }
 
     private static class Fileserver implements HttpHandler {
-        File root;
-        public Fileserver(File root) {
+        private File[] root;
+        public Fileserver(File[] root) {
             this.root = root;
         }
 
@@ -140,11 +140,9 @@ public class WebServer implements Runnable {
             final String requestPath = exchange.getRequestPath();
 
             // load requested file
-            File f = new File(this.root, requestPath);
-            if (f.isDirectory()) f = new File(f, "index.html");
-            final String filePath = f.getAbsolutePath();
-            final int p = filePath.lastIndexOf('.');
-            final String ext = p < 0 ? "default" : filePath.substring(p + 1);
+            File f = findFile(requestPath);
+            final int p = requestPath.lastIndexOf('.');
+            final String ext = p < 0 ? "html" : requestPath.substring(p + 1);
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
 
@@ -170,7 +168,7 @@ public class WebServer implements Runnable {
 
                 // generate response (handle servlets + handlebars)
                 String html = null;
-                try {html = file2tring(f);} catch (final FileNotFoundException e) {}
+                if (f != null) try {html = file2tring(f);} catch (final FileNotFoundException e) {}
                 html = ServiceMap.serviceDispatcher(requestPath, html, json);
 
                 // apply server-side includes
@@ -198,6 +196,16 @@ public class WebServer implements Runnable {
             }
         }
 
+        private File findFile(String requestPath) {
+            for (File g: this.root) {
+                File f = new File(g, requestPath);
+                if (!f.exists()) continue;
+                if (f.isDirectory()) f = new File(f, "index.html");
+                return f;
+            }
+            return null;
+        }
+
         private String recursiveRequest(String requestPath) throws Exception {
 
             // parse query parameters
@@ -216,18 +224,16 @@ public class WebServer implements Runnable {
             }
 
             // load requested file
-            File f = new File(this.root, requestPath);
-            if (f.isDirectory()) f = new File(f, "index.html");
-            final String filePath = f.getAbsolutePath();
-            final int p = filePath.lastIndexOf('.');
-            final String ext = p < 0 ? "default" : filePath.substring(p + 1);
+            File f = findFile(requestPath);
+            final int p = requestPath.lastIndexOf('.');
+            final String ext = p < 0 ? "html" : requestPath.substring(p + 1);
 
             // switch case: files with templating / without
             if (isTemplatingFileType(ext)) {
 
                 // generate response (handle servlets + handlebars)
                 String html = null;
-                try {html = file2tring(f);} catch (final FileNotFoundException e) {}
+                if (f != null) try {html = file2tring(f);} catch (final FileNotFoundException e) {}
                 html = ServiceMap.serviceDispatcher(requestPath, html, json);
 
                 // apply server-side includes
@@ -277,7 +283,10 @@ public class WebServer implements Runnable {
         // Start webserver
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         final PathHandler ph = Handlers.path();
-        ph.addPrefixPath("/", new Fileserver(new File(new File("ui"), "site")));
+        ph.addPrefixPath("/", new Fileserver(new File[] {
+                new File(new File("ui"), "site"),
+                new File("htdocs")
+        }));
         builder.setHandler(ph);
         this.server = builder.build();
         this.server.start();

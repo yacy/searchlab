@@ -45,7 +45,7 @@ public class YaCySearchService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/yacysearch.json", ""};
+        return new String[] {"/api/yacysearch.json", "/api/yacysearch.html"};
     }
 
     @Override
