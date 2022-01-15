@@ -63,12 +63,7 @@ a:""})}var h=/\{\{(([@!]?)(.+?))\}\}(([\s\S]+?)(\{\{:\1\}\}([\s\S]+?))?)\{\{\/\1
       // result list 
       document.getElementById("result").innerHTML = new t(document.getElementById('resulttemplate').innerHTML).render(channel);
       // page navigation
-      var pagenav = [{"startRecord" : startRecord < 10 ? 0 : startRecord - 10, "page" : "&lt;", "query" : query, "style" : "default"}];
-      for (let p = 0; p < Math.min(pages, 20); p++) {
-        pagenav.push({"startRecord" : p * 10, "page" : p + 1, "query" : query, "style" : p * 10 == startRecord ? "success" : "default"});
-      }
-      pagenav.push({"startRecord" : (startRecord + 10 > channel.totalResults) ? startRecord : startRecord + 10, "page" : "&gt;", "query" : query, "style" : "default"});
-      document.getElementById("pagination").innerHTML = new t(document.getElementById('paginationtemplate').innerHTML).render({"items": pagenav});
+      document.getElementById("pagination").innerHTML = new t(document.getElementById('paginationtemplate').innerHTML).render({"items": channel.pagenav});
     }
   }
   // event listener on query field to trigger search button when enter is hit
