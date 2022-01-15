@@ -28,11 +28,11 @@ a:""})}var h=/\{\{(([@!]?)(.+?))\}\}(([\s\S]+?)(\{\{:\1\}\}([\s\S]+?))?)\{\{\/\1
 {{/@items}}
 </script>
 
-<!-- template for pagination bar -->
+<!-- template for pagination bar used by t.js -->
 <script type="t/template" id="paginationtemplate">
 <div class="btn-group" role="group" aria-label="pagination">
 {{@items}}
-  <button type="button" class="btn btn-{{=_val.style}} btn-xs" onClick="document.getElementById('startRecord').value={{=_val.startRecord}}; getapi();">{{=_val.page}}</button>
+  <button type="button" class="btn btn-{{_val.same}}success{{:_val.same}}default{{/_val.same}} btn-xs" onClick="document.getElementById('startRecord').value={{=_val.startRecord}}; getapi();">{{=_val.page}}</button>
 {{/@items}}
 </div>
 </script>
@@ -58,17 +58,12 @@ a:""})}var h=/\{\{(([@!]?)(.+?))\}\}(([\s\S]+?)(\{\{:\1\}\}([\s\S]+?))?)\{\{\/\1
     xhr.send();
     xhr.onload = function() {
       var channel = xhr.response.channels[0];
-      var pages = Math.floor(channel.totalResults / 10 + 1);
-      channel["results"] = channel.totalResults == 0 ? "" : "<p>" + channel.totalResults + " hits, page " + Math.floor(startRecord / 10 + 1) + " of " + pages + "</p>";
+      var pages = Math.floor(channel.totalResults / channel.itemsPerPage) + 1;
+      channel["results"] = channel.totalResults == 0 ? "" : "<p>" + channel.totalResults + " hits, page " + (Math.floor(startRecord / channel.itemsPerPage) + 1) + " of " + pages + "</p>";
       // result list 
       document.getElementById("result").innerHTML = new t(document.getElementById('resulttemplate').innerHTML).render(channel);
       // page navigation
-      var pagenav = [{"startRecord" : startRecord < 10 ? 0 : startRecord - 10, "page" : "&lt;", "query" : query, "style" : "default"}];
-      for (let p = 0; p < Math.min(pages, 20); p++) {
-        pagenav.push({"startRecord" : p * 10, "page" : p + 1, "query" : query, "style" : p * 10 == startRecord ? "success" : "default"});
-      }
-      pagenav.push({"startRecord" : (startRecord + 10 > channel.totalResults) ? startRecord : startRecord + 10, "page" : "&gt;", "query" : query, "style" : "default"});
-      document.getElementById("pagination").innerHTML = new t(document.getElementById('paginationtemplate').innerHTML).render({"items": pagenav});
+      document.getElementById("pagination").innerHTML = new t(document.getElementById('paginationtemplate').innerHTML).render({"items": channel.pagenav});
     }
   }
   // event listener on query field to trigger search button when enter is hit

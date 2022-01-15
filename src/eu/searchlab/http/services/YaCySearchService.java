@@ -56,72 +56,72 @@ public class YaCySearchService extends AbstractService implements Service {
     @Override
     public JSONObject serveObject(JSONObject call) {
 
-        final String path = call.optString("PATH", "");
-        final int p = path.lastIndexOf("/graph/");
-
-        String callback = call.optString("callback", "");
-        boolean jsonp = callback != null && callback.length() > 0;
-        boolean minified = call.optBoolean("minified", false);
-        boolean explain = call.optBoolean("explain", false);
-        String q = call.optString("query", "");
-        Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
+        // evaluate request parameter
+        final String callback = call.optString("callback", "");
+        final boolean minified = call.optBoolean("minified", false);
+        final boolean explain = call.optBoolean("explain", false);
+        final String q = call.optString("query", "");
+        final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
         String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
         collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
-        String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
-        int maximumRecords = call.optInt("maximumRecords", call.optInt("rows", call.optInt("num", 10)));
-        int startRecord = call.optInt("startRecord", call.optInt("start", 0));
+        final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
+        final int itemsPerPage = call.optInt("itemsPerPage", call.optInt("maximumRecords", call.optInt("rows", call.optInt("num", 10))));
+        final int startRecord = call.optInt("startRecord", call.optInt("start", 0));
         //int meanCount = call.opt("meanCount", 5);
-        int timezoneOffset = call.optInt("timezoneOffset", -1);
+        final int timezoneOffset = call.optInt("timezoneOffset", -1);
         //String nav = call.opt("nav", "");
         //String prefermaskfilter = call.opt("prefermaskfilter", "");
         //String constraint = call.opt("constraint", "");
-        int facetLimit = call.optInt("facetLimit", 10);
-        String facetFields = call.optString("facetFields", YaCyQuery.FACET_DEFAULT_PARAMETER);
-        List<WebMapping> facetFieldMapping = new ArrayList<>();
-        for (String s: facetFields.split(",")) facetFieldMapping.add(WebMapping.valueOf(s));
-        Sort sort = new Sort(call.optString("sort", ""));
+        final int facetLimit = call.optInt("facetLimit", 10);
+        final String facetFields = call.optString("facetFields", YaCyQuery.FACET_DEFAULT_PARAMETER);
+        final List<WebMapping> facetFieldMapping = new ArrayList<>();
+        for (final String s: facetFields.split(",")) facetFieldMapping.add(WebMapping.valueOf(s));
+        final Sort sort = new Sort(call.optString("sort", ""));
 
-        YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
-        ElasticsearchClient.Query query = Searchlab.ec.query(
+        // run query against search index
+        final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
+        final ElasticsearchClient.Query query = Searchlab.ec.query(
                 System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
-                yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, maximumRecords, facetLimit, explain,
+                yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 
-        JSONObject json = new JSONObject(true);
+        // prepare result object
+        final JSONObject json = new JSONObject(true);
         try {
-            JSONArray channels = new JSONArray();
+            final JSONArray channels = new JSONArray();
             json.put("channels", channels);
-            JSONObject channel = new JSONObject(true);
+            final JSONObject channel = new JSONObject(true);
             channels.put(channel);
-            JSONArray items = new JSONArray();
+            final JSONArray items = new JSONArray();
+
+            // search metadata
             channel.put("title", "Search for " + q);
             channel.put("description", "Search for " + q);
             channel.put("startIndex", "" + startRecord);
-            channel.put("itemsPerPage", "" + items.length());
             channel.put("searchTerms", q);
             channel.put("totalResults", Integer.toString(query.hitCount));
-            channel.put("items", items);
 
-            List<Map<String, Object>> result = query.results;
-            List<String> explanations = query.explanations;
+            // create result list
+            final List<Map<String, Object>> result = query.results;
+            final List<String> explanations = query.explanations;
             for (int hitc = 0; hitc < result.size(); hitc++) {
-                WebDocument doc = new WebDocument(result.get(hitc));
-                JSONObject hit = new JSONObject(true);
-                String titleString = doc.getTitle();
+                final WebDocument doc = new WebDocument(result.get(hitc));
+                final JSONObject hit = new JSONObject(true);
+                final String titleString = doc.getTitle();
                 String link = doc.getLink();
                 if (Classification.ContentDomain.IMAGE == contentdom) {
                     hit.put("url", link); // the url before we extract the link
-                    link = doc.pickImage((String) link);
+                    link = doc.pickImage(link);
                     hit.put("icon", link);
                     hit.put("image", link);
                 }
-                String snippet = doc.getSnippet(query.highlights.get(hitc), yq);
-                Date last_modified_date = doc.getDate();
-                int size = doc.getSize();
-                int sizekb = size / 1024;
-                int sizemb = sizekb / 1024;
-                String size_string = sizemb > 0 ? (Integer.toString(sizemb) + " mbyte") : sizekb > 0 ? (Integer.toString(sizekb) + " kbyte") : (Integer.toString(size) + " byte");
-                String host = doc.getHost();
+                final String snippet = doc.getSnippet(query.highlights.get(hitc), yq);
+                final Date last_modified_date = doc.getDate();
+                final int size = doc.getSize();
+                final int sizekb = size / 1024;
+                final int sizemb = sizekb / 1024;
+                final String size_string = sizemb > 0 ? (Integer.toString(sizemb) + " mbyte") : sizekb > 0 ? (Integer.toString(sizekb) + " kbyte") : (Integer.toString(size) + " byte");
+                final String host = doc.getHost();
                 hit.put("title", titleString);
                 hit.put("link", link.toString());
                 hit.put("description", snippet);
@@ -133,15 +133,18 @@ public class YaCySearchService extends AbstractService implements Service {
                     hit.put("explanation", explanations.get(hitc));
                 }
                 items.put(hit);
-            };
-            JSONArray navigation = new JSONArray();
-            channel.put("navigation", navigation);
+            }
+            channel.put("itemsPerPage", "" + itemsPerPage);
+            channel.put("items", items);
 
-            Map<String, List<Map.Entry<String, Long>>> aggregations = query.aggregations;
-            for (Map.Entry<String, List<Map.Entry<String, Long>>> fe: aggregations.entrySet()) {
-                String facetname = fe.getKey();
-                WebMapping mapping = WebMapping.valueOf(facetname);
-                JSONObject facetobject = new JSONObject(true);
+            // create facet navigation
+            final JSONArray navigation = new JSONArray();
+            channel.put("navigation", navigation);
+            final Map<String, List<Map.Entry<String, Long>>> aggregations = query.aggregations;
+            for (final Map.Entry<String, List<Map.Entry<String, Long>>> fe: aggregations.entrySet()) {
+                final String facetname = fe.getKey();
+                final WebMapping mapping = WebMapping.valueOf(facetname);
+                final JSONObject facetobject = new JSONObject(true);
                 facetobject.put("facetname", mapping.getMapping().getFacetname());
                 facetobject.put("displayname", mapping.getMapping().getDisplayname());
                 facetobject.put("type", mapping.getMapping().getFacettype());
@@ -149,10 +152,10 @@ public class YaCySearchService extends AbstractService implements Service {
                 facetobject.put("max", "0");
                 facetobject.put("mean", "0");
                 facetobject.put("count", fe.getValue().size());
-                JSONArray elements = new JSONArray();
+                final JSONArray elements = new JSONArray();
                 facetobject.put("elements", elements);
-                for (Map.Entry<String, Long> element: fe.getValue()) {
-                    JSONObject elementEntry = new JSONObject(true);
+                for (final Map.Entry<String, Long> element: fe.getValue()) {
+                    final JSONObject elementEntry = new JSONObject(true);
                     elementEntry.put("name", element.getKey());
                     elementEntry.put("count", element.getValue().toString());
                     elementEntry.put("modifier", mapping.getMapping().getFacetmodifier() + ":" + element.getKey());
@@ -160,7 +163,29 @@ public class YaCySearchService extends AbstractService implements Service {
                 }
                 navigation.put(facetobject);
             }
-        } catch (JSONException e) {e.printStackTrace();}
+
+            // create page navigation
+            final JSONArray pagenav = new JSONArray();
+            JSONObject nave = new JSONObject(true);
+            nave.put("startRecord", startRecord < itemsPerPage ? 0 : startRecord - itemsPerPage);
+            nave.put("page", "&lt;");
+            nave.put("same", false);
+            pagenav.put(nave);
+            final int pages = query.hitCount / itemsPerPage + 1;
+            for (int p = 0; p < Math.min(pages, 20); p++) {
+                nave = new JSONObject(true);
+                nave.put("startRecord", p * itemsPerPage);
+                nave.put("page", "" + (p + 1));
+                nave.put("same", p * itemsPerPage == startRecord);
+                pagenav.put(nave);
+            }
+            nave = new JSONObject(true);
+            nave.put("startRecord", (startRecord + itemsPerPage > query.hitCount) ? startRecord : startRecord + itemsPerPage);
+            nave.put("page", "&gt;");
+            nave.put("same", false);
+            pagenav.put(nave);
+            channel.put("pagenav", pagenav);
+        } catch (final JSONException e) {e.printStackTrace();}
         return json;
     }
 
