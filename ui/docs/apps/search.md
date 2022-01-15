@@ -58,8 +58,8 @@ a:""})}var h=/\{\{(([@!]?)(.+?))\}\}(([\s\S]+?)(\{\{:\1\}\}([\s\S]+?))?)\{\{\/\1
     xhr.send();
     xhr.onload = function() {
       var channel = xhr.response.channels[0];
-      var pages = Math.floor(channel.totalResults / 10 + 1);
-      channel["results"] = channel.totalResults == 0 ? "" : "<p>" + channel.totalResults + " hits, page " + Math.floor(startRecord / 10 + 1) + " of " + pages + "</p>";
+      var pages = Math.floor(channel.totalResults / channel.itemsPerPage) + 1;
+      channel["results"] = channel.totalResults == 0 ? "" : "<p>" + channel.totalResults + " hits, page " + (Math.floor(startRecord / channel.itemsPerPage) + 1)) + " of " + pages + "</p>";
       // result list 
       document.getElementById("result").innerHTML = new t(document.getElementById('resulttemplate').innerHTML).render(channel);
       // page navigation

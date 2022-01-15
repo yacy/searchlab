@@ -65,7 +65,7 @@ public class YaCySearchService extends AbstractService implements Service {
         String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
         collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
         final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
-        final int maximumRecords = call.optInt("maximumRecords", call.optInt("rows", call.optInt("num", 10)));
+        final int itemsPerPage = call.optInt("itemsPerPage", call.optInt("maximumRecords", call.optInt("rows", call.optInt("num", 10))));
         final int startRecord = call.optInt("startRecord", call.optInt("start", 0));
         //int meanCount = call.opt("meanCount", 5);
         final int timezoneOffset = call.optInt("timezoneOffset", -1);
@@ -82,7 +82,7 @@ public class YaCySearchService extends AbstractService implements Service {
         final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
         final ElasticsearchClient.Query query = Searchlab.ec.query(
                 System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
-                yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, maximumRecords, facetLimit, explain,
+                yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 
         // prepare result object
@@ -134,7 +134,6 @@ public class YaCySearchService extends AbstractService implements Service {
                 }
                 items.put(hit);
             }
-            final int itemsPerPage = items.length();
             channel.put("itemsPerPage", "" + itemsPerPage);
             channel.put("items", items);
 
