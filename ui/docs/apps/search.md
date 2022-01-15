@@ -28,11 +28,11 @@ a:""})}var h=/\{\{(([@!]?)(.+?))\}\}(([\s\S]+?)(\{\{:\1\}\}([\s\S]+?))?)\{\{\/\1
 {{/@items}}
 </script>
 
-<!-- template for pagination bar -->
+<!-- template for pagination bar used by t.js -->
 <script type="t/template" id="paginationtemplate">
 <div class="btn-group" role="group" aria-label="pagination">
 {{@items}}
-  <button type="button" class="btn btn-{{=_val.style}} btn-xs" onClick="document.getElementById('startRecord').value={{=_val.startRecord}}; getapi();">{{=_val.page}}</button>
+  <button type="button" class="btn btn-{{_val.same}}success{{:_val.same}}default{{/_val.same}} btn-xs" onClick="document.getElementById('startRecord').value={{=_val.startRecord}}; getapi();">{{=_val.page}}</button>
 {{/@items}}
 </div>
 </script>

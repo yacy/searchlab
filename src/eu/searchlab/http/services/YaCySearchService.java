@@ -169,7 +169,6 @@ public class YaCySearchService extends AbstractService implements Service {
             JSONObject nave = new JSONObject(true);
             nave.put("startRecord", startRecord < itemsPerPage ? 0 : startRecord - itemsPerPage);
             nave.put("page", "&lt;");
-            nave.put("style", "default");
             nave.put("same", false);
             pagenav.put(nave);
             final int pages = query.hitCount / itemsPerPage + 1;
@@ -177,14 +176,12 @@ public class YaCySearchService extends AbstractService implements Service {
                 nave = new JSONObject(true);
                 nave.put("startRecord", p * itemsPerPage);
                 nave.put("page", "" + (p + 1));
-                nave.put("style", p * itemsPerPage == startRecord ? "success" : "default");
                 nave.put("same", p * itemsPerPage == startRecord);
                 pagenav.put(nave);
             }
             nave = new JSONObject(true);
             nave.put("startRecord", (startRecord + itemsPerPage > query.hitCount) ? startRecord : startRecord + itemsPerPage);
             nave.put("page", "&gt;");
-            nave.put("style", "default");
             nave.put("same", false);
             pagenav.put(nave);
             channel.put("pagenav", pagenav);
