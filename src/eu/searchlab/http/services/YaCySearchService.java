@@ -45,7 +45,7 @@ public class YaCySearchService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/yacysearch.json", "/api/yacysearch.html"};
+        return new String[] {"/api/yacysearch.json", "/apps/search/"};
     }
 
     @Override
@@ -57,10 +57,11 @@ public class YaCySearchService extends AbstractService implements Service {
     public JSONObject serveObject(JSONObject call) {
 
         // evaluate request parameter
+        final String q = call.optString("query", "").trim();
+        if (q.length() == 0) return new JSONObject();
         final String callback = call.optString("callback", "");
         final boolean minified = call.optBoolean("minified", false);
         final boolean explain = call.optBoolean("explain", false);
-        final String q = call.optString("query", "");
         final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
         String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
         collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
