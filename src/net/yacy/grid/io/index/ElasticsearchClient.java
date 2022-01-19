@@ -122,13 +122,13 @@ public class ElasticsearchClient implements FulltextIndex {
         Settings.Builder settings = Settings.builder()
                 .put("cluster.routing.allocation.enable", "all")
                 .put("cluster.routing.allocation.allow_rebalance", "always");
-        if (this.clusterName != null) settings.put("cluster.name", this.clusterName);
+        if (this.clusterName != null && this.clusterName.length() > 0) settings.put("cluster.name", this.clusterName);
 
         // create a client
         System.setProperty("es.set.netty.runtime.available.processors", "false"); // patch which prevents io.netty.util.NettyRuntime$AvailableProcessorsHolder.setAvailableProcessors from failing
         TransportClient newClient = null;
         while (true) try {
-        	newClient = new PreBuiltTransportClient(settings.build());
+            newClient = new PreBuiltTransportClient(settings.build());
             break;
         } catch (Exception e) {
             log.warn("failed to create an elastic client, retrying...", e);
@@ -786,11 +786,11 @@ public class ElasticsearchClient implements FulltextIndex {
             } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
                 ee = e;
                 log.info("ElasticsearchClient query failed with " + e.getMessage() + ", retrying attempt " + t + " ...");
-                try {Thread.sleep(100);} catch (InterruptedException eee) {}
+                try {Thread.sleep(3000);} catch (InterruptedException eee) {}
                 continue;
             }
             log.info("ElasticsearchClient query failed with " + ee.getMessage() + ", retrying to connect node...");
-            try {Thread.sleep(1000);} catch (InterruptedException eee) {}
+            try {Thread.sleep(5000);} catch (InterruptedException eee) {}
             connect();
             continue;
         }

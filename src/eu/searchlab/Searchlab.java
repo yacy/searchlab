@@ -117,7 +117,7 @@ public class Searchlab {
 
                 // get connection to elasticsearch
                 final String[] elasticsearchAddress = System.getProperty("grid.elasticsearch.address", "127.0.0.1:9300").split(",");
-                final String elasticsearchClusterName = System.getProperty("grid.elasticsearch.clusterName", "elasticsearch");
+                final String elasticsearchClusterName = System.getProperty("grid.elasticsearch.clusterName", "elasticsearch"); // default is elasticsearch but "" will ignore it
                 ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
             }
         };
