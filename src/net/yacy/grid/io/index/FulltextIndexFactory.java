@@ -62,11 +62,21 @@ public class FulltextIndexFactory implements IndexFactory {
 
         // create elasticsearch connection
         this.elasticsearchClient = new ElasticsearchClient(new String[]{this.elasticsearchAddress}, this.elasticsearchClusterName.length() == 0 ? null : this.elasticsearchClusterName);
-        log.info("Connected elasticsearch at " + this.elasticsearchAddress);
+        if (this.elasticsearchClient.clusterReady()) {
+            log.info("Connected elasticsearch at " + this.elasticsearchAddress);
+        } else {
+            log.info("no connection to elasticsearch. Attempting to reach a host in the network.");
+            this.elasticsearchClient = new ElasticsearchClient(new String[]{"172.17.0.1:9300"}, null);
+            if (this.elasticsearchClient.clusterReady()) {
+                log.info("Connected elasticsearch at " + this.elasticsearchAddress);
+            } else {
+                log.info("no connection to elasticsearch.");
+            }
+        }
 
-        Path mappingsPath = Paths.get("conf","mappings");
+        final Path mappingsPath = Paths.get("conf","mappings");
         if (mappingsPath.toFile().exists()) {
-            for (File f: mappingsPath.toFile().listFiles()) {
+            for (final File f: mappingsPath.toFile().listFiles()) {
                 if (f.getName().endsWith(".json")) {
                     String indexName = f.getName();
                     indexName = indexName.substring(0, indexName.length() - 5); // cut off ".json"
@@ -95,7 +105,7 @@ public class FulltextIndexFactory implements IndexFactory {
             @Override
             public IndexFactory addBulk(String indexName, String typeName, final Map<String, JSONObject> objects) throws IOException {
                 if (objects.size() > 0) {
-                    List<FulltextIndex.BulkEntry> entries = new ArrayList<>();
+                    final List<FulltextIndex.BulkEntry> entries = new ArrayList<>();
                     objects.forEach((id, obj) -> {
                         entries.add(new FulltextIndex.BulkEntry(id, typeName, null, obj.toMap()));
                     });
@@ -122,33 +132,33 @@ public class FulltextIndexFactory implements IndexFactory {
 
             @Override
             public long count(String indexName, QueryLanguage language, String query) throws IOException {
-                YaCyQuery yq = getQuery(language, query);
+                final YaCyQuery yq = getQuery(language, query);
                 return FulltextIndexFactory.this.elasticsearchClient.count(indexName, yq);
             }
 
             @Override
             public JSONObject query(String indexName, String id) throws IOException {
-                Map<String, Object> map = FulltextIndexFactory.this.elasticsearchClient.readMap(indexName, id);
+                final Map<String, Object> map = FulltextIndexFactory.this.elasticsearchClient.readMap(indexName, id);
                 if (map == null) return null;
                 return new JSONObject(map);
             }
 
             @Override
             public Map<String, JSONObject> queryBulk(String indexName, Collection<String> ids) throws IOException {
-                Map<String, Map<String, Object>> bulkresponse = FulltextIndexFactory.this.elasticsearchClient.readMapBulk(indexName, ids);
-                Map<String, JSONObject> response = new HashMap<>();
+                final Map<String, Map<String, Object>> bulkresponse = FulltextIndexFactory.this.elasticsearchClient.readMapBulk(indexName, ids);
+                final Map<String, JSONObject> response = new HashMap<>();
                 bulkresponse.forEach((id, obj) -> response.put(id, new JSONObject(obj)));
                 return response;
             }
 
             @Override
             public JSONList query(String indexName, QueryLanguage language, String query, int start, int count) throws IOException {
-                YaCyQuery yq = getQuery(language, query);
-                ElasticsearchClient.Query q = FulltextIndexFactory.this.elasticsearchClient.query(indexName, yq, null, Sort.DEFAULT, null, 0, start, count, 0, false);
-                List<Map<String, Object>> results = q.results;
-                JSONList list = new JSONList();
+                final YaCyQuery yq = getQuery(language, query);
+                final ElasticsearchClient.Query q = FulltextIndexFactory.this.elasticsearchClient.query(indexName, yq, null, Sort.DEFAULT, null, 0, start, count, 0, false);
+                final List<Map<String, Object>> results = q.results;
+                final JSONList list = new JSONList();
                 for (int hitc = 0; hitc < results.size(); hitc++) {
-                    Map<String, Object> map = results.get(hitc);
+                    final Map<String, Object> map = results.get(hitc);
                     list.add(new JSONObject(map));
                 }
                 return list;
@@ -156,24 +166,24 @@ public class FulltextIndexFactory implements IndexFactory {
 
             @Override
             public JSONObject query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) throws IOException {
-                ElasticsearchClient.Query q = FulltextIndexFactory.this.elasticsearchClient.query(indexName, yq, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
-                JSONObject queryResult = new JSONObject(true);
+                final ElasticsearchClient.Query q = FulltextIndexFactory.this.elasticsearchClient.query(indexName, yq, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
+                final JSONObject queryResult = new JSONObject(true);
 
-                int hitCount = q.hitCount;
+                final int hitCount = q.hitCount;
                 try {
                         queryResult.put("hitCount", hitCount);
 
-                        List<Map<String, Object>> results = q.results;
-                        JSONList list = new JSONList();
+                        final List<Map<String, Object>> results = q.results;
+                        final JSONList list = new JSONList();
                         for (int hitc = 0; hitc < results.size(); hitc++) {
-                            Map<String, Object> map = results.get(hitc);
+                            final Map<String, Object> map = results.get(hitc);
                             list.add(new JSONObject(map));
                         }
                         queryResult.put("results", list);
 
-                        List<String> explanations = q.explanations;
+                        final List<String> explanations = q.explanations;
                         queryResult.put("explanations", explanations);
-                } catch (JSONException e) {
+                } catch (final JSONException e) {
                     log.debug("json exception", e);
                 }
                 return queryResult;
@@ -186,7 +196,7 @@ public class FulltextIndexFactory implements IndexFactory {
 
             @Override
             public long delete(String indexName, QueryLanguage language, String query) throws IOException {
-                YaCyQuery yq = getQuery(language, query);
+                final YaCyQuery yq = getQuery(language, query);
                 return FulltextIndexFactory.this.elasticsearchClient.deleteByQuery(indexName, yq);
             }
 

@@ -85,8 +85,24 @@ public class Searchlab {
         if (assertionenabled) Logger.info("Asserts are enabled");
 
 
-        // initialize data services (in the backgound)
-        final Thread t = new Thread() {
+        // initialize data services (in the background)
+        new Thread() {
+            @Override
+            public void run() {
+                // get connection to minio
+                final String s3address = System.getProperty("grid.s3.address", "admin:12345678@searchlab.b00:9000");
+                final String s3SettingsPath = System.getProperty("grid.s3.path", "data/settings");
+                final String bucket_endpoint = getHost(s3address);
+                final int p = bucket_endpoint.indexOf('.');
+                assert p > 0;
+                final String bucket = bucket_endpoint.substring(0, p);
+                final String endpoint = bucket_endpoint.substring(p + 1);
+                io = new S3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
+                settingsIop = new IOPath(bucket, s3SettingsPath);
+
+            }
+        }.start();
+        new Thread() {
             @Override
             public void run() {
 
@@ -103,25 +119,17 @@ public class Searchlab {
                 hzInstance = Hazelcast.newHazelcastInstance(hzConfig);
                 final Set<Member> hzMembers = hzInstance.getCluster().getMembers();
                 hzMap = hzInstance.getMap("data");
-
-                // get connection to minio
-                final String s3address = System.getProperty("grid.s3.address", "admin:12345678@searchlab.b00:9000");
-                final String s3SettingsPath = System.getProperty("grid.s3.path", "data/settings");
-                final String bucket_endpoint = getHost(s3address);
-                final int p = bucket_endpoint.indexOf('.');
-                assert p > 0;
-                final String bucket = bucket_endpoint.substring(0, p);
-                final String endpoint = bucket_endpoint.substring(p + 1);
-                io = new S3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
-                settingsIop = new IOPath(bucket, s3SettingsPath);
-
+            }
+        }.start();
+        new Thread() {
+            @Override
+            public void run() {
                 // get connection to elasticsearch
                 final String[] elasticsearchAddress = System.getProperty("grid.elasticsearch.address", "127.0.0.1:9300").split(",");
                 final String elasticsearchClusterName = System.getProperty("grid.elasticsearch.clusterName", "elasticsearch"); // default is elasticsearch but "" will ignore it
                 ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
             }
-        };
-        t.start();
+        }.start();
 
 
         // Start webserver
