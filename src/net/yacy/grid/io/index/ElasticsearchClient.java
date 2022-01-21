@@ -181,12 +181,16 @@ public class ElasticsearchClient implements FulltextIndex {
 
     private boolean clusterReadyCache = false;
 
-    @SuppressWarnings("unused")
     public boolean clusterReady() {
         if (this.clusterReadyCache) return true;
-        final ClusterHealthResponse chr = this.elasticsearchClient.admin().cluster().prepareHealth().get();
-        this.clusterReadyCache = chr.getStatus() != ClusterHealthStatus.RED;
-        return this.clusterReadyCache;
+        try {
+            final ClusterHealthResponse chr = this.elasticsearchClient.admin().cluster().prepareHealth().get();
+            this.clusterReadyCache = chr.getStatus() != ClusterHealthStatus.RED;
+            return this.clusterReadyCache;
+        } catch (final Exception e) {
+            log.warn("", e);
+            return false;
+        }
     }
 
     @SuppressWarnings("unused")
