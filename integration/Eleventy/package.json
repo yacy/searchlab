@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "clean-css": "^5.2.2",
+    "terser": "^5.10.0"
+  }
+}
