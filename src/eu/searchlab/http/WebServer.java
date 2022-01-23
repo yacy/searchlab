@@ -113,7 +113,7 @@ public class WebServer implements Runnable {
     }
 
     private static class Fileserver implements HttpHandler {
-        private File[] root;
+        private final File[] root;
         public Fileserver(File[] root) {
             this.root = root;
         }
@@ -121,11 +121,12 @@ public class WebServer implements Runnable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
 
-            String method = exchange.getRequestMethod().toString();
+            final String method = exchange.getRequestMethod().toString();
+
+            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
+            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 
             if (method.toLowerCase().equals("options")) {
-                exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-                exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
                 exchange.getResponseSender().send("");
                 return;
             }
@@ -140,7 +141,7 @@ public class WebServer implements Runnable {
             final String requestPath = exchange.getRequestPath();
 
             // load requested file
-            File f = findFile(requestPath);
+            final File f = findFile(requestPath);
             final int p = requestPath.lastIndexOf('.');
             final String ext = p < 0 ? "html" : requestPath.substring(p + 1);
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
@@ -178,15 +179,13 @@ public class WebServer implements Runnable {
                 if (html == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                 } else {
-                    exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-                    exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
                     exchange.getResponseSender().send(html);
                 }
             } else {
                 try {
-                    ByteBuffer bb = file2bytebuffer(f);
+                    final ByteBuffer bb = file2bytebuffer(f);
                     exchange.getResponseSender().send(bb);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, "https://community.searchlab.eu" + requestPath);
@@ -197,7 +196,7 @@ public class WebServer implements Runnable {
         }
 
         private File findFile(String requestPath) {
-            for (File g: this.root) {
+            for (final File g: this.root) {
                 File f = new File(g, requestPath);
                 if (!f.exists()) continue;
                 if (f.isDirectory()) f = new File(f, "index.html");
@@ -224,7 +223,7 @@ public class WebServer implements Runnable {
             }
 
             // load requested file
-            File f = findFile(requestPath);
+            final File f = findFile(requestPath);
             final int p = requestPath.lastIndexOf('.');
             final String ext = p < 0 ? "html" : requestPath.substring(p + 1);
 
