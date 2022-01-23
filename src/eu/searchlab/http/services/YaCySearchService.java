@@ -101,6 +101,9 @@ public class YaCySearchService extends AbstractService implements Service {
             channel.put("startIndex", "" + startRecord);
             channel.put("searchTerms", q);
             channel.put("totalResults", Integer.toString(query.hitCount));
+            channel.put("itemsPerPage", "" + itemsPerPage);
+            channel.put("pages", "" + ((query.hitCount / itemsPerPage) + 1));
+            channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
 
             // create result list
             final List<Map<String, Object>> result = query.results;
@@ -135,7 +138,6 @@ public class YaCySearchService extends AbstractService implements Service {
                 }
                 items.put(hit);
             }
-            channel.put("itemsPerPage", "" + itemsPerPage);
             channel.put("items", items);
 
             // create facet navigation
