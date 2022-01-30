@@ -29,6 +29,7 @@ import org.json.JSONObject;
 
 import com.github.jknack.handlebars.Context;
 import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.http.services.AbstractService;
@@ -202,9 +203,13 @@ public class ServiceMap {
                 .newBuilder(json)
                 .resolver(JSONObjectValueResolver.INSTANCE)
                 .build();
-        final Template template = handlebars.compileInline(html);
-        html = template.apply(context);
-
-        return html;
+        try {
+            final Template template = handlebars.compileInline(html);
+            html = template.apply(context);
+            return html;
+        } catch (final HandlebarsException e) {
+            Logger.error("Handlebars Error in \n" + html, e);
+            throw new IOException(e.getMessage());
+        }
     }
 }
