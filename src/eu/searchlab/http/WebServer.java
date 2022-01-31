@@ -120,10 +120,10 @@ public class WebServer implements Runnable {
             // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
             final JSONObject post = getQueryParams(exchange);
             final String requestPath = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
-            final String user = post.optString("USER", "");
+            final String user = post.optString("USER", null);
             
             // we force using of a user/language path
-            if (user.length() == 0) {
+            if (user == null) {
                 exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                 exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + requestPath);
                 return;
@@ -181,6 +181,7 @@ public class WebServer implements Runnable {
         private String processPost(final JSONObject post) throws IOException {
 
             final String requestPath = post.optString("PATH", "/");
+            final String knownuser = post.optString("USER", null);
             
             // load requested file
             final File f = findFile(requestPath);
@@ -214,12 +215,12 @@ public class WebServer implements Runnable {
             }
             
             // apply server-side includes
-            if (html != null) html = ssi(html);
+            if (html != null) html = ssi(knownuser, html);
 
             return html;
         }
 
-        private String ssi(String html) throws IOException {
+        private String ssi(String knownuser, String html) throws IOException {
             // apply server-side includes
             /*
              * include a file in the same path as current path
@@ -234,7 +235,7 @@ public class WebServer implements Runnable {
                 final int rightquote = html.indexOf("\"", ssip + 23);
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String virtual = html.substring(ssip + 22, rightquote);
-                final JSONObject post = getQueryParams(virtual);
+                final JSONObject post = getQueryParams(knownuser, virtual);
                 final String include = processPost(post);
                 if (include == null) {
                     html = html.substring(0, ssip) + html.substring(end + 3);
@@ -310,7 +311,7 @@ public class WebServer implements Runnable {
             return json;
         }
         
-        private JSONObject getQueryParams(String requestPath)  {
+        private JSONObject getQueryParams(String knownuser, String requestPath)  {
             // parse query parameters
             final JSONObject json = new JSONObject(true);
             final int q = requestPath.indexOf('?');
@@ -325,8 +326,12 @@ public class WebServer implements Runnable {
                     try {json.put(pms.substring(0, r), pms.substring(r + 1));} catch (final JSONException e) {}
                 }
             }
-            final String user = getUserPrefix(requestPath);
-            if (user != null) requestPath = requestPath.substring(user.length() + 1);
+            String user = getUserPrefix(requestPath);
+            if (user == null) {
+                user = knownuser;
+            } else {
+                requestPath = requestPath.substring(user.length() + 1);
+            }
             try {json.put("PATH", requestPath);} catch (final JSONException e) {}
             try {json.put("USER", user == null ? "" : user);} catch (final JSONException e) {}
             return json;
