@@ -24,13 +24,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.util.Date;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Properties;
@@ -39,14 +38,19 @@ import java.util.stream.Collectors;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.github.jknack.handlebars.Context;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.HandlebarsException;
+import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.http.services.MirrorService;
 import eu.searchlab.http.services.TableGetService;
 import eu.searchlab.http.services.TablePutService;
 import eu.searchlab.http.services.YaCySearchService;
 import eu.searchlab.storage.io.AbstractIO;
+import eu.searchlab.tools.DateParser;
+import eu.searchlab.tools.Logger;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -60,14 +64,13 @@ import io.undertow.util.StatusCodes;
 
 public class WebServer implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(WebServer.class);
     private static final Properties mimeTable = new Properties();
 
     static {
         try {
             mimeTable.load(new FileInputStream("conf/httpd.mime"));
         } catch (final IOException e) {
-            log.error("failed loading defaults/httpd.mime", e);
+            Logger.error("failed loading defaults/httpd.mime", e);
         }
     }
 
@@ -85,33 +88,7 @@ public class WebServer implements Runnable {
         ServiceMap.register(new TablePutService());
         ServiceMap.register(new YaCySearchService());
     }
-
-    private static String stream2string(InputStream is) {
-        return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n")).trim();
-    }
-
-    private static String file2tring(File f) throws FileNotFoundException {
-        return stream2string(new FileInputStream(f));
-    }
-
-    private static byte[] file2bytes(File f) throws IOException {
-        return Files.readAllBytes(f.toPath());
-    }
-
-    private static ByteBuffer file2bytebuffer(File f) throws IOException {
-        if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
-        if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
-        final RandomAccessFile raf = new RandomAccessFile(f, "r");
-        final FileChannel fc = raf.getChannel();
-        final long fileSize = fc.size();
-        final ByteBuffer bb = ByteBuffer.allocate((int) fileSize);
-        fc.read(bb);
-        bb.flip();
-        fc.close();
-        raf.close();
-        return bb;
-    }
-
+    
     private static class Fileserver implements HttpHandler {
         private final File[] root;
         public Fileserver(File[] root) {
@@ -138,42 +115,32 @@ public class WebServer implements Runnable {
                 return;
             }
 
-            final String requestPath = exchange.getRequestPath();
+            // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
+            final JSONObject post = getQueryParams(exchange);
+            final String requestPath = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
 
-            // load requested file
+            // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
             final File f = findFile(requestPath);
             final int p = requestPath.lastIndexOf('.');
             final String ext = p < 0 ? "html" : requestPath.substring(p + 1);
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
 
-            // switch case: files with templating / without
-            if (isTemplatingFileType(ext)) {
-
-                // read query parameters
-                String post_message = "";
-                if (exchange.getRequestMethod().equals(Methods.POST) || exchange.getRequestMethod().equals(Methods.PUT)) {
-                    exchange.startBlocking();
-                    post_message = new String(AbstractIO.readAll(exchange.getInputStream(), -1), StandardCharsets.UTF_8);
-                }
-                JSONObject json = new JSONObject(true);
-                json.put("PATH", requestPath);
-                if (post_message.length() > 0) try {
-                    json = new JSONObject(new JSONTokener(post_message));
-                } catch (final JSONException e) {};
-
-                final Map<String, Deque<String>> query = exchange.getQueryParameters();
-                for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
-                    json.put(entry.getKey(), entry.getValue().getFirst());
-                }
-
+            if (!isTemplatingFileType(ext) && f != null) {
+                // just serve the file
+                final ByteBuffer bb = file2bytebuffer(f);
+                final long d = f.lastModified();
+                exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date(d))); // like a proper file server
+                exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
+                exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
+                exchange.getResponseSender().send(bb);
+                exchange.endExchange();
+                return;
+            }
+            
+            try {
                 // generate response (handle servlets + handlebars)
-                String html = null;
-                if (f != null) try {html = file2tring(f);} catch (final FileNotFoundException e) {}
-                html = ServiceMap.serviceDispatcher(requestPath, html, json);
-
-                // apply server-side includes
-                if (html != null) html = ssi(html);
+                final String html = processPost(post);
 
                 // send html to client
                 if (html == null) {
@@ -181,74 +148,68 @@ public class WebServer implements Runnable {
                 } else {
                     exchange.getResponseSender().send(html);
                 }
-            } else {
-                try {
-                    final ByteBuffer bb = file2bytebuffer(f);
-                    exchange.getResponseSender().send(bb);
-                } catch (final IOException e) {
-                    // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
+                exchange.endExchange();
+            } catch (final IOException e) {
+                // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
+                if (e instanceof FileNotFoundException) {
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, "https://community.searchlab.eu" + requestPath);
-                    exchange.getResponseSender().send("");
-                    exchange.endExchange();
+                } else {
+                    exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR).setReasonPhrase(e.getMessage());
                 }
+                exchange.getResponseSender().send("");
+                exchange.endExchange();
             }
         }
 
-        private File findFile(String requestPath) {
-            for (final File g: this.root) {
-                File f = new File(g, requestPath);
-                if (!f.exists()) continue;
-                if (f.isDirectory()) f = new File(f, "index.html");
-                return f;
-            }
-            return null;
-        }
+        /**
+         * processing a request with parameters
+         * @param post the post request with special object "PATH" which containes the request path
+         * @return full html or any kind of response that should be transferred with http status code 200
+         * @throws IOException in case this request cannot be fullfilled.
+         */
+        private String processPost(final JSONObject post) throws IOException {
 
-        private String recursiveRequest(String requestPath) throws Exception {
-
-            // parse query parameters
-            final JSONObject json = new JSONObject(true);
-            json.put("PATH", requestPath);
-            final int q = requestPath.indexOf('?');
-            if (q >= 0) {
-                final String qs = requestPath.substring(q + 1);
-                requestPath = requestPath.substring(0, q);
-                final String[] pm = qs.split("&");
-                for (final String pms: pm) {
-                    final int r = pms.indexOf('=');
-                    if (r < 0) continue;
-                    json.put(pms.substring(0, r), pms.substring(r + 1));
-                }
-            }
-
+            final String requestPath = post.optString("PATH", "/");
+            
             // load requested file
             final File f = findFile(requestPath);
-            final int p = requestPath.lastIndexOf('.');
-            final String ext = p < 0 ? "html" : requestPath.substring(p + 1);
 
-            // switch case: files with templating / without
-            if (isTemplatingFileType(ext)) {
-
-                // generate response (handle servlets + handlebars)
-                String html = null;
-                if (f != null) try {html = file2tring(f);} catch (final FileNotFoundException e) {}
-                html = ServiceMap.serviceDispatcher(requestPath, html, json);
-
-                // apply server-side includes
-                if (html != null) html = ssi(html);
-
-                return html;
-            } else {
-                return file2tring(f);
+            // generate response (handle servlets + handlebars)
+            String html = null;
+            if (f != null) html = file2String(f); // throws FileNotFoundException which must be handled outside
+            final Service service = ServiceMap.getService(requestPath);
+            
+            // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
+            if (html != null && service != null && service.getType() == Service.Type.OBJECT) {
+                final JSONObject json = service.serveObject(post);
+                final Handlebars handlebars = new Handlebars();
+                final Context context = Context
+                        .newBuilder(json)
+                        .resolver(JSONObjectValueResolver.INSTANCE)
+                        .build();
+                try {
+                    final Template template = handlebars.compileInline(html);
+                    html = template.apply(context);
+                } catch (final HandlebarsException e) {
+                    Logger.error("Handlebars Error in \n" + html, e);
+                    throw new IOException(e.getMessage());
+                }
+            } else if (service != null) {
+                // the response is defined only by the service
+                html = ServiceMap.serviceDispatcher(service, requestPath, post);
             }
+            if (html == null && f == null) {
+                throw new FileNotFoundException("not found:" + requestPath);
+            }
+            
+            // apply server-side includes
+            if (html != null) html = ssi(html);
+
+            return html;
         }
 
-        boolean isTemplatingFileType(String ext) {
-            return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
-        }
-
-        private String ssi(String html) throws Exception {
+        private String ssi(String html) throws IOException {
             // apply server-side includes
             /*
              * include a file in the same path as current path
@@ -263,7 +224,8 @@ public class WebServer implements Runnable {
                 final int rightquote = html.indexOf("\"", ssip + 23);
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String virtual = html.substring(ssip + 22, rightquote);
-                final String include = recursiveRequest(virtual);
+                final JSONObject post = getQueryParams(virtual);
+                final String include = processPost(post);
                 if (include == null) {
                     html = html.substring(0, ssip) + html.substring(end + 3);
                     ssip = html.indexOf("<!--#include virtual=\"", ssip);
@@ -273,6 +235,88 @@ public class WebServer implements Runnable {
                 }
             }
             return html;
+        }
+
+        private File findFile(String requestPath) {
+            for (final File g: this.root) {
+                File f = new File(g, requestPath);
+                if (!f.exists()) continue;
+                if (f.isDirectory()) f = new File(f, "index.html");
+                return f;
+            }
+            return null;
+        }
+
+        private static String file2String(File f) throws IOException {
+            if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
+            if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
+            final FileInputStream fis = new FileInputStream(f);
+            final InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+            final BufferedReader br = new BufferedReader(isr);
+            final String html = br.lines().collect(Collectors.joining("\n")).trim();
+            br.close();
+            isr.close();
+            fis.close();
+            return html;
+        }
+        
+        private static ByteBuffer file2bytebuffer(File f) throws IOException {
+            if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
+            if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
+            final RandomAccessFile raf = new RandomAccessFile(f, "r");
+            final FileChannel fc = raf.getChannel();
+            final long fileSize = fc.size();
+            final ByteBuffer bb = ByteBuffer.allocate((int) fileSize);
+            fc.read(bb);
+            bb.flip();
+            fc.close();
+            raf.close();
+            return bb;
+        }
+        
+        private JSONObject getQueryParams(HttpServerExchange exchange) throws IOException {
+            // read query parameters
+            String post_message = "";
+            if (exchange.getRequestMethod().equals(Methods.POST) || exchange.getRequestMethod().equals(Methods.PUT)) {
+                exchange.startBlocking();
+                post_message = new String(AbstractIO.readAll(exchange.getInputStream(), -1), StandardCharsets.UTF_8);
+            }
+            JSONObject json = new JSONObject(true);
+            if (post_message.length() > 0) try {
+                json = new JSONObject(new JSONTokener(post_message));
+            } catch (final JSONException e) {};
+
+            final Map<String, Deque<String>> query = exchange.getQueryParameters();
+            for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
+                try {json.put(entry.getKey(), entry.getValue().getFirst());} catch (final JSONException e) {}
+            }
+            final String requestPath = exchange.getRequestPath();
+            final int q = requestPath.indexOf('?');
+            try {json.put("PATH", q >= 0 ? requestPath.substring(0, q) : requestPath);} catch (final JSONException e) {}
+            return json;
+        }
+        
+        private JSONObject getQueryParams(final String requestPath)  {
+            // parse query parameters
+            final JSONObject json = new JSONObject(true);
+            final int q = requestPath.indexOf('?');
+            if (q >= 0) {
+                final String qs = requestPath.substring(q + 1);
+                try {json.put("PATH", requestPath.substring(0, q));} catch (final JSONException e) {}
+                final String[] pm = qs.split("&");
+                for (final String pms: pm) {
+                    final int r = pms.indexOf('=');
+                    if (r < 0) continue;
+                    try {json.put(pms.substring(0, r), pms.substring(r + 1));} catch (final JSONException e) {}
+                }
+            } else {
+                try {json.put("PATH", requestPath);} catch (final JSONException e) {}
+            }
+            return json;
+        }
+
+        boolean isTemplatingFileType(String ext) {
+            return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
         }
 
     }
