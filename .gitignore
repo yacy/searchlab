@@ -3,5 +3,7 @@ bin
 .class
 .DS_Store
 .build
+build/
+result/
 ui/site
 ui/.DS_Store
