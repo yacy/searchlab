@@ -31,8 +31,10 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.json.JSONException;
@@ -118,7 +120,15 @@ public class WebServer implements Runnable {
             // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
             final JSONObject post = getQueryParams(exchange);
             final String requestPath = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
-
+            final String user = post.optString("USER", "");
+            
+            // we force using of a user/language path
+            if (user.length() == 0) {
+                exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
+                exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + requestPath);
+                return;
+            }
+            
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
             final File f = findFile(requestPath);
             final int p = requestPath.lastIndexOf('.');
@@ -290,32 +300,64 @@ public class WebServer implements Runnable {
             for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
                 try {json.put(entry.getKey(), entry.getValue().getFirst());} catch (final JSONException e) {}
             }
-            final String requestPath = exchange.getRequestPath();
+            String requestPath = exchange.getRequestPath();
             final int q = requestPath.indexOf('?');
-            try {json.put("PATH", q >= 0 ? requestPath.substring(0, q) : requestPath);} catch (final JSONException e) {}
+            if (q >= 0) requestPath = requestPath.substring(0, q);
+            final String user = getUserPrefix(requestPath);
+            if (user != null) requestPath = requestPath.substring(user.length() + 1);
+            try {json.put("PATH", requestPath);} catch (final JSONException e) {}
+            try {json.put("USER", user == null ? "" : user);} catch (final JSONException e) {}
             return json;
         }
         
-        private JSONObject getQueryParams(final String requestPath)  {
+        private JSONObject getQueryParams(String requestPath)  {
             // parse query parameters
             final JSONObject json = new JSONObject(true);
             final int q = requestPath.indexOf('?');
             if (q >= 0) {
                 final String qs = requestPath.substring(q + 1);
-                try {json.put("PATH", requestPath.substring(0, q));} catch (final JSONException e) {}
+                requestPath = requestPath.substring(0, q);
+                try {json.put("PATH", requestPath);} catch (final JSONException e) {}
                 final String[] pm = qs.split("&");
                 for (final String pms: pm) {
                     final int r = pms.indexOf('=');
                     if (r < 0) continue;
                     try {json.put(pms.substring(0, r), pms.substring(r + 1));} catch (final JSONException e) {}
                 }
-            } else {
-                try {json.put("PATH", requestPath);} catch (final JSONException e) {}
             }
+            final String user = getUserPrefix(requestPath);
+            if (user != null) requestPath = requestPath.substring(user.length() + 1);
+            try {json.put("PATH", requestPath);} catch (final JSONException e) {}
+            try {json.put("USER", user == null ? "" : user);} catch (final JSONException e) {}
             return json;
         }
+        
+        /**
+         * check if path starts with a user id.
+         * @param path the full path of the request, starting with "/"
+         * @return the user id, or null if the path does not start with the user id
+         */
+        private String getUserPrefix(String path) {
+            assert path.charAt(0) == '/';
+            if (path.length() < 2) return null;
+            final int p = path.indexOf('/', 1);
+            if (p < 0) return null;
+            final String prefix = path.substring(1, p);
+            if (prefix.length() == 2) {
+                return prefix.equals("en") ? "en": null;
+            }
+            if (prefix.length() == 9) {
+                // must consist of only digits and every digit must appear only once;
+                final Set<Integer> c = new HashSet<>(); for (int i = 1; i <= 9; i++) c.add(i);
+                for (int i = 0; i < 9; i++) {
+                    if (!c.remove(prefix.charAt(i) - 48)) return null;
+                }
+                return prefix;
+            }
+            return null;
+        }
 
-        boolean isTemplatingFileType(String ext) {
+        private boolean isTemplatingFileType(String ext) {
             return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
         }
 

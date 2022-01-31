@@ -1,6 +1,6 @@
 ## Search
 
-<form class="input-group input-group-lg" name="searchform" action="/apps/search/">
+<form class="input-group input-group-lg" name="searchform" action=".">
 <input type="text" value="{{channels.[0].searchTerms}}" name="query" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()" onClick="document.getElementById('startRecord').value=0;document.getElementById('query').value='';"/>
 <input type="hidden" name="startRecord" id="startRecord" value="0"/>
 <span class="input-group-btn">
