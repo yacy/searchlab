@@ -103,10 +103,12 @@ public class WebServer implements Runnable {
             final String method = exchange.getRequestMethod().toString();
 
             exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
+            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Methods, Access-Control-Request-Headers");
 
             if (method.toLowerCase().equals("options")) {
                 exchange.getResponseSender().send("");
+                exchange.endExchange();
                 return;
             }
 
@@ -128,7 +130,15 @@ public class WebServer implements Runnable {
             if (user == null) {
                 exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                 exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path);
+                exchange.getResponseSender().send("");
+                exchange.endExchange();
                 return;
+            }
+            
+            if (user.length() != 2) {
+                // add a noindex flag to http response header
+                exchange.getResponseHeaders().put(new HttpString("X-Robots-Tag"), "noindex");
+                exchange.getResponseHeaders().put(new HttpString("Link"), "</en" + path + ">; rel=\"canonical\""); // see https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls#rel-canonical-header-method
             }
             
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
