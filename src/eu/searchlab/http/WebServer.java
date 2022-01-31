@@ -119,20 +119,22 @@ public class WebServer implements Runnable {
 
             // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
             final JSONObject post = getQueryParams(exchange);
-            final String requestPath = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
+            final String path = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
             final String user = post.optString("USER", null);
+            
+            Logger.info("WebServer request: USER=" + user + ", PARH=" + path);
             
             // we force using of a user/language path
             if (user == null) {
                 exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
-                exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + requestPath);
+                exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path);
                 return;
             }
             
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
-            final File f = findFile(requestPath);
-            final int p = requestPath.lastIndexOf('.');
-            final String ext = p < 0 ? "html" : requestPath.substring(p + 1);
+            final File f = findFile(path);
+            final int p = path.lastIndexOf('.');
+            final String ext = p < 0 ? "html" : path.substring(p + 1);
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
 
@@ -163,7 +165,7 @@ public class WebServer implements Runnable {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
-                    exchange.getResponseHeaders().put(Headers.LOCATION, "https://community.searchlab.eu" + requestPath);
+                    exchange.getResponseHeaders().put(Headers.LOCATION, "https://community.searchlab.eu" + path);
                 } else {
                     exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR).setReasonPhrase(e.getMessage());
                 }
@@ -180,16 +182,16 @@ public class WebServer implements Runnable {
          */
         private String processPost(final JSONObject post) throws IOException {
 
-            final String requestPath = post.optString("PATH", "/");
+            final String path = post.optString("PATH", "/");
             final String knownuser = post.optString("USER", null);
             
             // load requested file
-            final File f = findFile(requestPath);
+            final File f = findFile(path);
 
             // generate response (handle servlets + handlebars)
             String html = null;
             if (f != null) html = file2String(f); // throws FileNotFoundException which must be handled outside
-            final Service service = ServiceMap.getService(requestPath);
+            final Service service = ServiceMap.getService(path);
             
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
             if (html != null && service != null && service.getType() == Service.Type.OBJECT) {
@@ -208,10 +210,10 @@ public class WebServer implements Runnable {
                 }
             } else if (service != null) {
                 // the response is defined only by the service
-                html = ServiceMap.serviceDispatcher(service, requestPath, post);
+                html = ServiceMap.serviceDispatcher(service, path, post);
             }
             if (html == null && f == null) {
-                throw new FileNotFoundException("not found:" + requestPath);
+                throw new FileNotFoundException("not found:" + path);
             }
             
             // apply server-side includes
@@ -307,7 +309,7 @@ public class WebServer implements Runnable {
             final String user = getUserPrefix(requestPath);
             if (user != null) requestPath = requestPath.substring(user.length() + 1);
             try {json.put("PATH", requestPath);} catch (final JSONException e) {}
-            try {json.put("USER", user == null ? "" : user);} catch (final JSONException e) {}
+            try {json.put("USER", user);} catch (final JSONException e) {}
             return json;
         }
         
@@ -333,7 +335,7 @@ public class WebServer implements Runnable {
                 requestPath = requestPath.substring(user.length() + 1);
             }
             try {json.put("PATH", requestPath);} catch (final JSONException e) {}
-            try {json.put("USER", user == null ? "" : user);} catch (final JSONException e) {}
+            try {json.put("USER", user);} catch (final JSONException e) {}
             return json;
         }
         
