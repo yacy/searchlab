@@ -89,11 +89,15 @@ public class ServiceMap {
 
             final JSONObject json = service.serveObject(post);
             if (path.endsWith(".json")) {
+                final String callback = post.optString("callback", ""); //  used like "callback=?", which encapsulates then json into <callback> "([" <json> "]);"
+                final boolean minified = post.optBoolean("minified", false);
+                String jsons = "";
                 try {
-                    return json.toString(2);
+                    jsons = minified ? json.toString() : json.toString(2);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
+                return callback.length() > 0 ? callback + "([" + jsons + "]);" : jsons;
             }
             if (path.endsWith(".table")) {
                 try {

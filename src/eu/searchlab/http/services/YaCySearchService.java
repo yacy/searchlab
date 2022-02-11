@@ -59,8 +59,6 @@ public class YaCySearchService extends AbstractService implements Service {
         // evaluate request parameter
         final String q = call.optString("query", "").trim();
         if (q.length() == 0) return new JSONObject();
-        final String callback = call.optString("callback", "");
-        final boolean minified = call.optBoolean("minified", false);
         final boolean explain = call.optBoolean("explain", false);
         final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
         String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!

@@ -163,6 +163,11 @@ public class WebServer implements Runnable {
             try {
                 // generate response (handle servlets + handlebars)
                 final String html = processPost(post);
+                if ("application/json".equals(mime) && html.endsWith("]);")) {
+                    // JSONP patch
+                    exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/javascript");
+                }
 
                 // send html to client
                 if (html == null) {
