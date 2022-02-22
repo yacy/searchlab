@@ -80,7 +80,7 @@ public class WebServer implements Runnable {
     String bind;
     Undertow server;
 
-    public WebServer(int port, String bind) {
+    public WebServer(final int port, final String bind) {
         this.port = port;
         this.bind = bind;
 
@@ -90,15 +90,17 @@ public class WebServer implements Runnable {
         ServiceMap.register(new TablePutService());
         ServiceMap.register(new YaCySearchService());
     }
-    
+
     private static class Fileserver implements HttpHandler {
+
         private final File[] root;
-        public Fileserver(File[] root) {
+
+        public Fileserver(final File[] root) {
             this.root = root;
         }
 
         @Override
-        public void handleRequest(HttpServerExchange exchange) throws Exception {
+        public void handleRequest(final HttpServerExchange exchange) throws Exception {
 
             final String method = exchange.getRequestMethod().toString();
 
@@ -123,9 +125,9 @@ public class WebServer implements Runnable {
             final JSONObject post = getQueryParams(exchange);
             final String path = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
             final String user = post.optString("USER", null);
-            
+
             Logger.info("WebServer request: USER=" + user + ", PARH=" + path);
-            
+
             // we force using of a user/language path
             if (user == null) {
                 exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
@@ -134,13 +136,13 @@ public class WebServer implements Runnable {
                 exchange.endExchange();
                 return;
             }
-            
+
             if (user.length() != 2) {
                 // add a noindex flag to http response header
                 exchange.getResponseHeaders().put(new HttpString("X-Robots-Tag"), "noindex");
                 exchange.getResponseHeaders().put(new HttpString("Link"), "</en" + path + ">; rel=\"canonical\""); // see https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls#rel-canonical-header-method
             }
-            
+
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
             final File f = findFile(path);
             final int p = path.lastIndexOf('.');
@@ -159,7 +161,7 @@ public class WebServer implements Runnable {
                 exchange.endExchange();
                 return;
             }
-            
+
             try {
                 // generate response (handle servlets + handlebars)
                 final String html = processPost(post);
@@ -199,7 +201,7 @@ public class WebServer implements Runnable {
 
             final String path = post.optString("PATH", "/");
             final String knownuser = post.optString("USER", null);
-            
+
             // load requested file
             final File f = findFile(path);
 
@@ -207,7 +209,7 @@ public class WebServer implements Runnable {
             String html = null;
             if (f != null) html = file2String(f); // throws FileNotFoundException which must be handled outside
             final Service service = ServiceMap.getService(path);
-            
+
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
             if (html != null && service != null && service.getType() == Service.Type.OBJECT) {
                 final JSONObject json = service.serveObject(post);
@@ -230,14 +232,14 @@ public class WebServer implements Runnable {
             if (html == null && f == null) {
                 throw new FileNotFoundException("not found:" + path);
             }
-            
+
             // apply server-side includes
             if (html != null) html = ssi(knownuser, html);
 
             return html;
         }
 
-        private String ssi(String knownuser, String html) throws IOException {
+        private String ssi(final String knownuser, String html) throws IOException {
             // apply server-side includes
             /*
              * include a file in the same path as current path
@@ -265,7 +267,7 @@ public class WebServer implements Runnable {
             return html;
         }
 
-        private File findFile(String requestPath) {
+        private File findFile(final String requestPath) {
             for (final File g: this.root) {
                 File f = new File(g, requestPath);
                 if (!f.exists()) continue;
@@ -275,7 +277,7 @@ public class WebServer implements Runnable {
             return null;
         }
 
-        private static String file2String(File f) throws IOException {
+        private static String file2String(final File f) throws IOException {
             if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
             if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
             final FileInputStream fis = new FileInputStream(f);
@@ -287,8 +289,8 @@ public class WebServer implements Runnable {
             fis.close();
             return html;
         }
-        
-        private static ByteBuffer file2bytebuffer(File f) throws IOException {
+
+        private static ByteBuffer file2bytebuffer(final File f) throws IOException {
             if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
             if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
             final RandomAccessFile raf = new RandomAccessFile(f, "r");
@@ -301,8 +303,8 @@ public class WebServer implements Runnable {
             raf.close();
             return bb;
         }
-        
-        private JSONObject getQueryParams(HttpServerExchange exchange) throws IOException {
+
+        private JSONObject getQueryParams(final HttpServerExchange exchange) throws IOException {
             // read query parameters
             String post_message = "";
             if (exchange.getRequestMethod().equals(Methods.POST) || exchange.getRequestMethod().equals(Methods.PUT)) {
@@ -327,8 +329,8 @@ public class WebServer implements Runnable {
             try {json.put("USER", user);} catch (final JSONException e) {}
             return json;
         }
-        
-        private JSONObject getQueryParams(String knownuser, String requestPath)  {
+
+        private JSONObject getQueryParams(final String knownuser, String requestPath)  {
             // parse query parameters
             final JSONObject json = new JSONObject(true);
             final int q = requestPath.indexOf('?');
@@ -353,13 +355,13 @@ public class WebServer implements Runnable {
             try {json.put("USER", user);} catch (final JSONException e) {}
             return json;
         }
-        
+
         /**
          * check if path starts with a user id.
          * @param path the full path of the request, starting with "/"
          * @return the user id, or null if the path does not start with the user id
          */
-        private String getUserPrefix(String path) {
+        private String getUserPrefix(final String path) {
             assert path.charAt(0) == '/';
             if (path.length() < 2) return null;
             final int p = path.indexOf('/', 1);
@@ -379,7 +381,7 @@ public class WebServer implements Runnable {
             return null;
         }
 
-        private boolean isTemplatingFileType(String ext) {
+        private boolean isTemplatingFileType(final String ext) {
             return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
         }
 
@@ -390,10 +392,15 @@ public class WebServer implements Runnable {
         // Start webserver
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         final PathHandler ph = Handlers.path();
-        ph.addPrefixPath("/", new Fileserver(new File[] {
-                new File(new File("ui"), "site"),
-                new File("htdocs")
-        }));
+        try {
+            ph.addPrefixPath("/", new Fileserver(new File[] {
+                    new File(new File("ui"), "site"),
+                    new File(new File(new File(".").getCanonicalFile().getParentFile(), "searchlab_apps"), "htdocs").getCanonicalFile(),
+                    new File("htdocs")
+            }));
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
         builder.setHandler(ph);
         this.server = builder.build();
         this.server.start();
