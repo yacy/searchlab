@@ -32,7 +32,7 @@ ARG default_branch=master
 EXPOSE 8400
 
 ADD searchlab /app
-ADD searchlab_apps /apps
+ADD searchlab_apps /searchlab_apps
 COPY --from=sitebuilder /app/ui/site/ ./app/ui/site/
 WORKDIR /app
 RUN ./gradlew assemble

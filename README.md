@@ -57,6 +57,7 @@ The source code is released simply by providing a git clone opportunity using th
 To get the source code, just run
 ```
 git clone https://github.com/yacy/searchlab.git
+git clone https://github.com/yacy/searchlab_apps.git
 ```
 
 If you just want to download a zip file with all source,
@@ -87,15 +88,19 @@ The searchlab application can then be accessed at http://localhost:8400/
 
 A docker release can be produced in one simple step: just run
 ```
-docker build -t searchlab .
+cd ..
+docker build -t searchlab -f searchlab/Dockerfile .
 ```
 
-... and a docker image will be in your local docker image store which can be started with
+The image MUST be build from a directory path below the application folder.
+The repository `searchlab_apps` must exist in parallel to `searchlab`.
+Then a docker image will be in your local docker image store which can be started with
+
 ```
 docker run -d --rm -p 8400:8400 --name searchlab searchlab
 ```
 
-Then the searchlab application can be accessed at http://localhost:8400/
+The searchlab application can be accessed at http://localhost:8400/
 
 We publish docker images of the searchlab application also at dockerhub which can be obtained simply with
 
