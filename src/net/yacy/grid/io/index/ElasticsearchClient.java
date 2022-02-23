@@ -164,7 +164,7 @@ public class ElasticsearchClient implements FulltextIndex {
                 } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {}
             }
         }.start();
-        
+
         // check if client is ready
         log.info("Elasticsearch: node is " + (clusterReady() ? "ready" : "not ready"));
     }
@@ -194,7 +194,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @SuppressWarnings("unused")
-    private boolean wait_ready(long maxtimemillis, ClusterHealthStatus status) {
+    private boolean wait_ready(final long maxtimemillis, final ClusterHealthStatus status) {
         // wait for yellow status
         final long start = System.currentTimeMillis();
         boolean is_ready;
@@ -214,11 +214,11 @@ public class ElasticsearchClient implements FulltextIndex {
      * If previous indexing steps had been done, it is required to call this method to get most recent documents into the search results.
      */
     @Override
-    public void refresh(String indexName) {
+    public void refresh(final String indexName) {
         new RefreshRequest(indexName);
     }
 
-    public void settings(String indexName) {
+    public void settings(final String indexName) {
         final UpdateSettingsRequest request = new UpdateSettingsRequest(indexName);
         final String settingKey = "index.mapping.total_fields.limit";
         final int settingValue = 10000;
@@ -238,7 +238,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @throws NoNodeAvailableException | IllegalStateException in case that no elasticsearch server can be contacted.
      */
     @Override
-    public void createIndexIfNotExists(String indexName, final int shards, final int replicas) {
+    public void createIndexIfNotExists(final String indexName, final int shards, final int replicas) {
         // create an index if not existent
         if (!this.elasticsearchClient.admin().indices().prepareExists(indexName).execute().actionGet().isExists()) {
             final Settings.Builder settings = Settings.builder()
@@ -253,7 +253,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @Override
-    public void setMapping(String indexName, String mapping) {
+    public void setMapping(final String indexName, final String mapping) {
         try {
             this.elasticsearchClient.admin().indices().preparePutMapping(indexName)
                 .setSource(mapping, XContentType.JSON)
@@ -307,7 +307,7 @@ public class ElasticsearchClient implements FulltextIndex {
      *
      * @return the count of all documents in the index
      */
-    private long count(String indexName) {
+    private long count(final String indexName) {
         final QueryBuilder q = QueryBuilders.constantScoreQuery(QueryBuilders.matchAllQuery());
         while (true) try {
             return countInternal(q, indexName);
@@ -349,7 +349,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return the document, if it exists or null otherwise;
      */
     @Override
-    public boolean exist(String indexName, final String id) {
+    public boolean exist(final String indexName, final String id) {
         while (true) try {
             return existInternal(indexName, id);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -359,7 +359,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    private boolean existInternal(String indexName, final String id) {
+    private boolean existInternal(final String indexName, final String id) {
         final GetResponse getResponse = this.elasticsearchClient
                 .prepareGet(indexName, null, id)
                 .setFetchSource(false)
@@ -370,7 +370,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @Override
-    public Set<String> existBulk(String indexName, final Collection<String> ids) {
+    public Set<String> existBulk(final String indexName, final Collection<String> ids) {
         while (true) try {
             return existBulkInternal(indexName, ids);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -381,7 +381,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    private Set<String> existBulkInternal(String indexName, final Collection<String> ids) {
+    private Set<String> existBulkInternal(final String indexName, final Collection<String> ids) {
         if (ids == null || ids.size() == 0) return new HashSet<>();
         final MultiGetResponse multiGetItemResponses = this.elasticsearchClient.prepareMultiGet()
                 .add(indexName, null, ids)
@@ -408,7 +408,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return the type name of the document if it exists, null otherwise
      */
     @SuppressWarnings("unused")
-    private String getType(String indexName, final String id) {
+    private String getType(final String indexName, final String id) {
         final GetResponse getResponse = this.elasticsearchClient.prepareGet(indexName, null, id).execute().actionGet();
         return getResponse.isExists() ? getResponse.getType() : null;
     }
@@ -426,7 +426,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return true if the document existed and was deleted, false otherwise
      */
     @Override
-    public boolean delete(String indexName, String typeName, final String id) {
+    public boolean delete(final String indexName, final String typeName, final String id) {
         while (true) try {
             return deleteInternal(indexName, typeName, id);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -437,7 +437,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    private boolean deleteInternal(String indexName, String typeName, final String id) {
+    private boolean deleteInternal(final String indexName, final String typeName, final String id) {
         final DeleteResponse response = this.elasticsearchClient.prepareDelete(indexName, typeName, id).get();
         return response.getResult() == DocWriteResponse.Result.DELETED;
     }
@@ -453,7 +453,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return delete document count
      */
     @Override
-    public int deleteByQuery(String indexName, final YaCyQuery yq) {
+    public int deleteByQuery(final String indexName, final YaCyQuery yq) {
         final QueryBuilder q = yq.getQueryBuilder();
         while (true) try {
             return deleteByQueryInternal(indexName, q);
@@ -465,7 +465,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    private int deleteByQueryInternal(String indexName, final QueryBuilder q) {
+    private int deleteByQueryInternal(final String indexName, final QueryBuilder q) {
         final Map<String, String> ids = new TreeMap<>();
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName);
         request
@@ -496,7 +496,7 @@ public class ElasticsearchClient implements FulltextIndex {
      *            a map from the unique identifier of a document to the document type
      * @return the number of deleted documents
      */
-    private int deleteBulk(String indexName, Map<String, String> ids) {
+    private int deleteBulk(final String indexName, final Map<String, String> ids) {
         // bulk-delete the ids
         if (ids == null || ids.size() == 0) return 0;
         final BulkRequestBuilder bulkRequest = this.elasticsearchClient.prepareBulk();
@@ -519,7 +519,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return the document as source text
      */
     @SuppressWarnings("unused")
-    private byte[] readSource(String indexName, final String id) {
+    private byte[] readSource(final String indexName, final String id) {
         final GetResponse response = this.elasticsearchClient.prepareGet(indexName, null, id).execute().actionGet();
         return response.getSourceAsBytes();
     }
@@ -577,7 +577,7 @@ public class ElasticsearchClient implements FulltextIndex {
         return bulkresponse;
     }
 
-    protected static Map<String, Object> getMap(GetResponse response) {
+    protected static Map<String, Object> getMap(final GetResponse response) {
         Map<String, Object> map = null;
         if (response.isExists() && (map = response.getSourceAsMap()) != null) {
             if (!map.containsKey("id")) map.put("id", response.getId());
@@ -598,7 +598,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return true if the document with given id did not exist before, false if it existed and was overwritten
      */
     @Override
-    public boolean writeMap(String indexName, String typeName, String id, final Map<String, Object> jsonMap) {
+    public boolean writeMap(final String indexName, final String typeName, final String id, final Map<String, Object> jsonMap) {
         while (true) try {
             return writeMapInternal(indexName, typeName, id, jsonMap);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -610,7 +610,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     // internal method used for a re-try after NoNodeAvailableException | IllegalStateException
-    private boolean writeMapInternal(String indexName, String typeName, String id, final Map<String, Object> jsonMap) {
+    private boolean writeMapInternal(final String indexName, final String typeName, final String id, final Map<String, Object> jsonMap) {
         final long start = System.currentTimeMillis();
         // get the version number out of the json, if any is given
         final Long version = (Long) jsonMap.remove("_version");
@@ -696,6 +696,59 @@ public class ElasticsearchClient implements FulltextIndex {
 
     private final static DateTimeFormatter utcFormatter = ISODateTimeFormat.dateTime().withZoneUTC();
 
+    public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final Sort sort, final int from, final int resultCount) {
+        final QueryBuilder queryBuilder = yq.getQueryBuilder();
+        final FulltextIndex.Query query = new FulltextIndex.Query();
+        for (int t = 0; t < 10; t++) try {
+
+            // prepare request
+            SearchRequestBuilder request = ElasticsearchClient.this.elasticsearchClient.prepareSearch(indexName);
+            request
+                    .setExplain(false)
+                    .setSearchType(SearchType.QUERY_THEN_FETCH)
+                    .setQuery(queryBuilder)
+                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH) // DFS_QUERY_THEN_FETCH is slower but provides stability of search results
+                    .setFrom(from)
+                    .setSize(resultCount);
+
+            request.clearRescorers();
+
+            // apply sort
+            request = sort.sort(request);
+
+            // get response
+            final SearchResponse response = request.execute().actionGet();
+            final SearchHits searchHits = response.getHits();
+            query.hitCount = (int) searchHits.getTotalHits();
+
+            // evaluate search result
+            //long totalHitCount = response.getHits().getTotalHits();
+            final SearchHit[] hits = searchHits.getHits();
+            query.results = new ArrayList<Map<String, Object>>(query.hitCount);
+            query.explanations = new ArrayList<String>(query.hitCount);
+            query.highlights = new ArrayList<Map<String, HighlightField>>(query.hitCount);
+            for (final SearchHit hit: hits) {
+                final Map<String, Object> map = hit.getSourceAsMap();
+                if (!map.containsKey("id")) map.put("id", hit.getId());
+                if (!map.containsKey("type")) map.put("type", hit.getType());
+                query.results.add(map);
+                query.highlights.add(hit.getHighlightFields());
+                query.explanations.add("");
+            }
+
+            // evaluate aggregation
+            // collect results: fields
+            query.aggregations = new HashMap<>();
+            return query;
+        } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
+            log.warn("ElasticsearchClient query failed with " + e.getMessage() + ", retrying attempt " + t + " ...", e);
+            try {Thread.sleep(1000);} catch (final InterruptedException eee) {}
+            connect();
+            continue;
+        }
+        return query;
+    }
+
     /**
      * Searches using a elasticsearch query.
      * @param indexName the name of the search index
@@ -708,7 +761,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @param aggregationFields - names of the aggregation fields. If no aggregation is wanted, pass no (zero) field(s)
      */
     @Override
-    public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields) {
+    public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
         final QueryBuilder queryBuilder = yq.getQueryBuilder();
         final FulltextIndex.Query query = new FulltextIndex.Query();
         for (int t = 0; t < 10; t++) try {
@@ -801,7 +854,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @SuppressWarnings("unused")
-    private List<Map<String, Object>> queryWithConstraints(final String indexName, final String fieldName, final String fieldValue, final Map<String, String> constraints, boolean latest) throws IOException {
+    private List<Map<String, Object>> queryWithConstraints(final String indexName, final String fieldName, final String fieldValue, final Map<String, String> constraints, final boolean latest) throws IOException {
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
                 .setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setFrom(0);
@@ -830,7 +883,7 @@ public class ElasticsearchClient implements FulltextIndex {
         return result;
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         final ElasticsearchClient client = new ElasticsearchClient(new String[]{"localhost:9300"}, "");
         // check access
         client.createIndexIfNotExists("test", 1, 0);

@@ -1,0 +1,87 @@
+/**
+ *  SuggestService
+ *  Copyright 23.02.2022 by Michael Peter Christen, @orbiterlab
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program in the file lgpl21.txt
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package eu.searchlab.http.services;
+
+import java.util.Collection;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import eu.searchlab.http.Service;
+import net.yacy.grid.io.index.DidYouMean;
+
+// http://localhost:8400/en/api/suggest.json?q=ne
+public class SuggestService extends AbstractService implements Service {
+
+    private static final int meanMax = 30;
+
+    /**
+     * for json format:
+     * implementation of the opensearch suggestion extension, see
+     * http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1
+     * or
+     * https://wiki.mozilla.org/Search_Service/Suggestions
+     */
+
+    // request:
+    // /suggest.json?q=eins%20zwei%20drei
+    //
+    // should return a json array like
+    // [
+    //   "query", ["text0", "text1", "text2"]
+    // ]
+    // #[jsonp-start]#["#[query]#",[#{suggestions}#"#[text]#"#(eol)#,::#(/eol)##{/suggestions}#]]#[jsonp-end]#
+
+    @Override
+    public String[] getPaths() {
+        return new String[] {"/api/suggest.json"};
+    }
+
+    @Override
+    public Type getType() {
+        return Service.Type.ARRAY;
+    }
+
+    @Override
+    public JSONArray serveArray(final JSONObject call) {
+
+        // evaluate request parameter
+        final String originalquerystring = call.optString("query", call.optString("q", ""));
+        final String querystring =  originalquerystring.trim();
+        final int timeout = call.optInt("timeout", 300);
+        final int count = Math.min(30, call.optInt("count", 20));
+
+        // find answer
+        final DidYouMean didYouMean = new DidYouMean(querystring);
+        final Collection<StringBuilder> suggestions = didYouMean.getSuggestions(timeout, count);
+
+        final JSONArray json = new JSONArray();
+        json.put(originalquerystring);
+        final JSONArray a = new JSONArray();
+        for (final StringBuilder suggestion: suggestions) {
+            if (a.length() >= meanMax) break;
+            final String s = suggestion.toString();
+            a.put(s);
+        }
+        json.put(a);
+        return json;
+    }
+
+}
