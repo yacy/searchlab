@@ -46,6 +46,7 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
+import eu.searchlab.http.services.AppsService;
 import eu.searchlab.http.services.MirrorService;
 import eu.searchlab.http.services.SuggestService;
 import eu.searchlab.http.services.TableGetService;
@@ -69,9 +70,14 @@ public class WebServer implements Runnable {
 
     private static final Properties mimeTable = new Properties();
 
+    public static File UI_PATH, APPS_PATH, HTDOCS_PATH;
+
     static {
         try {
             mimeTable.load(new FileInputStream("conf/httpd.mime"));
+            UI_PATH = new File(new File("ui"), "site");
+            APPS_PATH = new File(new File(new File(".").getCanonicalFile().getParentFile(), "searchlab_apps"), "htdocs").getCanonicalFile();
+            HTDOCS_PATH = new File("htdocs");
         } catch (final IOException e) {
             Logger.error("failed loading defaults/httpd.mime", e);
         }
@@ -91,6 +97,7 @@ public class WebServer implements Runnable {
         ServiceMap.register(new TablePutService());
         ServiceMap.register(new YaCySearchService());
         ServiceMap.register(new SuggestService());
+        ServiceMap.register(new AppsService());
     }
 
     private static class Fileserver implements HttpHandler {
@@ -128,7 +135,7 @@ public class WebServer implements Runnable {
             final String path = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
             final String user = post.optString("USER", null);
 
-            Logger.info("WebServer request: USER=" + user + ", PARH=" + path);
+            Logger.info("WebServer request: USER=" + user + ", PATH=" + path);
 
             // we force using of a user/language path
             if (user == null) {
@@ -394,15 +401,7 @@ public class WebServer implements Runnable {
         // Start webserver
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         final PathHandler ph = Handlers.path();
-        try {
-            ph.addPrefixPath("/", new Fileserver(new File[] {
-                    new File(new File("ui"), "site"),
-                    new File(new File(new File(".").getCanonicalFile().getParentFile(), "searchlab_apps"), "htdocs").getCanonicalFile(),
-                    new File("htdocs")
-            }));
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
+        ph.addPrefixPath("/", new Fileserver(new File[] {UI_PATH, APPS_PATH, HTDOCS_PATH}));
         builder.setHandler(ph);
         this.server = builder.build();
         this.server.start();

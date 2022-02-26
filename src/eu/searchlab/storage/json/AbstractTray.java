@@ -19,9 +19,12 @@
 
 package eu.searchlab.storage.json;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -63,17 +66,17 @@ public abstract class AbstractTray implements Tray {
         this.mutex = this;
     }
 
-    public static void write(OutputStream os, JSONObject json) throws IOException {
+    public static void write(final OutputStream os, final JSONObject json) throws IOException {
         if (json == null) throw new IOException("json must not be null");
-        OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+        final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
         writer.write('{');
         writer.write(LF);
-        String[] keys = new String[json.length()];
+        final String[] keys = new String[json.length()];
         int p = 0;
-        for (String key: json.keySet()) keys[p++] = key; // we do this only to get a hint which key is the last one
+        for (final String key: json.keySet()) keys[p++] = key; // we do this only to get a hint which key is the last one
         for (int i = 0; i < keys.length; i++) {
-            String key = keys[i];
-            Object obj = json.opt(key);
+            final String key = keys[i];
+            final Object obj = json.opt(key);
             if (obj == null) continue;
             writer.write('"'); writer.write(key); writer.write('"'); writer.write(':');
             if (obj instanceof JSONObject) {
@@ -96,7 +99,14 @@ public abstract class AbstractTray implements Tray {
         writer.close();
     }
 
-    public static JSONObject read(InputStream is) throws IOException {
+    public static JSONObject read(final File f) throws IOException {
+        final InputStream bis = new BufferedInputStream(new FileInputStream(f));
+        final JSONObject j = read(bis);
+        bis.close();
+        return j;
+    }
+
+    public static JSONObject read(final InputStream is) throws IOException {
         JSONObject json = new JSONObject(true);
         // The file can be written in either of two ways:
         // - as a simple toString() or toString(2) from a JSONObject
@@ -104,27 +114,27 @@ public abstract class AbstractTray implements Tray {
         // If the file was written in the first way, all property keys must be unique because we must use the JSONTokener to parse it.
         // if the file was written in the second way, we can apply a reader which reads the file line by line, overwriting a property
         // if it appears a second (third..) time. This has a big advantage: we can append new properties just at the end of the file.
-        byte[] b = AbstractIO.readAll(is, -1);
+        final byte[] b = AbstractIO.readAll(is, -1);
         if (b.length == 0) return json;
         // check which variant is in b[]:
         // in a toString() output, there is no line break
         // in a toString(2) output, there is a line break but also two spaces in front
         // in a line-by-line output, there is a line break at b[1] and no spaces after that because the first char is a '"' and the second a letter
-        boolean lineByLine = (b.length == 3 && b[0] == '{' && b[1] == LF && b[2] == '}') || (b[1] < ' ' && b[2] != ' ' && b[3] != ' ');
-        ByteArrayInputStream bais = new ByteArrayInputStream(b);
+        final boolean lineByLine = (b.length == 3 && b[0] == '{' && b[1] == LF && b[2] == '}') || (b[1] < ' ' && b[2] != ' ' && b[3] != ' ');
+        final ByteArrayInputStream bais = new ByteArrayInputStream(b);
         if (lineByLine) {
-            int a = bais.read();
+            final int a = bais.read();
             assert (a == '{');
-            BufferedReader reader = new BufferedReader(new InputStreamReader(bais, "UTF-8"));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(bais, "UTF-8"));
             String line;
             try {
                 while ((line = reader.readLine()) != null) {
                     line = line.trim();
                     if (line.equals("}")) break;
                     if (line.length() == 0) continue;
-                    int p = line.indexOf("\":");
+                    final int p = line.indexOf("\":");
                     if (p < 0) continue;
-                    String key = line.substring(1, p).trim();
+                    final String key = line.substring(1, p).trim();
                     String value = line.substring(p + 2).trim();
                     if (value.endsWith(",")) value = value.substring(0, value.length() - 1);
                     if (value.charAt(0) == '{') {
@@ -136,24 +146,24 @@ public abstract class AbstractTray implements Tray {
                     } else if (value.indexOf('.') > 0) {
                         try {
                             json.put(key, Double.parseDouble(value));
-                        } catch (NumberFormatException e) {
+                        } catch (final NumberFormatException e) {
                             json.put(key, value);
                         }
                     } else {
                         try {
                             json.put(key, Long.parseLong(value));
-                        } catch (NumberFormatException e) {
+                        } catch (final NumberFormatException e) {
                             json.put(key, value);
                         }
                     }
                 }
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 throw new IOException(e);
             }
         } else {
             try {
                 json = new JSONObject(new JSONTokener(new InputStreamReader(bais, StandardCharsets.UTF_8)));
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 // could be a double key problem. In that case we should repeat the process with another approach
                 throw new IOException(e);
             }
@@ -163,7 +173,7 @@ public abstract class AbstractTray implements Tray {
 
     protected Tray commitInternal() throws IOException {
         // #completelyawarethatthisisnotoptional
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         write(baos, this.object);
         this.io.write(this.iop, baos.toByteArray());
         return this;
@@ -171,7 +181,7 @@ public abstract class AbstractTray implements Tray {
 
     protected void ensureLoaded() throws IOException {
         if (this.object == null) {
-            InputStream is = this.io.read(this.iop);
+            final InputStream is = this.io.read(this.iop);
             this.object = read(is);
             is.close();
         }
@@ -187,7 +197,7 @@ public abstract class AbstractTray implements Tray {
         synchronized (this.mutex) {
             try {
                 ensureLoaded();
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 return 0;
             }
             return this.object.length();
@@ -208,7 +218,7 @@ public abstract class AbstractTray implements Tray {
     }
 
     @Override
-    public JSONObject getObject(String key) throws IOException {
+    public JSONObject getObject(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
             return this.object.optJSONObject(key);
@@ -216,7 +226,7 @@ public abstract class AbstractTray implements Tray {
     }
 
     @Override
-    public JSONArray getArray(String key) throws IOException {
+    public JSONArray getArray(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
             return this.object.optJSONArray(key);
