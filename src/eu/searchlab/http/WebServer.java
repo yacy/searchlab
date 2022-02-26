@@ -37,6 +37,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -220,23 +221,39 @@ public class WebServer implements Runnable {
             final Service service = ServiceMap.getService(path);
 
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
-            if (html != null && service != null && service.getType() == Service.Type.OBJECT) {
-                final JSONObject json = service.serveObject(post);
-                final Handlebars handlebars = new Handlebars();
-                final Context context = Context
-                        .newBuilder(json)
-                        .resolver(JSONObjectValueResolver.INSTANCE)
-                        .build();
-                try {
-                    final Template template = handlebars.compileInline(html);
-                    html = template.apply(context);
-                } catch (final HandlebarsException e) {
-                    Logger.error("Handlebars Error in \n" + html, e);
-                    throw new IOException(e.getMessage());
+            if (service != null) {
+                if (html != null && service.getType() == Service.Type.OBJECT) {
+                    final JSONObject json = service.serveObject(post);
+                    final Handlebars handlebars = new Handlebars();
+                    final Context context = Context
+                            .newBuilder(json)
+                            .resolver(JSONObjectValueResolver.INSTANCE)
+                            .build();
+                    try {
+                        final Template template = handlebars.compileInline(html);
+                        html = template.apply(context);
+                    } catch (final HandlebarsException e) {
+                        Logger.error("Handlebars Error in \n" + html, e);
+                        throw new IOException(e.getMessage());
+                    }
+                } else if (html != null && service.getType() == Service.Type.ARRAY) {
+                    final JSONArray json = service.serveArray(post);
+                    final Handlebars handlebars = new Handlebars();
+                    final Context context = Context
+                            .newBuilder(json)
+                            .resolver(JSONObjectValueResolver.INSTANCE)
+                            .build();
+                    try {
+                        final Template template = handlebars.compileInline(html);
+                        html = template.apply(context);
+                    } catch (final HandlebarsException e) {
+                        Logger.error("Handlebars Error in \n" + html, e);
+                        throw new IOException(e.getMessage());
+                    }
+                } else {
+                    // the response is defined only by the service
+                    html = ServiceMap.serviceDispatcher(service, path, post);
                 }
-            } else if (service != null) {
-                // the response is defined only by the service
-                html = ServiceMap.serviceDispatcher(service, path, post);
             }
             if (html == null && f == null) {
                 throw new FileNotFoundException("not found:" + path);

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.TreeMap;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
@@ -36,7 +37,7 @@ public class AppsService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/apps.json"};
+        return new String[] {"/api/apps.json", "/app/"};
     }
 
     @Override
@@ -49,13 +50,16 @@ public class AppsService extends AbstractService implements Service {
         final File app_path = new File(WebServer.APPS_PATH, "app");
         final String[] app_list = app_path.list();
         final TreeMap<String, JSONObject> sortlist = new TreeMap<>();
-        for (final String appp: app_list) {
-            final File appf = new File(new File(app_path, appp), "app.json");
+        for (final String path: app_list) {
+            final File appf = new File(new File(app_path, path), "app.json");
             if (!appf.exists()) continue;
             try {
                 final JSONObject appj = AbstractTray.read(appf);
+                appj.put("path", path);
                 sortlist.put(appj.optString("name", "") + "|" + appj.optString("headline", ""), appj);
-            } catch (final IOException e) {}
+            } catch (final IOException | JSONException e) {
+                e.printStackTrace();
+            }
         }
 
         final JSONArray json = new JSONArray();
