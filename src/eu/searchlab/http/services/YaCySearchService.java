@@ -40,7 +40,26 @@ import net.yacy.grid.io.index.WebDocument;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.io.index.YaCyQuery;
 
-// http://localhost:8400/api/yacysearch.json?query=help
+/**
+ * yacysearch - the main fulltext search service.
+ * This service should be compatible with the YaCy P2P search service, also named yacysearch.
+ * The original implementation considered two standards as guide for query and result:
+ * - SRU from http://www.loc.gov/standards/sru/sru-1-2.html for queries
+ * - Opensearch/XML for XML responses, similar to RSS. The original documentation does not exist any more.
+ *   A copy exist in the wayback machine, see:
+ *   https://web.archive.org/web/20120112124719/http://www.opensearch.org/Specifications/OpenSearch/1.1#OpenSearch_response_elements
+ *   Another copy is here: https://github.com/dewitt/opensearch/blob/master/opensearch-1-1-draft-6.md#opensearch-response-elements
+ *
+ * However, this original concept was altered later with two influences:
+ * - XML results are not state-of-the-art any more. In the searchlab, we drop it completely.
+ * - Search queries are also executed for the GSA implementation and accepts those queries as well.
+ * - Search results are returned in JSON; we tried to mirror the original Opensearch concept as
+ * - we extended search results with search facets to enable faceted search.
+ *
+ * For query field additions, we still recommend to use SRU, if applicable.
+ *
+ * Test endpoint: http://localhost:8400/api/yacysearch.json?query=help
+ */
 public class YaCySearchService extends AbstractService implements Service {
 
     @Override
@@ -54,7 +73,7 @@ public class YaCySearchService extends AbstractService implements Service {
     }
 
     @Override
-    public JSONObject serveObject(JSONObject call) {
+    public JSONObject serveObject(final JSONObject call) {
 
         // evaluate request parameter
         final String q = call.optString("query", "").trim();
