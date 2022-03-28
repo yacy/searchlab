@@ -44,6 +44,7 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveBucketArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.Result;
+import io.minio.SelectObjectContentArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -51,7 +52,11 @@ import io.minio.errors.InvalidResponseException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 import io.minio.messages.Bucket;
+import io.minio.messages.FileHeaderInfo;
+import io.minio.messages.InputSerialization;
 import io.minio.messages.Item;
+import io.minio.messages.OutputSerialization;
+import io.minio.messages.QuoteFields;
 
 public class S3IO extends AbstractIO implements GenericIO {
 
@@ -337,6 +342,31 @@ public class S3IO extends AbstractIO implements GenericIO {
             throw new IOException(e.getMessage());
         }
     }
+
+
+    public InputStream select(final IOPath iop, final String sqlExpression) throws IOException {
+        //final String sqlExpression = "select * from S3Object";
+        final InputSerialization is = new InputSerialization(null, false, null, null, FileHeaderInfo.USE, null, null, null);
+        final OutputSerialization os = new OutputSerialization(null, null, null, QuoteFields.ASNEEDED, null);
+        try {
+           final InputStream stream =
+                this.mc.selectObjectContent(
+                  SelectObjectContentArgs.builder()
+                  .bucket(iop.getBucket())
+                  .object(iop.getPath())
+                  .sqlExpression(sqlExpression)
+                  .inputSerialization(is)
+                  .outputSerialization(os)
+                  .requestProgress(true)
+                  .build());
+           return stream;
+        } catch (InvalidKeyException | ErrorResponseException | InsufficientDataException | InternalException
+                | InvalidResponseException | NoSuchAlgorithmException | ServerException | XmlParserException
+                | IllegalArgumentException | IOException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
 
     /**
      * removal of an object

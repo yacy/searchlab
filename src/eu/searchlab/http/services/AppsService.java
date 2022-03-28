@@ -37,7 +37,7 @@ public class AppsService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/apps.json", "/app/"};
+        return new String[] {"/api/apps.json", "/apps/data_studio/"};
     }
 
     @Override

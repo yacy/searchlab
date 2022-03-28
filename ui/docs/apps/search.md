@@ -1,5 +1,7 @@
 ## Search
 
+(this is a placeholder for a future search page on the Searchlab front page)
+
 <form class="input-group input-group-lg" name="searchform" action=".">
 <input type="text" value="{{channels.[0].searchTerms}}" name="query" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()" onClick="document.getElementById('startRecord').value=0;document.getElementById('query').value='';"/>
 <input type="hidden" name="startRecord" id="startRecord" value="0"/>

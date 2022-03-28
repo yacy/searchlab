@@ -17,8 +17,8 @@ nav:
     - Who made Searchlab - Impressum: access/imprint.md
   - Apps:
     - Data Studio: apps/data_studio.md
+    - App Development: apps/app_development.md
     - Search: apps/search.md
-    - Search Integration: apps/integration.md
   - Production:
     - Crawler: production/crawler.md
     - Network Scanner: production/network_scanner.md
