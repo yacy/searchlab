@@ -70,14 +70,14 @@ public class SuggestService extends AbstractService implements Service {
 
         // find answer
         final Typeahead typeahead = new Typeahead(querystring);
-        final Collection<StringBuilder> suggestions = typeahead.getTypeahead(timeout, count);
+        final Collection<String> suggestions = typeahead.getTypeahead(timeout, count);
 
         final JSONArray json = new JSONArray();
         json.put(originalquerystring);
         final JSONArray a = new JSONArray();
-        for (final StringBuilder suggestion: suggestions) {
+        for (final String suggestion: suggestions) {
             if (a.length() >= meanMax) break;
-            final String s = suggestion.toString();
+            final String s = suggestion;
             a.put(s);
         }
         json.put(a);
