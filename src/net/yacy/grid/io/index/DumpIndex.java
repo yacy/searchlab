@@ -1,3 +1,22 @@
+/**
+ *  DumpIndex
+ *  Copyright 29.11.2021 by Michael Peter Christen, @orbiterlab
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program in the file lgpl21.txt
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package net.yacy.grid.io.index;
 
 import java.io.BufferedReader;
@@ -12,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -40,17 +60,34 @@ import org.json.JSONTokener;
  */
 public class DumpIndex implements FulltextIndex {
 
-    private String clusterName;
-    Directory directory;
-    DirectoryReader indexReader;
-    IndexSearcher dirSearcher;
+    private final Map<String, Directory> directories; // storage space for indexes
+    private final Map<String, DirectoryReader> indexReaders; // reader for indexed from directory
+    private final Map<String, IndexSearcher> dirSearchers; // search function for indexes
 
-    public DumpIndex(final String clusterName) throws IOException {
-        // create default settings and add cluster name
-        this.clusterName = clusterName;
-        this.directory = new ByteBuffersDirectory();
-        this.indexReader = DirectoryReader.open(this.directory);
-        this.dirSearcher = new IndexSearcher(this.indexReader);
+    public DumpIndex() throws IOException {
+        this.directories = new ConcurrentHashMap<>();
+        this.indexReaders = new ConcurrentHashMap<>();
+        this.dirSearchers = new ConcurrentHashMap<>();
+    }
+
+    private void initIndex(String indexName) throws IOException {
+        if (directories.containsKey(indexName)) return;
+        Directory dir  = new ByteBuffersDirectory();
+        DirectoryReader reader = DirectoryReader.open(dir);
+        IndexSearcher searcher = new IndexSearcher(reader);
+        directories.put(indexName, dir);
+        indexReaders.put(indexName, reader);
+        dirSearchers.put(indexName, searcher);
+    }
+
+    private Directory getDirectory(String indexName) throws IOException {
+        initIndex(indexName);
+        return this.directories.get(indexName);
+    }
+
+    private IndexSearcher getDirSearcher(String indexName) throws IOException {
+        initIndex(indexName);
+        return this.dirSearchers.get(indexName);
     }
 
     /**
@@ -58,7 +95,7 @@ public class DumpIndex implements FulltextIndex {
      * @param indexName
      * @param jsonlist
      */
-    public void load(File jsonlist) throws IOException {
+    private void load(String indexName, File jsonlist) throws IOException {
         InputStream is = new FileInputStream(jsonlist);
         if (jsonlist.getName().endsWith(".gz")) is = new GZIPInputStream(is);
         BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
@@ -85,11 +122,10 @@ public class DumpIndex implements FulltextIndex {
         }
         br.close();
         is.close();
-        IndexWriter writer = new IndexWriter(this.directory, new IndexWriterConfig(new StandardAnalyzer()));
+        Directory dir = getDirectory(indexName);
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new StandardAnalyzer()));
         writer.addDocuments(documents);
         writer.close();
-
-
     }
 
     @Override
@@ -183,8 +219,10 @@ public class DumpIndex implements FulltextIndex {
     }
 
     @Override
-    public Query query(String indexName, YaCyQuery yq, YaCyQuery postFilter, Sort sort,
-            WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain,
+    public Query query(
+            String indexName, YaCyQuery yq, YaCyQuery postFilter, Sort sort,
+            WebMapping highlightField, int timezoneOffset,
+            int from, int resultCount, int aggregationLimit, boolean explain,
             WebMapping... aggregationFields) {
         QueryParser parser = new QueryParser("text_t", new StandardAnalyzer());
         org.apache.lucene.search.Query query = null;
@@ -192,9 +230,10 @@ public class DumpIndex implements FulltextIndex {
             query = parser.parse("hello");
         } catch (ParseException e) {}
         try {
-            TopDocs topDocs = this.dirSearcher.search(query, 10);
+            IndexSearcher searcher = getDirSearcher(indexName);
+            TopDocs topDocs = searcher.search(query, 10);
             for (ScoreDoc scoreDoc: topDocs.scoreDocs) {
-                Document document = this.dirSearcher.doc(scoreDoc.doc);
+                Document document = searcher.doc(scoreDoc.doc);
                 String url = document.get("sku");
                 String text = document.get("text_t");
                 System.out.println("url:  " + url + "\ntext: " + text + "\n\n");
@@ -208,8 +247,8 @@ public class DumpIndex implements FulltextIndex {
     public static void main(String[] args) {
         File f = new File(args[0]);
         try {
-            DumpIndex di = new DumpIndex(f.getName());
-            di.load(f);
+            DumpIndex di = new DumpIndex();
+            di.load("test", f);
         } catch (IOException e) {
             e.printStackTrace();
         }
