@@ -16,7 +16,7 @@ nav:
     - Download and install Searchlab and YaCy Grid: access/download.md
     - Who made Searchlab - Impressum: access/imprint.md
   - Apps:
-    - Data Studio: app.md
+    - Data Studio: apps/data_studio.md
     - Search: apps/search.md
     - Search Integration: apps/integration.md
   - Production:
