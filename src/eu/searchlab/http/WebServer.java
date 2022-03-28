@@ -49,6 +49,7 @@ import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.http.services.AppsService;
 import eu.searchlab.http.services.MirrorService;
+import eu.searchlab.http.services.QueryService;
 import eu.searchlab.http.services.SuggestService;
 import eu.searchlab.http.services.TableGetService;
 import eu.searchlab.http.services.TablePutService;
@@ -99,6 +100,7 @@ public class WebServer implements Runnable {
         ServiceMap.register(new YaCySearchService());
         ServiceMap.register(new SuggestService());
         ServiceMap.register(new AppsService());
+        ServiceMap.register(new QueryService());
     }
 
     private static class Fileserver implements HttpHandler {

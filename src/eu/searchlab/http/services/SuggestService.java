@@ -25,7 +25,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
-import net.yacy.grid.io.index.DidYouMean;
+import net.yacy.grid.io.index.Typeahead;
 
 // http://localhost:8400/en/api/suggest.json?q=ne
 public class SuggestService extends AbstractService implements Service {
@@ -69,8 +69,8 @@ public class SuggestService extends AbstractService implements Service {
         final int count = Math.min(30, call.optInt("count", 20));
 
         // find answer
-        final DidYouMean didYouMean = new DidYouMean(querystring);
-        final Collection<StringBuilder> suggestions = didYouMean.getSuggestions(timeout, count);
+        final Typeahead typeahead = new Typeahead(querystring);
+        final Collection<StringBuilder> suggestions = typeahead.getTypeahead(timeout, count);
 
         final JSONArray json = new JSONArray();
         json.put(originalquerystring);
