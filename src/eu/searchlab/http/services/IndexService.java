@@ -62,24 +62,33 @@ public class IndexService extends AbstractService implements Service {
         // evaluate request parameter
         final String indexName = call.optString("index", GridIndex.DEFAULT_INDEXNAME_WEB);
         final String id = call.optString("id", "");
-        final String query = call.optString("query", "");
+        final String q = call.optString("query", "");
         final JSONObject json = new JSONObject(true);
 
         try {
             if (indexName.length() > 0 && id.length() > 0) {
-                final Map<String, Object> map = Searchlab.ec.readMap(indexName, id);
+                json.put("title", "Search for id = " + id);
+                json.put("description", "Search for id = " + id);
+                json.put("startIndex", "0");
+                json.put("searchTerms", id);
+                json.put("itemsPerPage", "1");
+                json.put("pages", "1");
+                json.put("page", "1");
 
+                final Map<String, Object> map = Searchlab.ec.readMap(indexName, id);
                 final JSONList list = new JSONList();
                 if (map == null) {
-                    json.put("count", 0);
-                    json.put("list", list.toArray());
+                    json.put("totalResults",  "0");
+                    json.put("itemsCount", 0);
+                    json.put("items", list.toArray());
                 } else {
                     final WebDocument doc = new WebDocument(map); // this is an instance of JSONObject
                     list.add(doc);
-                    json.put("count", 1);
-                    json.put("list", list.toArray());
+                    json.put("totalResults",  "1");
+                    json.put("itemsCount", 1);
+                    json.put("items", list.toArray());
                 }
-            } else if (indexName.length() > 0 && query.length() > 0) {
+            } else if (indexName.length() > 0 && q.length() > 0) {
                 final int startRecord = call.optInt("startRecord", call.optInt("start", 0));
                 final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
                 String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
@@ -93,21 +102,30 @@ public class IndexService extends AbstractService implements Service {
                 final List<WebMapping> facetFieldMapping = new ArrayList<>();
                 for (final String s: facetFields.split(",")) facetFieldMapping.add(WebMapping.valueOf(s));
 
-                final YaCyQuery yq = new YaCyQuery(query, collections, contentdom, timezoneOffset);
-                final ElasticsearchClient.Query query1 = Searchlab.ec.query(
+                final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
+                final ElasticsearchClient.Query query = Searchlab.ec.query(
                         System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
                         yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, false,
                         facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 
-                final JSONList list = new JSONList();
-                final List<Map<String, Object>> qr = query1.results;
+                final JSONList items = new JSONList();
+                final List<Map<String, Object>> qr = query.results;
                 for (int hitc = 0; hitc < qr.size(); hitc++) {
                     final WebDocument doc = new WebDocument(qr.get(hitc)); // this is an instance of JSONObject
-                    list.add(doc);
+                    items.add(doc);
                 }
 
-                json.put("count", list.length());
-                json.put("list", list.toArray());
+                json.put("title", "Search for " + q);
+                json.put("description", "Search for " + q);
+                json.put("startIndex", "" + startRecord);
+                json.put("searchTerms", q);
+                json.put("totalResults", Integer.toString(query.hitCount));
+                json.put("itemsPerPage", "" + itemsPerPage);
+                json.put("pages", "" + ((query.hitCount / itemsPerPage) + 1));
+                json.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
+
+                json.put("itemsCount", items.length());
+                json.put("items", items.toArray());
             }
         } catch (final JSONException e) {e.printStackTrace();}
         return json;

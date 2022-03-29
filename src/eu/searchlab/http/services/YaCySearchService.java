@@ -155,6 +155,7 @@ public class YaCySearchService extends AbstractService implements Service {
                 }
                 items.put(hit);
             }
+            channel.put("itemsCount", items.length());
             channel.put("items", items);
 
             // create facet navigation
