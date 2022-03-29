@@ -802,7 +802,7 @@ public class ElasticsearchClient implements FulltextIndex {
                 final Map<String, Object> map = hit.getSourceAsMap();
                 if (!map.containsKey("id")) map.put("id", hit.getId());
                 if (!map.containsKey("type")) map.put("type", hit.getType());
-                query.results.add(map);
+                query.results.add(WebMapping.sortMapKeys(map));
                 query.highlights.add(hit.getHighlightFields());
                 if (explain) {
                     final Explanation explanation = hit.getExplanation();

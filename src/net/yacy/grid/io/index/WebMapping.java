@@ -265,12 +265,12 @@ public enum WebMapping implements MappingDeclaration {
 
     public static final Pattern catchall_pattern = Pattern.compile(".*");
 
-    public static Map<String, Pattern> collectionParser(String collectionString) {
+    public static Map<String, Pattern> collectionParser(final String collectionString) {
         if (collectionString == null || collectionString.length() == 0) return new HashMap<String, Pattern>();
-        String[] cs = collectionString.split(",");
+        final String[] cs = collectionString.split(",");
         final Map<String, Pattern> cm = new LinkedHashMap<String, Pattern>();
-        for (String c: cs) {
-            int p = c.indexOf(':');
+        for (final String c: cs) {
+            final int p = c.indexOf(':');
             if (p < 0) cm.put(c, catchall_pattern); else cm.put(c.substring(0, p), Pattern.compile(c.substring(p + 1)));
         }
         return cm;
@@ -307,6 +307,19 @@ public enum WebMapping implements MappingDeclaration {
         WebMapping.iframesscount_i
     };
 
+    public static LinkedHashMap<String, Object> sortMapKeys(final Map<String, Object> source) {
+        final Map<String, Object> buffer = new HashMap<>();
+        buffer.putAll(source);
+        final LinkedHashMap<String, Object> sorted = new LinkedHashMap<>();
+        for (final WebMapping key: WebMapping.values()) {
+            final Object obj = buffer.remove(key.name());
+            if (obj != null) sorted.put(key.name(), obj);
+        }
+        sorted.putAll(buffer);
+        return sorted;
+    }
+
+
     /**
      * helper main method to generate a mapping in elasticsearch.
      * To test this, upload the result of this main method to elasticsearch with the following line:
@@ -320,10 +333,10 @@ public enum WebMapping implements MappingDeclaration {
      * curl http://elastic:changeme@localhost:9200/web/_count
      * @param args
      */
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
             System.out.println(Mapping.elasticsearchMapping("web").toString(2));
-        } catch (JSONException e) {
+        } catch (final JSONException e) {
             e.printStackTrace();
         }
     }
