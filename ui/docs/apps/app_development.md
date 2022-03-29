@@ -31,6 +31,7 @@ If you like please give us a pull request with your new app!
 We love to extend the searchlab apps with community-created content.
 
 To do so, please..
+
 - Create a new subfolder within `htdocs` with the name of your app
 - Create a app.json and fill it with an app description using at least
   the same fields as used in `htdocs/websearch_list/app.json`.

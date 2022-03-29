@@ -4,6 +4,7 @@ This is a collection of Search Widgets and Dashboards that can be used
 with the Searchlab at https://searchlab.eu and in your own web pages.
 
 Data Studio Apps serve two purposes:
+
 - provide more than web search: analyze texts and search indexes, statistical evaluation and visualization, dashboards and data export
 - an easy way to integrate those pages into your own application
 
