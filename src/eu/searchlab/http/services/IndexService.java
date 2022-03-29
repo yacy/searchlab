@@ -42,13 +42,13 @@ import net.yacy.grid.io.index.YaCyQuery;
  * QueryService
  * returns a list of JSON objects that are present in the index.
  *
- * http://127.0.0.1:8400/en/api/query.json?query=where
+ * http://127.0.0.1:8400/en/api/index.json?query=where
  */
-public class QueryService extends AbstractService implements Service {
+public class IndexService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/query.json"};
+        return new String[] {"/api/index.json"};
     }
 
     @Override
