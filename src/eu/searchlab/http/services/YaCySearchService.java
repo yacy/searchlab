@@ -175,13 +175,21 @@ public class YaCySearchService extends AbstractService implements Service {
                 facetobject.put("count", fe.getValue().size());
                 final JSONArray elements = new JSONArray();
                 facetobject.put("elements", elements);
+                long allcount = 0;
                 for (final Map.Entry<String, Long> element: fe.getValue()) {
                     final JSONObject elementEntry = new JSONObject(true);
                     elementEntry.put("name", element.getKey());
                     elementEntry.put("count", element.getValue().toString());
                     elementEntry.put("modifier", mapping.getMapping().getFacetmodifier() + ":" + element.getKey());
+                    allcount += element.getValue();
                     elements.put(elementEntry);
                 }
+                // now go through all elements again and set a percentage
+                for (int i = 0; i < elements.length(); i++) {
+                    final JSONObject elementEntry = elements.getJSONObject(i);
+                    elementEntry.put("percent", Double.toString(Math.round(10000.0d * Double.parseDouble(elementEntry.getString("count")) / (allcount)) / 100.0d));
+                }
+                // store facet
                 navigation.put(facetobject);
             }
 
