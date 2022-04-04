@@ -48,8 +48,8 @@ import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.http.services.AppsService;
-import eu.searchlab.http.services.MirrorService;
 import eu.searchlab.http.services.IndexService;
+import eu.searchlab.http.services.MirrorService;
 import eu.searchlab.http.services.SuggestService;
 import eu.searchlab.http.services.TableGetService;
 import eu.searchlab.http.services.TablePutService;
@@ -122,7 +122,6 @@ public class WebServer implements Runnable {
 
             if (method.toLowerCase().equals("options")) {
                 exchange.getResponseSender().send("");
-                exchange.endExchange();
                 return;
             }
 
@@ -145,7 +144,6 @@ public class WebServer implements Runnable {
                 exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                 exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path);
                 exchange.getResponseSender().send("");
-                exchange.endExchange();
                 return;
             }
 
@@ -170,7 +168,6 @@ public class WebServer implements Runnable {
                 exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
                 exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
                 exchange.getResponseSender().send(bb);
-                exchange.endExchange();
                 return;
             }
 
@@ -187,9 +184,10 @@ public class WebServer implements Runnable {
                 if (html == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                 } else {
+                	exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
+                    exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
                     exchange.getResponseSender().send(html);
                 }
-                exchange.endExchange();
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
@@ -199,7 +197,6 @@ public class WebServer implements Runnable {
                     exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR).setReasonPhrase(e.getMessage());
                 }
                 exchange.getResponseSender().send("");
-                exchange.endExchange();
             }
         }
 
