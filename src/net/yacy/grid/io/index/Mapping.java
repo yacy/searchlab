@@ -24,10 +24,10 @@ import org.json.JSONObject;
 
 public class Mapping {
 
-    private String name;
+    private final String name;
     private final MappingType type;
     private final boolean indexed, stored, searchable, multiValued, omitNorms, docValues;
-    private String comment;
+    private final String comment;
 
     // for facets:
     private String facetname, displayname, facettype, facetmodifier;
@@ -51,9 +51,9 @@ public class Mapping {
         this.mandatory = mandatory;
         this.docValues = (type == MappingType.string || type == MappingType.date || type.name().startsWith("num_"));
         // verify our naming scheme
-        int p = name.indexOf('_');
+        final int p = name.indexOf('_');
         if (p > 0) {
-            String ext = name.substring(p + 1);
+            final String ext = name.substring(p + 1);
             assert !ext.equals("i") || (type == MappingType.num_integer && !multiValued) : name;
             assert !ext.equals("l") || (type == MappingType.num_long && !multiValued) : name;
             assert !ext.equals("b") || (type == MappingType.bool && !multiValued) : name;
@@ -68,9 +68,9 @@ public class Mapping {
             assert !ext.equals("d") || (type == MappingType.num_double && !multiValued) : name;
         }
         assert type.appropriateName(this) : "bad configuration: " + this.name();
-        this.facetname = "";
-        this.displayname = "";
-        this.facettype = "";
+        this.facetname = name;
+        this.displayname = name;
+        this.facettype = type == MappingType.string ? "String" : "";
         this.facetmodifier = "";
     }
 
@@ -144,26 +144,26 @@ public class Mapping {
     }
 
     public final JSONObject toJSON() {
-        JSONObject json = new JSONObject();
+        final JSONObject json = new JSONObject();
         try {
             json.put("type", getType().elasticName());
             if (getType() == MappingType.string) json.put("index", "not_analyzed");
             json.put("include_in_all", isIndexed() || isSearchable() ? "true":"false");
-        } catch (JSONException e) {}
+        } catch (final JSONException e) {}
         return json;
     }
 
-    public static JSONObject elasticsearchMapping(String indexName) {
-        JSONObject properties = new JSONObject(true);
-        JSONObject json = new JSONObject();
+    public static JSONObject elasticsearchMapping(final String indexName) {
+        final JSONObject properties = new JSONObject(true);
+        final JSONObject json = new JSONObject();
         try {
-            for (WebMapping mapping: WebMapping.values()) {
+            for (final WebMapping mapping: WebMapping.values()) {
                 properties.put(mapping.name(), mapping.getMapping().toJSON());
             }
-            JSONObject index = new JSONObject().put("properties", properties);
-            JSONObject mappings = new JSONObject().put(indexName, index);
+            final JSONObject index = new JSONObject().put("properties", properties);
+            final JSONObject mappings = new JSONObject().put(indexName, index);
             json.put("mappings", mappings);
-        } catch (JSONException e) {}
+        } catch (final JSONException e) {}
         return json;
     }
 

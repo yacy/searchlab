@@ -93,7 +93,9 @@ public class YaCySearchService extends AbstractService implements Service {
         final int facetLimit = call.optInt("facetLimit", 10);
         final String facetFields = call.optString("facetFields", YaCyQuery.FACET_DEFAULT_PARAMETER);
         final List<WebMapping> facetFieldMapping = new ArrayList<>();
-        for (final String s: facetFields.split(",")) facetFieldMapping.add(WebMapping.valueOf(s));
+        for (final String s: facetFields.split(",")) try {
+        	facetFieldMapping.add(WebMapping.valueOf(s));
+        } catch (final IllegalArgumentException e) {} // catch exception in case the facet field name is unknown
         final Sort sort = new Sort(call.optString("sort", ""));
 
         // run query against search index
@@ -164,33 +166,35 @@ public class YaCySearchService extends AbstractService implements Service {
             final Map<String, List<Map.Entry<String, Long>>> aggregations = query.aggregations;
             for (final Map.Entry<String, List<Map.Entry<String, Long>>> fe: aggregations.entrySet()) {
                 final String facetname = fe.getKey();
-                final WebMapping mapping = WebMapping.valueOf(facetname);
-                final JSONObject facetobject = new JSONObject(true);
-                facetobject.put("facetname", mapping.getMapping().getFacetname());
-                facetobject.put("displayname", mapping.getMapping().getDisplayname());
-                facetobject.put("type", mapping.getMapping().getFacettype());
-                facetobject.put("min", "0");
-                facetobject.put("max", "0");
-                facetobject.put("mean", "0");
-                facetobject.put("count", fe.getValue().size());
-                final JSONArray elements = new JSONArray();
-                facetobject.put("elements", elements);
-                long allcount = 0;
-                for (final Map.Entry<String, Long> element: fe.getValue()) {
-                    final JSONObject elementEntry = new JSONObject(true);
-                    elementEntry.put("name", element.getKey());
-                    elementEntry.put("count", element.getValue().toString());
-                    elementEntry.put("modifier", mapping.getMapping().getFacetmodifier() + ":" + element.getKey());
-                    allcount += element.getValue();
-                    elements.put(elementEntry);
-                }
-                // now go through all elements again and set a percentage
-                for (int i = 0; i < elements.length(); i++) {
-                    final JSONObject elementEntry = elements.getJSONObject(i);
-                    elementEntry.put("percent", Double.toString(Math.round(10000.0d * Double.parseDouble(elementEntry.getString("count")) / (allcount)) / 100.0d));
-                }
-                // store facet
-                navigation.put(facetobject);
+                try {
+                	final WebMapping mapping = WebMapping.valueOf(facetname);
+	                final JSONObject facetobject = new JSONObject(true);
+	                facetobject.put("facetname", mapping.getMapping().getFacetname());
+	                facetobject.put("displayname", mapping.getMapping().getDisplayname());
+	                facetobject.put("type", mapping.getMapping().getFacettype());
+	                facetobject.put("min", "0");
+	                facetobject.put("max", "0");
+	                facetobject.put("mean", "0");
+	                facetobject.put("count", fe.getValue().size());
+	                final JSONArray elements = new JSONArray();
+	                facetobject.put("elements", elements);
+	                long allcount = 0;
+	                for (final Map.Entry<String, Long> element: fe.getValue()) {
+	                    final JSONObject elementEntry = new JSONObject(true);
+	                    elementEntry.put("name", element.getKey());
+	                    elementEntry.put("count", element.getValue().toString());
+	                    elementEntry.put("modifier", mapping.getMapping().getFacetmodifier() + ":" + element.getKey());
+	                    allcount += element.getValue();
+	                    elements.put(elementEntry);
+	                }
+	                // now go through all elements again and set a percentage
+	                for (int i = 0; i < elements.length(); i++) {
+	                    final JSONObject elementEntry = elements.getJSONObject(i);
+	                    elementEntry.put("percent", Double.toString(Math.round(10000.0d * Double.parseDouble(elementEntry.getString("count")) / (allcount)) / 100.0d));
+	                }
+	                // store facet
+	                navigation.put(facetobject);
+                } catch (final IllegalArgumentException e) {} // catch exception in case the facet field name is unknown
             }
 
             // create page navigation

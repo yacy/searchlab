@@ -20,7 +20,6 @@
 
 package eu.searchlab.http.services;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -97,16 +96,11 @@ public class IndexService extends AbstractService implements Service {
                 final int timezoneOffset = call.optInt("timezoneOffset", -1);
                 final Sort sort = new Sort(call.optString("sort", ""));
                 final int itemsPerPage = call.optInt("itemsPerPage", call.optInt("maximumRecords", call.optInt("rows", call.optInt("num", 10))));
-                final int facetLimit = call.optInt("facetLimit", 10);
-                final String facetFields = call.optString("facetFields", YaCyQuery.FACET_DEFAULT_PARAMETER);
-                final List<WebMapping> facetFieldMapping = new ArrayList<>();
-                for (final String s: facetFields.split(",")) facetFieldMapping.add(WebMapping.valueOf(s));
 
                 final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
                 final ElasticsearchClient.Query query = Searchlab.ec.query(
                         System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
-                        yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, false,
-                        facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
+                        yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
 
                 final JSONList items = new JSONList();
                 final List<Map<String, Object>> qr = query.results;

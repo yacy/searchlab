@@ -783,7 +783,8 @@ public class ElasticsearchClient implements FulltextIndex {
             if (postFilter != null) request.setPostFilter(postFilter.getQueryBuilder());
             request.clearRescorers();
             for (final WebMapping field: aggregationFields) {
-                request.addAggregation(AggregationBuilders.terms(field.getMapping().name()).field(field.getMapping().name()).minDocCount(1).size(aggregationLimit));
+            	final String name = field.getMapping().name();
+                request.addAggregation(AggregationBuilders.terms(name).field(name).minDocCount(1).size(aggregationLimit));
             }
             // apply sort
             request = sort.sort(request);
