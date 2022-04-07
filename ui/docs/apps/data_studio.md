@@ -14,7 +14,7 @@ If you ever asked "How can I integrate a search function in my web page" then re
 Click on the tile to start the app:
 
 {{#each .}}
-<div class="card" style="width:288px; height:400px; display: flex; flex-flow: column; background-color:#4E5D6C; margin-right:16px; margin-bottom:16px; padding:16px; position:relative; float:left; display:block; overflow: hidden;">
+<div class="card" style="width:280px; height:400px; display: flex; flex-flow: column; background-color:#4E5D6C; margin-right:12px; margin-bottom:12px; padding:12px; position:relative; float:left; display:block; overflow: hidden;">
   <a href="../../app/{{this.path}}/" target="_blank" rel="noopener noreferrer" >
     <img src="../../app/{{this.path}}/screenshot.png" class="card-img-top" alt="{{this.name}}" width="256" height="256">
   </a>
