@@ -3,7 +3,6 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="robots" content="noindex">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="keywords" content="YaCy Suchmaschine search engine spider harvester indexer p2p peer network open free download software development">
@@ -11,7 +10,6 @@
 
     {% if config.site_description %}<meta name="description" content="{{ config.site_description }}">{% endif %}
     {% if config.site_author %}<meta name="author" content="{{ config.site_author }}">{% endif %}
-    {% if page.canonical_url %}<link rel="canonical" href="{{ page.canonical_url }}">{% endif %}
     <link rel="{{ 'img/favicon.ico'|url }}">
 
     {% block htmltitle %}
