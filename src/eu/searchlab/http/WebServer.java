@@ -31,10 +31,8 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
@@ -47,6 +45,7 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
+import eu.searchlab.http.aaa.Authentication;
 import eu.searchlab.http.services.AppsService;
 import eu.searchlab.http.services.IndexService;
 import eu.searchlab.http.services.MirrorService;
@@ -148,9 +147,11 @@ public class WebServer implements Runnable {
             }
 
             if (user.length() != 2) {
-                // add a noindex flag to http response header
+                // add a canonical and noindex tag to the response header
+            	// see:
+            	// https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls?hl=de#rel-canonical-header-method
                 exchange.getResponseHeaders().put(new HttpString("X-Robots-Tag"), "noindex");
-                exchange.getResponseHeaders().put(new HttpString("Link"), "</en" + path + ">; rel=\"canonical\""); // see https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls#rel-canonical-header-method
+                exchange.getResponseHeaders().put(new HttpString("Link"), "<https://searchlab.eu/en" + path + ">; rel=\"canonical\"");
             }
 
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
@@ -209,7 +210,7 @@ public class WebServer implements Runnable {
         private String processPost(final JSONObject post) throws IOException {
 
             final String path = post.optString("PATH", "/");
-            final String knownuser = post.optString("USER", null);
+            final String user = post.optString("USER", null);
 
             // load requested file
             final File f = findFile(path);
@@ -259,12 +260,12 @@ public class WebServer implements Runnable {
             }
 
             // apply server-side includes
-            if (html != null) html = ssi(knownuser, html);
+            if (html != null) html = ssi(user, path, html);
 
             return html;
         }
 
-        private String ssi(final String knownuser, String html) throws IOException {
+        private String ssi(final String user, final String path, String html) throws IOException {
             // apply server-side includes
             /*
              * include a file in the same path as current path
@@ -279,7 +280,7 @@ public class WebServer implements Runnable {
                 final int rightquote = html.indexOf("\"", ssip + 23);
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String virtual = html.substring(ssip + 22, rightquote);
-                final JSONObject post = getQueryParams(knownuser, virtual);
+                final JSONObject post = getQueryParams(user, virtual);
                 final String include = processPost(post);
                 if (include == null) {
                     html = html.substring(0, ssip) + html.substring(end + 3);
@@ -287,6 +288,20 @@ public class WebServer implements Runnable {
                 } else {
                     html = html.substring(0, ssip) + include + html.substring(end + 3);
                     ssip = html.indexOf("<!--#include virtual=\"", ssip + include.length());
+                }
+            }
+            ssip = html.indexOf("<!--#echo var=\"");//  <!--#echo var="CANONICAL_TAG" -->
+            while (ssip >= 0 && (end = html.indexOf("-->", ssip + 17)) > 0 ) { // min length 17; <!--#echo var="a"
+                final int rightquote = html.indexOf("\"", ssip + 16);
+                if (rightquote <= 0 || rightquote >= end) break;
+                final String var = html.substring(ssip + 15, rightquote);
+                if ("CANONICAL_TAG".equals(var)) {
+                	final String include = "<link rel=\"canonical\" href=\"" + "https://searchlab.eu/en" + path + "\">";
+                	html = html.substring(0, ssip) + include + html.substring(end + 3);
+                    ssip = html.indexOf("<!--#echo var=\"", ssip + include.length());
+                } else {
+                    html = html.substring(0, ssip) + html.substring(end + 3);
+                    ssip = html.indexOf("<!--#echo var=\"", ssip);
                 }
             }
             return html;
@@ -395,14 +410,7 @@ public class WebServer implements Runnable {
             if (prefix.length() == 2) {
                 return prefix.equals("en") ? "en": null;
             }
-            if (prefix.length() == 9) {
-                // must consist of only digits and every digit must appear only once;
-                final Set<Integer> c = new HashSet<>(); for (int i = 1; i <= 9; i++) c.add(i);
-                for (int i = 0; i < 9; i++) {
-                    if (!c.remove(prefix.charAt(i) - 48)) return null;
-                }
-                return prefix;
-            }
+            if (Authentication.isValid(prefix)) return prefix;
             return null;
         }
 
