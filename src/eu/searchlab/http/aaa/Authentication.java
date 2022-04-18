@@ -19,10 +19,15 @@
 
 package eu.searchlab.http.aaa;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 public class Authentication {
+
+	private final static Random random = new Random(System.currentTimeMillis());
 
 	public final static String ANONYMOUS_ID = "112358132";
 
@@ -41,5 +46,25 @@ public class Authentication {
             return true;
         }
 		return false;
+	}
+
+	public static String generateRandomID() {
+		final StringBuilder sb = new StringBuilder();
+		final List<Integer> a = new ArrayList<>();
+		for (int i = 1; i <= 9; i++) a.add(i);
+		while (a.size() > 1) {
+			final int c = a.remove(random.nextInt(a.size()));
+			sb.append(Integer.toString(c));
+		}
+		sb.append(Integer.toString(a.get(0)));
+		final String id = sb.toString();
+		assert isValid(id);
+		return id;
+	}
+
+	public static void main(final String[] args) {
+		for (int i = 0; i < 100; i++) {
+			System.out.println(generateRandomID());
+		}
 	}
 }

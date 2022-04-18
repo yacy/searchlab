@@ -47,6 +47,8 @@ import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.http.aaa.Authentication;
 import eu.searchlab.http.services.AppsService;
+import eu.searchlab.http.services.IDGeneratorService;
+import eu.searchlab.http.services.IDValidationService;
 import eu.searchlab.http.services.IndexService;
 import eu.searchlab.http.services.MirrorService;
 import eu.searchlab.http.services.SuggestService;
@@ -100,6 +102,8 @@ public class WebServer implements Runnable {
         ServiceMap.register(new SuggestService());
         ServiceMap.register(new AppsService());
         ServiceMap.register(new IndexService());
+        ServiceMap.register(new IDGeneratorService());
+        ServiceMap.register(new IDValidationService());
     }
 
     private static class Fileserver implements HttpHandler {
