@@ -1,6 +1,6 @@
 site_name: Searchlab
 site_author: Michael Christen
-site_description: "YaCy Searchlab"
+site_description: "Search as a service with YaCy Searchlab: Web Crawling and Data Science Apps for Web Content"
 site_url: "https://searchlab.eu"
 repo_url: "https://github.com/yacy/searchlab.git"
 
