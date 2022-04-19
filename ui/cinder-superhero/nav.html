@@ -53,21 +53,22 @@
 
             <ul class="nav navbar-nav navbar-right">
             
+                    <li id="userid">
+                    </li>
                     <li id="logout">
-                        <a href="/en/logout/">
-                            <span class="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout
-                        </a>
+                        <a href="/en/login/"><span class="glyphicon glyphicon-log-in" aria-hidden="true"></span> Login</a>
                     </li>
                     <script>
-                        if (window.location.pathname.includes("/en/")) {
-                             var auth = document.getElementById("logout");
-                             auth.innerHTML = '<a href="/en/login/"><span class="glyphicon glyphicon-log-in" aria-hidden="true"></span> Login</a>';
+                        var id = location.pathname.split('/')[1];
+                        if (id != 'en') {
+                            document.getElementById("userid").innerHTML = '<a href="/' + id + '/user/"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> ' + id + '</a>';
+                            document.getElementById("logout").innerHTML = '<a href="/' + id + '/logout/"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout</a>';
                         }
                     </script>
                     
 		            <li>
                         <a href="https://community.searchlab.eu">
-                            <span class="glyphicon glyphicon-user" aria-hidden="true"></span> Community Forum
+                            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Community Forum
                         </a>
                     </li>
 

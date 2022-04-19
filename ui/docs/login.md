@@ -31,37 +31,33 @@ ownership right now as temporary and expendable entity. Please be prepared that 
 <script>
     var input = document.getElementById('idinput');
     input.addEventListener('keyup', verifyid);
+    
     function getid() {
-        const xhr = new XMLHttpRequest(); xhr.open('GET', '/en/api/aaa/id_generator.json');
-        xhr.setRequestHeader('Content-type', 'application/json'); xhr.responseType = 'json'; xhr.send();
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/en/api/aaa/id_generator.json');
+        xhr.responseType = 'json';
+        xhr.send();
         xhr.onload = function() {
             document.getElementById("idinput").value = xhr.response.id;
             document.getElementById("loginbtn").disabled = "";
         }
+        return false;
     }
     function verifyid() {
-        const id = document.querySelector('#idinput').value;
-        const xhr = new XMLHttpRequest();
+        var id = document.querySelector('#idinput').value;
+        var xhr = new XMLHttpRequest();
         xhr.open('GET', '/en/api/aaa/id_validation.json?id=' + id);
-        xhr.setRequestHeader('Content-type', 'application/json');
         xhr.responseType = 'json';
         xhr.send();
         xhr.onload = function() {
-            if (xhr.response.valid) {
-                document.getElementById("loginbtn").disabled = "";
-                return false;
-            } else {
-                document.getElementById("loginbtn").disabled = "disabled";
-                return true;
-            }
+            document.getElementById("loginbtn").disabled = xhr.response.valid ? "" : "disabled";
         }
+        return false;
     }
     function login() {
         verifyid();
-        const disabled = document.getElementById("loginbtn").disabled
-        if (disabled) return;
-        const id = document.querySelector('#idinput').value;
-        window.location.href = "/" + id + "/";
+        if (document.getElementById("loginbtn").disabled) return;
+        window.location.href = "/" + document.querySelector('#idinput').value + "/";
         return false;
     }
 </script>
