@@ -45,7 +45,7 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
-import eu.searchlab.http.aaa.Authentication;
+import eu.searchlab.aaa.Authentication;
 import eu.searchlab.http.services.AppsService;
 import eu.searchlab.http.services.IDGeneratorService;
 import eu.searchlab.http.services.IDValidationService;

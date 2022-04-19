@@ -1,6 +1,6 @@
 /**
- *  IDGeneratorService
- *  Copyright 18.04.2022 by Michael Peter Christen, @orbiterlab
+ *  Authorization
+ *  Copyright 19.04.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -17,33 +17,29 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-package eu.searchlab.http.services;
+package eu.searchlab.aaa;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.aaa.Authentication;
-import eu.searchlab.http.Service;
+public class Authorization {
 
-public class IDGeneratorService  extends AbstractService implements Service {
+	private final JSONObject json;
 
-    @Override
-    public String[] getPaths() {
-        return new String[] {"/api/aaa/id_generator.json"};
-    }
+	public Authorization() {
+		this.json = new JSONObject();
+	}
 
-    @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
-    }
+	public JSONObject getJSON() {
+		return this.json;
+	}
 
-    @Override
-    public JSONObject serveObject(final JSONObject call) {
-    	final JSONObject json = new JSONObject(true);
-    	try {
-			json.put("id", Authentication.generateRandomID());
-		} catch (final JSONException e) {}
-    	return json;
-    }
+	@Override
+	public String toString() {
+		try {
+			return this.json.toString(2);
+		} catch (final JSONException e) {
+			throw new RuntimeException(e.getMessage());
+		}
+	}
 }

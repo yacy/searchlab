@@ -23,8 +23,8 @@ package eu.searchlab.http.services;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import eu.searchlab.aaa.Authentication;
 import eu.searchlab.http.Service;
-import eu.searchlab.http.aaa.Authentication;
 
 public class IDValidationService  extends AbstractService implements Service {
 
