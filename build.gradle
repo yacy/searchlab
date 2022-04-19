@@ -53,4 +53,7 @@ dependencies {
   implementation 'io.minio:minio:8.3.+'
   implementation 'org.slf4j:log4j-over-slf4j:1.7.+'
   implementation 'org.slf4j:slf4j-jdk14:1.7.+'
+  implementation 'com.github.crawler-commons:urlfrontier:1.2'
+  implementation 'org.rocksdb:rocksdbjni:7.0.+'
+  
 }
