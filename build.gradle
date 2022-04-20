@@ -49,6 +49,7 @@ dependencies {
   implementation 'tech.tablesaw:tablesaw-json:0.43.+'
   implementation 'tech.tablesaw:tablesaw-core:0.43.+'
   implementation 'com.github.jknack:handlebars:4.2.+'
+  implementation 'com.rabbitmq:amqp-client:5.14.+'
   implementation 'com.hazelcast:hazelcast:4.1.+'
   implementation 'io.minio:minio:8.3.+'
   implementation 'org.slf4j:log4j-over-slf4j:1.7.+'
