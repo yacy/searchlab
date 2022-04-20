@@ -19,6 +19,9 @@
 
 package eu.searchlab;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -45,26 +48,26 @@ public class Searchlab {
     public static IOPath settingsIop;
     public static ElasticsearchClient ec;
 
-    public static String getHost(String address) {
+    public static String getHost(final String address) {
         final String hp = t(address, '@', address);
         return h(hp, ':', hp);
     }
-    public static int getPort(String address, String defaultPort) {
+    public static int getPort(final String address, final String defaultPort) {
         return Integer.parseInt(t(t(address, '@', address), ':', defaultPort));
     }
-    public static String getUser(String address, String defaultUser) {
+    public static String getUser(final String address, final String defaultUser) {
         return h(h(address, '@', ""), ':', defaultUser);
     }
-    public static String getPassword(String address, String defaultPassword) {
+    public static String getPassword(final String address, final String defaultPassword) {
         return t(h(address, '@', ""), ':', defaultPassword);
     }
 
-    private static String h(String a, char s, String d) {
+    private static String h(final String a, final char s, final String d) {
         final int p = a.indexOf(s);
         return p < 0 ? d : a.substring(0,  p);
     }
 
-    private static String t(String a, char s, String d) {
+    private static String t(final String a, final char s, final String d) {
         final int p = a.indexOf(s);
         return p < 0 ? d : a.substring(p + 1);
     }
@@ -136,7 +139,57 @@ public class Searchlab {
         final String port = System.getProperty("PORT", "8400");
         Logger.info("starting server at port " + port);
         final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0");
-        webserver.run();
+
+        // give positive feedback
+        Logger.info("Searchlab started at port " + port);
+
+        // prepare shutdown signal
+        boolean pidkillfileCreated = false;
+        File killfile = null;
+        // we use two files: one kill file which can be used to stop the process and one pid file which exists until the process runs
+        // in case that the deletion of the kill file does not cause a termination, still a "fuser -k" on the pid file can be used to
+        // terminate the process.
+        try {
+	        final File data_dir = FileSystems.getDefault().getPath("data").toFile();
+	        if (!data_dir.exists()) data_dir.mkdirs();
+	        final File pidfile = new File(data_dir, "searchlab-" + port + ".pid");
+	        killfile = new File(data_dir, "searchlab-" + port + ".kill");
+	        if (pidfile.exists()) pidfile.delete();
+	        if (killfile.exists()) killfile.delete();
+	        if (!pidfile.exists()) try {
+	            pidfile.createNewFile();
+	            if (pidfile.exists()) {pidfile.deleteOnExit(); pidkillfileCreated = true;}
+	        } catch (final IOException e) {
+	            Logger.info("pid file " + pidfile.getAbsolutePath() + " creation failed: " + e.getMessage());
+	        }
+	        if (!killfile.exists()) try {
+	            killfile.createNewFile();
+	            if (killfile.exists()) killfile.deleteOnExit(); else pidkillfileCreated = false;
+	        } catch (final IOException e) {
+	            Logger.info("kill file " + killfile.getAbsolutePath() + " creation failed: " + e.getMessage());
+	            pidkillfileCreated = false;
+	        }
+        } catch (final Exception e) {}
+
+        // wait for shutdown signal (kill on process)
+        if (pidkillfileCreated) {
+            // we can control this by deletion of the kill file
+            Logger.info("to stop this process, delete kill file " + killfile.getAbsolutePath());
+            while (!webserver.server.getWorker().isTerminated() && killfile.exists()) {
+                try {Thread.sleep(1000);} catch (final InterruptedException e) {}
+            }
+    		webserver.server.stop();
+            Logger.info("server kill termination requested");
+            System.exit(1); // not soo nixe because it goes around the CronBox, but that is stateless so just exit here.
+        } else {
+            // something with the pid file creation did not work; fail-over to normal operation waiting for a kill command
+        	try {
+        		webserver.server.getWorker().awaitTermination();
+			} catch (final InterruptedException e) {
+				Logger.error(e);
+			}
+        }
+        Logger.info("server nominal termination");
     }
 
 }

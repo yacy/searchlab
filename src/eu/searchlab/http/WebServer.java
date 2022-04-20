@@ -69,7 +69,7 @@ import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 
-public class WebServer implements Runnable {
+public class WebServer {
 
     private static final Properties mimeTable = new Properties();
 
@@ -86,9 +86,9 @@ public class WebServer implements Runnable {
         }
     }
 
-    int port;
-    String bind;
-    Undertow server;
+    private final int port;
+    private final String bind;
+    public final Undertow server;
 
     public WebServer(final int port, final String bind) {
         this.port = port;
@@ -104,6 +104,14 @@ public class WebServer implements Runnable {
         ServiceMap.register(new IndexService());
         ServiceMap.register(new IDGeneratorService());
         ServiceMap.register(new IDValidationService());
+
+        // Start webserver
+        final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
+        final PathHandler ph = Handlers.path();
+        ph.addPrefixPath("/", new Fileserver(new File[] {UI_PATH, APPS_PATH, HTDOCS_PATH}));
+        builder.setHandler(ph);
+        this.server = builder.build();
+        this.server.start();
     }
 
     private static class Fileserver implements HttpHandler {
@@ -422,17 +430,6 @@ public class WebServer implements Runnable {
             return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
         }
 
-    }
-
-    @Override
-    public void run() {
-        // Start webserver
-        final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
-        final PathHandler ph = Handlers.path();
-        ph.addPrefixPath("/", new Fileserver(new File[] {UI_PATH, APPS_PATH, HTDOCS_PATH}));
-        builder.setHandler(ph);
-        this.server = builder.build();
-        this.server.start();
     }
 
 }
