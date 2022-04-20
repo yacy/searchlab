@@ -37,16 +37,28 @@ import eu.searchlab.http.WebServer;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.io.S3IO;
+import eu.searchlab.storage.queues.QueueFactory;
+import eu.searchlab.storage.queues.RabbitQueueFactory;
 import eu.searchlab.tools.Logger;
 import net.yacy.grid.io.index.ElasticsearchClient;
+import net.yacy.grid.io.index.GridIndex;
 
 public class Searchlab {
 
+    // hazelcast
     public static HazelcastInstance hzInstance;
     public static Map<String, String> hzMap;
+
+    // IO and MinIO
     public static GenericIO io;
     public static IOPath settingsIop;
+
+    // elastic client
     public static ElasticsearchClient ec;
+    public static String crawlerIndexName, crawlstartIndexName, crawlstartTypeName;
+
+    // Messaging client
+    public static QueueFactory queues;
 
     public static String getHost(final String address) {
         final String hp = t(address, '@', address);
@@ -92,22 +104,6 @@ public class Searchlab {
         new Thread() {
             @Override
             public void run() {
-                // get connection to minio
-                final String s3address = System.getProperty("grid.s3.address", "admin:12345678@searchlab.b00:9000");
-                final String s3SettingsPath = System.getProperty("grid.s3.path", "data/settings");
-                final String bucket_endpoint = getHost(s3address);
-                final int p = bucket_endpoint.indexOf('.');
-                assert p > 0;
-                final String bucket = bucket_endpoint.substring(0, p);
-                final String endpoint = bucket_endpoint.substring(p + 1);
-                io = new S3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
-                settingsIop = new IOPath(bucket, s3SettingsPath);
-
-            }
-        }.start();
-        new Thread() {
-            @Override
-            public void run() {
 
                 // start Hazelcast
                 final Config hzConfig = new Config().setClusterName("Searchlab");//.setNetworkConfig(new NetworkConfig())
@@ -127,13 +123,43 @@ public class Searchlab {
         new Thread() {
             @Override
             public void run() {
+                // get connection to minio
+                final String s3address = System.getProperty("grid.s3.address", "admin:12345678@searchlab.b00:9000");
+                final String s3SettingsPath = System.getProperty("grid.s3.path", "data/settings");
+                final String bucket_endpoint = getHost(s3address);
+                final int p = bucket_endpoint.indexOf('.');
+                assert p > 0;
+                final String bucket = bucket_endpoint.substring(0, p);
+                final String endpoint = bucket_endpoint.substring(p + 1);
+                io = new S3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
+                settingsIop = new IOPath(bucket, s3SettingsPath);
+            }
+        }.start();
+        new Thread() {
+            @Override
+            public void run() {
                 // get connection to elasticsearch
                 final String[] elasticsearchAddress = System.getProperty("grid.elasticsearch.address", "127.0.0.1:9300").split(",");
                 final String elasticsearchClusterName = System.getProperty("grid.elasticsearch.clusterName", "elasticsearch"); // default is elasticsearch but "" will ignore it
+                crawlerIndexName = System.getProperty("grid.elasticsearch.indexName.crawler", GridIndex.DEFAULT_INDEXNAME_CRAWLER);
+                crawlstartIndexName = System.getProperty("grid.elasticsearch.indexName.crawlstart", GridIndex.DEFAULT_INDEXNAME_CRAWLSTART);
+                crawlstartTypeName = System.getProperty("grid.elasticsearch.typeName", GridIndex.DEFAULT_TYPENAME);
                 ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
             }
         }.start();
-
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    // get connection to elasticsearch
+                    final String gridBrokerAddress = System.getProperty("grid.broker.address", "");
+                    queues = new RabbitQueueFactory(getHost(gridBrokerAddress), getPort(gridBrokerAddress, "-1"), getUser(gridBrokerAddress, "anonymous"), getPassword(gridBrokerAddress, "yacy"), false, 100000);
+                    Logger.info("Connected Broker at " + getHost(gridBrokerAddress));
+                } catch (final IOException e) {
+                    Logger.error(e);
+                }
+           }
+        }.start();
 
         // Start webserver
         final String port = System.getProperty("PORT", "8400");

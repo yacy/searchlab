@@ -39,161 +39,159 @@ public class Document extends JSONObject {
         super();
     }
 
-    public Document(Map<String, Object> map) {
+    public Document(final Map<String, Object> map) {
         super(map);
     }
 
-    public Document(JSONObject obj) {
+    public Document(final JSONObject obj) {
         super(obj.toMap());
     }
 
-    public Document putObject(MappingDeclaration declaration, JSONObject o) throws JSONException {
+    public Document putObject(final MappingDeclaration declaration, final JSONObject o) throws JSONException {
         if (!isString(declaration)) return this;
         this.put(declaration.getMapping().name(), o);
         return this;
     }
 
-    public JSONObject getObject(MappingDeclaration declaration) {
+    public JSONObject getObject(final MappingDeclaration declaration) {
         if (!isString(declaration)) return null;
         return this.optJSONObject(declaration.getMapping().name());
     }
 
-    public Document putString(MappingDeclaration declaration, String s) throws JSONException {
+    public Document putString(final MappingDeclaration declaration, final String s) throws JSONException {
         if (!isString(declaration)) return this;
         this.put(declaration.getMapping().name(), s);
         return this;
     }
 
-    public String getString(MappingDeclaration declaration, String dflt) {
+    public String getString(final MappingDeclaration declaration, final String dflt) {
         if (!isString(declaration)) return null;
         return this.optString(declaration.getMapping().name(), dflt);
     }
 
-    public boolean isString(MappingDeclaration declaration) {
-        MappingType type = declaration.getMapping().getType();
+    public boolean isString(final MappingDeclaration declaration) {
+        final MappingType type = declaration.getMapping().getType();
         boolean valid = type == MappingType.string || type == MappingType.text_en_splitting_tight || type == MappingType.text_general;
         valid = valid && !declaration.getMapping().isMultiValued();
         return valid;
     }
 
-    /*
-    public Document putStrings(MappingDeclaration declaration, Collection<String> list) {
+    public Document putStrings(final MappingDeclaration declaration, final Collection<String> list) throws JSONException {
         if (!isStrings(declaration)) return this;
-        this.put(CrawlerMapping.collection_sxt.getMapping().name(), list);
+        this.put(declaration.getMapping().name(), list);
         return this;
     }
-    */
 
-    public List<String> getStrings(MappingDeclaration declaration) {
+    public List<String> getStrings(final MappingDeclaration declaration) {
         if (!isStrings(declaration)) return null;
-        Object obj = this.opt(declaration.getMapping().name());
+        final Object obj = this.opt(declaration.getMapping().name());
         if (obj == null) return new ArrayList<>(0);
-        boolean valid = obj instanceof JSONArray;
+        final boolean valid = obj instanceof JSONArray;
         if (!valid) return null;
         return ((JSONArray) obj).toList().stream().map(o -> Objects.toString(o, null)).collect(Collectors.toList());
     }
 
-    public boolean isStrings(MappingDeclaration declaration) {
-        MappingType type = declaration.getMapping().getType();
+    public boolean isStrings(final MappingDeclaration declaration) {
+        final MappingType type = declaration.getMapping().getType();
         boolean valid = type == MappingType.string || type == MappingType.text_en_splitting_tight || type == MappingType.text_general;
         valid = valid && declaration.getMapping().isMultiValued();
         return valid;
     }
 
-    public Document putInt(MappingDeclaration declaration, int i) throws JSONException {
+    public Document putInt(final MappingDeclaration declaration, final int i) throws JSONException {
         if (!isInt(declaration)) return this;
         this.put(declaration.getMapping().name(), i);
         return this;
     }
 
-    public int getInt(MappingDeclaration declaration) {
+    public int getInt(final MappingDeclaration declaration) {
         if (!isInt(declaration)) return 0;
         return this.optInt(declaration.getMapping().name());
     }
 
-    private boolean isInt(MappingDeclaration declaration) {
-        MappingType type = declaration.getMapping().getType();
-        boolean valid = type == MappingType.num_integer && !declaration.getMapping().isMultiValued();
+    private boolean isInt(final MappingDeclaration declaration) {
+        final MappingType type = declaration.getMapping().getType();
+        final boolean valid = type == MappingType.num_integer && !declaration.getMapping().isMultiValued();
         assert valid;
         return valid;
     }
 
-    public Document putInts(MappingDeclaration declaration, Collection<Integer> ints) throws JSONException {
+    public Document putInts(final MappingDeclaration declaration, final Collection<Integer> ints) throws JSONException {
         if (!isInts(declaration)) return this;
         this.put(declaration.getMapping().name(), ints);
         return this;
     }
 
-    public List<Integer> getInts(MappingDeclaration declaration) {
+    public List<Integer> getInts(final MappingDeclaration declaration) {
         if (!isInts(declaration)) return null;
-        Object obj = this.opt(declaration.getMapping().name());
-        boolean valid = obj instanceof JSONArray;
+        final Object obj = this.opt(declaration.getMapping().name());
+        final boolean valid = obj instanceof JSONArray;
         assert valid; if (!valid) return null;
         return ((JSONArray) obj).toList().stream().map(o -> (int) o).collect(Collectors.toList());
     }
 
-    private boolean isInts(MappingDeclaration declaration) {
-        MappingType type = declaration.getMapping().getType();
-        boolean valid = type == MappingType.num_integer && declaration.getMapping().isMultiValued();
+    private boolean isInts(final MappingDeclaration declaration) {
+        final MappingType type = declaration.getMapping().getType();
+        final boolean valid = type == MappingType.num_integer && declaration.getMapping().isMultiValued();
         assert valid;
         return valid;
     }
 
-    public Document putLong(MappingDeclaration declaration, long l) throws JSONException {
+    public Document putLong(final MappingDeclaration declaration, final long l) throws JSONException {
         if (!isLong(declaration)) return this;
         this.put(declaration.getMapping().name(), l);
         return this;
     }
 
-    public long getLong(MappingDeclaration declaration) {
+    public long getLong(final MappingDeclaration declaration) {
         if (!isLong(declaration)) return 0;
         return this.optLong(declaration.getMapping().name());
     }
 
-    private boolean isLong(MappingDeclaration declaration) {
-        MappingType type = declaration.getMapping().getType();
-        boolean valid = type == MappingType.num_long && !declaration.getMapping().isMultiValued();
+    private boolean isLong(final MappingDeclaration declaration) {
+        final MappingType type = declaration.getMapping().getType();
+        final boolean valid = type == MappingType.num_long && !declaration.getMapping().isMultiValued();
         assert valid;
         return valid;
     }
 
-    public Document putlongs(MappingDeclaration declaration, Collection<Long> longs) throws JSONException {
+    public Document putlongs(final MappingDeclaration declaration, final Collection<Long> longs) throws JSONException {
         if (!isInts(declaration)) return this;
         this.put(declaration.getMapping().name(), longs);
         return this;
     }
 
-    public List<Long> getLongs(MappingDeclaration declaration) {
+    public List<Long> getLongs(final MappingDeclaration declaration) {
         if (!isLongs(declaration)) return null;
-        Object obj = this.opt(declaration.getMapping().name());
-        boolean valid = obj instanceof JSONArray;
+        final Object obj = this.opt(declaration.getMapping().name());
+        final boolean valid = obj instanceof JSONArray;
         assert valid; if (!valid) return null;
         return ((JSONArray) obj).toList().stream().map(o -> (long) o).collect(Collectors.toList());
     }
 
-    private boolean isLongs(MappingDeclaration declaration) {
-        MappingType type = declaration.getMapping().getType();
-        boolean valid = type == MappingType.num_long && declaration.getMapping().isMultiValued();
+    private boolean isLongs(final MappingDeclaration declaration) {
+        final MappingType type = declaration.getMapping().getType();
+        final boolean valid = type == MappingType.num_long && declaration.getMapping().isMultiValued();
         assert valid;
         return valid;
     }
 
-    public Document putDate(MappingDeclaration declaration, Date date) throws JSONException {
+    public Document putDate(final MappingDeclaration declaration, final Date date) throws JSONException {
         if (!isDate(declaration)) return this;
         this.put(declaration.getMapping().name(), DateParser.iso8601MillisFormat.format(date));
         return this;
     }
 
-    public Date getDate(MappingDeclaration declaration) throws JSONException {
+    public Date getDate(final MappingDeclaration declaration) throws JSONException {
        if (!isDate(declaration)) return null;
         if (!this.has(declaration.getMapping().name())) return null;
-        String date = this.getString(declaration.getMapping().name());
+        final String date = this.getString(declaration.getMapping().name());
         return DateParser.iso8601MillisParser(date);
     }
 
-    private boolean isDate(MappingDeclaration declaration) {
-        MappingType type = declaration.getMapping().getType();
-        boolean valid = type == MappingType.date && !declaration.getMapping().isMultiValued();
+    private boolean isDate(final MappingDeclaration declaration) {
+        final MappingType type = declaration.getMapping().getType();
+        final boolean valid = type == MappingType.date && !declaration.getMapping().isMultiValued();
         assert valid;
         return valid;
     }
