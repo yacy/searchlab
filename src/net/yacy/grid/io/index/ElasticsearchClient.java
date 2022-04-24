@@ -456,7 +456,7 @@ public class ElasticsearchClient implements FulltextIndex {
     public int deleteByQuery(final String indexName, final YaCyQuery yq) {
         final QueryBuilder q = yq.getQueryBuilder();
         while (true) try {
-            return deleteByQueryInternal(indexName, q);
+            return deleteByQuery(indexName, q);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
             log.info("ElasticsearchClient deleteByQuery failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
@@ -465,7 +465,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    private int deleteByQueryInternal(final String indexName, final QueryBuilder q) {
+    public int deleteByQuery(final String indexName, final QueryBuilder q) {
         final Map<String, String> ids = new TreeMap<>();
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName);
         request

@@ -170,10 +170,10 @@ public class Searchlab {
             @Override
             public void run() {
                 try {
-                    // get connection to elasticsearch
-                    final String gridBrokerAddress = System.getProperty("grid.broker.address", "");
-                    queues = new RabbitQueueFactory(getHost(gridBrokerAddress), getPort(gridBrokerAddress, "-1"), getUser(gridBrokerAddress, "anonymous"), getPassword(gridBrokerAddress, "yacy"), false, 100000);
-                    Logger.info("Connected Broker at " + getHost(gridBrokerAddress));
+                    // get connection to RabbitMQ
+                    final String brokerAddress = System.getProperty("grid.broker.address", "");
+                    queues = new RabbitQueueFactory(getHost(brokerAddress), getPort(brokerAddress, "-1"), getUser(brokerAddress, "anonymous"), getPassword(brokerAddress, "yacy"), true, 0);
+                    Logger.info("Connected Broker at " + getHost(brokerAddress));
                 } catch (final IOException e) {
                     Logger.error(e);
                 }

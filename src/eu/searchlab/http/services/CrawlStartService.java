@@ -195,7 +195,8 @@ public class CrawlStartService  extends AbstractService implements Service {
 
                 // delete the start url
                 final String urlid = Digest.encodeMD5Hex(start_url);
-                long deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, new YaCyQuery("{ \"_id\":\"" + urlid + "\"}", null, Classification.ContentDomain.ALL, 0));
+                long deleted = Searchlab.ec.delete(Searchlab.crawlerIndexName, "web", urlid) ? 1 : 0;
+                //long deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("_id", urlid));
                 Logger.info(this.getClass(), "deleted " + deleted + " old crawl index entries for _id");
 
                 // Because 'old' crawls may block new ones we identify possible blocking entries using the mustmatch pattern.
@@ -230,7 +231,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                 // crawler documents must be written after the double check has happened.
 
                 // create a crawl queue entry
-                final String queueName = "webcrawler_00";
+                final String queueName = "crawler_webcrawler_00";
                 final ActionSequence json = new ActionSequence();
                 json.setData(new JSONArray().put(singlecrawl));
                 final JSONObject action = new JSONObject()
