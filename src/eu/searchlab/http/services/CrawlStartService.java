@@ -1,3 +1,22 @@
+/**
+ *  CrawlStartService
+ *  Copyright 21.04.2022 by Michael Peter Christen, @orbiterlab
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program in the file lgpl21.txt
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package eu.searchlab.http.services;
 
 import java.io.IOException;
@@ -35,6 +54,16 @@ import net.yacy.grid.io.index.Sort;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.io.index.YaCyQuery;
 
+/**
+ *
+ * Test URL:
+ * http://localhost:8400/en/api/crawlStart.json?crawlingURL=yacy.net&indexmustnotmatch=.*Mitmachen.*&mustmatch=.*yacy.net.*
+ * http://localhost:8400/en/api/crawlStart.json?crawlingURL=ix.de&crawlingDepth=6&priority=true
+ * http://localhost:8400/en/api/crawlStart.json?crawlingURL=tagesschau.de&loaderHeadless=false
+ *
+ * then check crawl queue status at http://localhost:15672/
+ * default account is guest:guest
+ */
 public class CrawlStartService  extends AbstractService implements Service {
 
     @Override
@@ -102,18 +131,22 @@ public class CrawlStartService  extends AbstractService implements Service {
         final JSONObject crawlstart = crawlStartDefaultClone();
 
         // read call attributes using the default crawlstart key names
-        for (final String key: crawlstart.keySet()) try {
-            final Object object = crawlstart.get(key);
-            if (object instanceof String) crawlstart.put(key, call.optString(key, crawlstart.getString(key)));
-            else if (object instanceof Integer) crawlstart.put(key, call.optInt(key, crawlstart.getInt(key)));
-            else if (object instanceof Long) crawlstart.put(key, call.optLong(key, crawlstart.getLong(key)));
-            else if (object instanceof JSONArray) {
-                final JSONArray a = crawlstart.getJSONArray(key);
-                final Object cv = call.get(key);
-                if (cv != null) crawlstart.put(key, cv);
-            } else {
-                System.out.println("unrecognized type: " + object.getClass().toString());
-            }
+        final String userId = call.optString("USER", Authentication.ANONYMOUS_ID);
+        try {
+	        for (final String key: crawlstart.keySet()) {
+	            final Object object = crawlstart.get(key);
+	            if (object instanceof String) crawlstart.put(key, call.optString(key, crawlstart.getString(key)));
+	            else if (object instanceof Integer) crawlstart.put(key, call.optInt(key, crawlstart.getInt(key)));
+	            else if (object instanceof Long) crawlstart.put(key, call.optLong(key, crawlstart.getLong(key)));
+	            else if (object instanceof JSONArray) {
+	                final JSONArray a = crawlstart.getJSONArray(key);
+	                final Object cv = call.get(key);
+	                if (cv != null) crawlstart.put(key, cv);
+	            } else {
+	                System.out.println("unrecognized type: " + object.getClass().toString());
+	            }
+	        }
+	        crawlstart.put("userId", userId); // we MUST overwrite that property otherwise the use is able to fake another user ID
         } catch (final JSONException e) {}
 
         // fix attributes
@@ -133,11 +166,10 @@ public class CrawlStartService  extends AbstractService implements Service {
             for (final MultiProtocolURL url: crawlstartURLs.getURLs()) {
                 final JSONObject singlecrawl = new JSONObject();
                 for (final String key: crawlstart.keySet()) singlecrawl.put(key, crawlstart.get(key)); // create a clone of crawlstart
-                final String crawl_id = getCrawlID(url, now, count++);
-                final String user_id = Authentication.ANONYMOUS_ID;
+                final String crawlId = getCrawlID(url, now, count++);
                 final String start_url = url.toNormalform(true);
                 final String start_ssld = Domains.getSmartSLD(url.getHost());
-                singlecrawl.put("id", crawl_id);
+                singlecrawl.put("id", crawlId);
                 singlecrawl.put("start_url", start_url);
                 singlecrawl.put("start_ssld", start_ssld);
 
@@ -146,8 +178,8 @@ public class CrawlStartService  extends AbstractService implements Service {
                 // Create a crawlstart index entry: this will keep track of all crawls that have been started.
                 // once such an entry is created, it is never changed or deleted again by any YaCy Grid process.
                 final CrawlstartDocument crawlstartDoc = new CrawlstartDocument()
-                        .setCrawlID(crawl_id)
-                        .setUserID(user_id)
+                        .setCrawlID(crawlId)
+                        .setUserID(userId)
                         .setMustmatch(mustmatch)
                         .setCollections(collections.keySet())
                         .setCrawlstartURL(start_url)
@@ -204,8 +236,8 @@ public class CrawlStartService  extends AbstractService implements Service {
                 final JSONObject action = new JSONObject()
                         .put("type", "crawler")
                         .put("queue", queueName)
-                        .put("id", crawl_id)
-                        .put("user_id", user_id)
+                        .put("id", crawlId)
+                        .put("userId", userId)
                         .put("depth", 0)
                         .put("sourcegraph", "rootasset");
                 final Action crawlAction = new Action(action);

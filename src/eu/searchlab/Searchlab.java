@@ -20,6 +20,7 @@
 package eu.searchlab;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.util.Map;
@@ -84,10 +85,28 @@ public class Searchlab {
         return p < 0 ? d : a.substring(p + 1);
     }
 
+    public static void readDefaultConfig() {
+        final File conf_dir = FileSystems.getDefault().getPath("conf").toFile();
+		final Properties properties = new Properties();
+		final File f = new File(conf_dir, "config.properties");
+		if (f.exists()) try {
+			properties.load(new FileInputStream(f));
+		} catch (final IOException e1) {
+		    e1.printStackTrace();
+		}
+
+		for (final Object key: properties.keySet()) {
+		    final String value = properties.getProperty((String) key);
+		    // overwrite the system property only if it is not set already
+		    if (System.getProperty((String) key) == null) System.setProperty((String) key, value);
+		}
+    }
+
     public static void main(final String[] args) {
 
         // prepare configuration
         final Properties sysprops = System.getProperties(); // system properties
+        readDefaultConfig() ;
         System.getenv().forEach((k,v) -> {
             if (k.startsWith("SEARCHLAB_")) sysprops.put(k.substring(10).replace('_', '.'), v);
         }); // add also environment variables

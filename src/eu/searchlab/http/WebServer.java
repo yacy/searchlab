@@ -47,6 +47,7 @@ import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.aaa.Authentication;
 import eu.searchlab.http.services.AppsService;
+import eu.searchlab.http.services.CrawlStartService;
 import eu.searchlab.http.services.IDGeneratorService;
 import eu.searchlab.http.services.IDValidationService;
 import eu.searchlab.http.services.IndexService;
@@ -104,6 +105,7 @@ public class WebServer {
         ServiceMap.register(new IndexService());
         ServiceMap.register(new IDGeneratorService());
         ServiceMap.register(new IDValidationService());
+        ServiceMap.register(new CrawlStartService());
 
         // Start webserver
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);

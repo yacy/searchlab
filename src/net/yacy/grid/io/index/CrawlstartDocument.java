@@ -41,8 +41,8 @@ public class CrawlstartDocument extends Document {
         super(obj);
     }
 
-    public CrawlstartDocument setCrawlID(final String crawl_id) {
-        try {this.putString(CrawlstartMapping.crawl_id_s, crawl_id);} catch (final JSONException e) {}
+    public CrawlstartDocument setCrawlID(final String crawlId) {
+        try {this.putString(CrawlstartMapping.crawl_id_s, crawlId);} catch (final JSONException e) {}
         return this;
     }
 
@@ -50,8 +50,8 @@ public class CrawlstartDocument extends Document {
         return this.getString(CrawlstartMapping.crawl_id_s, "");
     }
 
-    public CrawlstartDocument setUserID(final String user_id) {
-        try {this.putString(CrawlstartMapping.user_id_s, user_id);} catch (final JSONException e) {}
+    public CrawlstartDocument setUserID(final String userId) {
+        try {this.putString(CrawlstartMapping.user_id_s, userId);} catch (final JSONException e) {}
         return this;
     }
 
