@@ -79,7 +79,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -697,7 +696,10 @@ public class ElasticsearchClient implements FulltextIndex {
     private final static DateTimeFormatter utcFormatter = ISODateTimeFormat.dateTime().withZoneUTC();
 
     public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final Sort sort, final int from, final int resultCount) {
-        final QueryBuilder queryBuilder = yq.getQueryBuilder();
+        return query(indexName, yq.getQueryBuilder(), sort, from, resultCount);
+    }
+
+    public FulltextIndex.Query query(final String indexName, final QueryBuilder queryBuilder, final Sort sort, final int from, final int resultCount) {
         final FulltextIndex.Query query = new FulltextIndex.Query();
         for (int t = 0; t < 10; t++) try {
 
@@ -724,9 +726,9 @@ public class ElasticsearchClient implements FulltextIndex {
             // evaluate search result
             //long totalHitCount = response.getHits().getTotalHits();
             final SearchHit[] hits = searchHits.getHits();
-            query.results = new ArrayList<Map<String, Object>>(query.hitCount);
-            query.explanations = new ArrayList<String>(query.hitCount);
-            query.highlights = new ArrayList<Map<String, HighlightField>>(query.hitCount);
+            query.results = new ArrayList<>(query.hitCount);
+            query.explanations = new ArrayList<>(query.hitCount);
+            query.highlights = new ArrayList<>(query.hitCount);
             for (final SearchHit hit: hits) {
                 final Map<String, Object> map = hit.getSourceAsMap();
                 if (!map.containsKey("id")) map.put("id", hit.getId());
@@ -762,7 +764,10 @@ public class ElasticsearchClient implements FulltextIndex {
      */
     @Override
     public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
-        final QueryBuilder queryBuilder = yq.getQueryBuilder();
+        return query(indexName, yq.getQueryBuilder(), postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
+    }
+
+    public FulltextIndex.Query query(final String indexName, final QueryBuilder queryBuilder, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
         final FulltextIndex.Query query = new FulltextIndex.Query();
         for (int t = 0; t < 10; t++) try {
 
@@ -796,9 +801,9 @@ public class ElasticsearchClient implements FulltextIndex {
             // evaluate search result
             //long totalHitCount = response.getHits().getTotalHits();
             final SearchHit[] hits = searchHits.getHits();
-            query.results = new ArrayList<Map<String, Object>>(query.hitCount);
-            query.explanations = new ArrayList<String>(query.hitCount);
-            query.highlights = new ArrayList<Map<String, HighlightField>>(query.hitCount);
+            query.results = new ArrayList<>(query.hitCount);
+            query.explanations = new ArrayList<>(query.hitCount);
+            query.highlights = new ArrayList<>(query.hitCount);
             for (final SearchHit hit: hits) {
                 final Map<String, Object> map = hit.getSourceAsMap();
                 if (!map.containsKey("id")) map.put("id", hit.getId());
@@ -835,7 +840,7 @@ public class ElasticsearchClient implements FulltextIndex {
                     if (key.length() > 0) {
                         final Long v = checkMap.remove(key.toLowerCase());
                         if (v == null) continue;
-                        list.add(new AbstractMap.SimpleEntry<String, Long>(key, v));
+                        list.add(new AbstractMap.SimpleEntry<>(key, v));
                     }
                 }
                 query.aggregations.put(field.getMapping().name(), list);
@@ -874,7 +879,7 @@ public class ElasticsearchClient implements FulltextIndex {
         final SearchResponse response = request.execute().actionGet();
 
         // evaluate search result
-        final ArrayList<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+        final ArrayList<Map<String, Object>> result = new ArrayList<>();
         final SearchHit[] hits = response.getHits().getHits();
         for (final SearchHit hit: hits) {
             final Map<String, Object> map = hit.getSourceAsMap();

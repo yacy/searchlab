@@ -31,6 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.elasticsearch.index.query.QueryBuilders;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,7 +42,6 @@ import eu.searchlab.corpus.Action;
 import eu.searchlab.corpus.ActionSequence;
 import eu.searchlab.corpus.CrawlStart;
 import eu.searchlab.http.Service;
-import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.Digest;
 import eu.searchlab.tools.Domains;
 import eu.searchlab.tools.JSONList;
@@ -52,7 +52,6 @@ import net.yacy.grid.io.index.CrawlstartMapping;
 import net.yacy.grid.io.index.FulltextIndex;
 import net.yacy.grid.io.index.Sort;
 import net.yacy.grid.io.index.WebMapping;
-import net.yacy.grid.io.index.YaCyQuery;
 
 /**
  *
@@ -195,36 +194,37 @@ public class CrawlStartService  extends AbstractService implements Service {
 
                 // delete the start url
                 final String urlid = Digest.encodeMD5Hex(start_url);
-                long deleted = Searchlab.ec.delete(Searchlab.crawlerIndexName, "web", urlid) ? 1 : 0;
-                //long deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("_id", urlid));
+                long deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("_id", urlid));
                 Logger.info(this.getClass(), "deleted " + deleted + " old crawl index entries for _id");
 
                 // Because 'old' crawls may block new ones we identify possible blocking entries using the mustmatch pattern.
                 // We therefore delete all entries with the same mustmatch pattern before a crawl starts.
                 if (mustmatch.equals(".*")) {
                     // we cannot delete all wide crawl status urls!
-                    final FulltextIndex.Query q = Searchlab.ec.query(Searchlab.crawlstartIndexName, new YaCyQuery("{ \"" + CrawlstartMapping.start_url_s.name() + "\":\"" + start_url + "\"}", null, Classification.ContentDomain.ALL, 0), null, Sort.DEFAULT, null, 0, 0, 100, 0, false);
+                    final FulltextIndex.Query q = Searchlab.ec.query(
+                            Searchlab.crawlstartIndexName,
+                            QueryBuilders.termQuery(CrawlstartMapping.start_url_s.name(), start_url),
+                            null, Sort.DEFAULT, null, 0, 0, 100, 0, false);
                     final List<Map<String, Object>> results = q.results;
                     // from there we pick out the crawl start id and delete using them
                     for (int hitc = 0; hitc < results.size(); hitc++) {
                         final Map<String, Object> map = results.get(hitc);
                         crawlid = (String) map.get(CrawlstartMapping.crawl_id_s.name());
                         if (crawlid != null && crawlid.length() > 0) {
-                            deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, new YaCyQuery("{ \"crawl_id_s\":\"" + crawlid + "\"}", null, Classification.ContentDomain.ALL, 0));
+                            deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("crawl_id_s", crawlid));
                             Logger.info(this.getClass(), "deleted " + deleted + " old crawl index entries for crawl_id_s");
                         }
                     }
                     // we also delete all entries with same start_url and start_ssld
-                    deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, new YaCyQuery("{ \"start_url_s\":\"" + start_url + "\"}", null, Classification.ContentDomain.ALL, 0));
+                    deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("start_url_s", start_url));
                     Logger.info(this.getClass(), "deleted " + deleted + " old crawl index entries for start_url_s");
-                    deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, new YaCyQuery("{ \"start_ssld_s\":\"" + start_ssld + "\"}", null, Classification.ContentDomain.ALL, 0));
+                    deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("start_ssld_s", start_ssld));
                     Logger.info(this.getClass(), "deleted " + deleted + " old crawl index entries for start_ssld_s");
                 } else {
                     // this should fit exactly on the old urls
                     // test url:
                     // curl -s -H 'Content-Type: application/json' -X GET http://localhost:9200/crawler/_search?q=_id:0a800a8ec1cc76b5eb8412ec494babc9 | python3 -m json.tool
-                    final String deletequery = "{ \"mustmatch_s\":\"" + mustmatch.replace("\\", "\\\\") + "\"}";
-                    deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, new YaCyQuery(deletequery, null, Classification.ContentDomain.ALL, 0));
+                    deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("mustmatch_s", mustmatch.replace("\\", "\\\\")));
                     Logger.info(this.getClass(), "deleted " + deleted + " old crawl index entries");
                 }
                 // we do not create a crawler document entry here because that would conflict with the double check.
