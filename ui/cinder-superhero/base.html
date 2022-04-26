@@ -64,9 +64,6 @@
         <script>var shortcuts = {{ config.shortcuts | tojson }}</script>
     {% endif %}
     <script src="{{ 'js/base.js'|url }}"></script>
-    {%- for path in config['extra_javascript'] %}
-    <script src="{{ path|url }}"></script>
-    {%- endfor %}
     {%- endblock %}
 
     {% include "nav.html" %}
