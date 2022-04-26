@@ -67,7 +67,7 @@ public class CrawlStartService  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/crawlStart.json"};
+        return new String[] {"/api/crawlStart.json", "/production/crawler/"};
     }
 
     @Override
@@ -97,6 +97,7 @@ public class CrawlStartService  extends AbstractService implements Service {
             this.crawlingURLArray = new ArrayList<>();
             this.badURLStrings = new ArrayList<>();
             for (final String u: crawlingURLs) {
+            	if (u.length() == 0) continue;
                 try {
                     final MultiProtocolURL url = new MultiProtocolURL(u);
                     Logger.info(this.getClass(), "splitted url: " + url.toNormalform(true));
