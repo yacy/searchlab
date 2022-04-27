@@ -118,10 +118,10 @@ public class WebServer {
 
     private static class Fileserver implements HttpHandler {
 
-        private final File[] root;
+        private final File[] rootSet;
 
         public Fileserver(final File[] root) {
-            this.root = root;
+            this.rootSet = root;
         }
 
         @Override
@@ -149,7 +149,6 @@ public class WebServer {
             final JSONObject post = getQueryParams(exchange);
             final String path = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
             final String user = post.optString("USER", null);
-
             Logger.info("WebServer request: USER=" + user + ", PATH=" + path);
 
             // we force using of a user/language path
@@ -177,12 +176,18 @@ public class WebServer {
 
             if (!isTemplatingFileType(ext) && f != null) {
                 // just serve the file
-                final ByteBuffer bb = file2bytebuffer(f);
-                final long d = f.lastModified();
-                exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date(d))); // like a proper file server
-                exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
-                exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
-                exchange.getResponseSender().send(bb);
+                try {
+	                final ByteBuffer bb = file2bytebuffer(f);
+	                final long d = f.lastModified();
+	                exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date(d))); // like a proper file server
+	                exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
+	                exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
+	                exchange.getResponseSender().send(bb);
+                } catch (final IOException e) {
+                    exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found");
+                    exchange.getResponseSender().send("");
+                    exchange.endExchange();
+                }
                 return;
             }
 
@@ -321,8 +326,13 @@ public class WebServer {
             return html;
         }
 
+        /**
+         * find any file that is inside one of the given root paths
+         * @param requestPath
+         * @return a file if it exists or null if it does not exist
+         */
         private File findFile(final String requestPath) {
-            for (final File g: this.root) {
+            for (final File g: this.rootSet) {
                 File f = new File(g, requestPath);
                 if (!f.exists()) continue;
                 if (f.isDirectory()) f = new File(f, "index.html");
@@ -431,7 +441,9 @@ public class WebServer {
         private boolean isTemplatingFileType(final String ext) {
             return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
         }
-
     }
 
+    public void stop() {
+        this.server.stop();
+    }
 }

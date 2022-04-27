@@ -29,17 +29,16 @@ import org.json.JSONObject;
 
 import eu.searchlab.http.services.AbstractService;
 import eu.searchlab.storage.table.IndexedTable;
-import eu.searchlab.tools.Logger;
 
 
 public class ServiceMap {
 
     private static List<Service> services = new ArrayList<>();
 
-    public static void register(Service service) {
+    public static void register(final Service service) {
         services.add(service);
     }
-    
+
     public static Service getService(String path) {
         path = AbstractService.normalizePath(path);
         Service service = null;
@@ -51,7 +50,7 @@ public class ServiceMap {
         }
         return service;
     }
-    
+
     /**
      * Handle services defined for given paths: generate html.
      * This method combines existing html with defined services. In most cases the existence of html and services
@@ -68,7 +67,7 @@ public class ServiceMap {
      * @return a service response or NULL if no service is defined
      * @throws IOException
      */
-    public static String serviceDispatcher(final Service service, String path, JSONObject post) throws IOException {
+    public static String serviceDispatcher(final Service service, final String path, final JSONObject post) throws IOException {
 
         if (service == null) {
             return null; // not a fail, just a signal that no service is defined
@@ -84,9 +83,6 @@ public class ServiceMap {
             if (p > 0) tablename = tablename.substring(0, p); else tablename = null;
         }
         if (service.getType() == Service.Type.OBJECT) {
-
-            Logger.info(post.toString());
-
             final JSONObject json = service.serveObject(post);
             if (path.endsWith(".json")) {
                 final String callback = post.optString("callback", ""); //  used like "callback=?", which encapsulates then json into <callback> "([" <json> "]);"
@@ -149,7 +145,12 @@ public class ServiceMap {
                         sb.setCharAt(sb.length() - 1, '\n');
                         for (int i = 0; i < array.length(); i++) {
                             final JSONObject row = array.getJSONObject(i);
-                            for (final String k: headKeys) sb.append(row.optString(k, "")).append(';');
+                            for (final String k: headKeys) {
+                                final Object vo = row.opt(k);
+                                String vs = vo == null ? "" : vo instanceof String ? (String) vo : String.valueOf(vo);
+                                if (vo instanceof Double || vo instanceof Float) vs = vs.replace('.', ','); // german decimal separator
+                                sb.append(vs).append(';');
+                            }
                             sb.setCharAt(sb.length() - 1, '\n');
                         }
                     }
