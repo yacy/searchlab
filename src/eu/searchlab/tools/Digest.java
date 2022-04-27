@@ -39,12 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class Digest {
-
-    private static final Logger log = LoggerFactory.getLogger(Digest.class);
 
     public static Queue<MessageDigest> digestPool = new ConcurrentLinkedQueue<MessageDigest>();
 
@@ -116,7 +111,7 @@ public class Digest {
 
     public static byte[] encodeMD5Raw(final String key) {
 
-        byte[] h = md5Cache.get(key);
+        final byte[] h = md5Cache.get(key);
         if (h != null) return h;
 
     	MessageDigest digest = digestPool.poll();
@@ -149,7 +144,7 @@ public class Digest {
         try {
             in = new FileInputStream(file);
         } catch (final java.io.FileNotFoundException e) {
-            log.warn("file not found:" + file.toString(), e);
+            Logger.warn("file not found:" + file.toString(), e);
             return null;
         }
 
@@ -170,7 +165,7 @@ public class Digest {
                 md5consumer.consume(c);
             }
         } catch (final IOException e) {
-            log.warn("file error with " + file.toString() + ": " + e.getMessage(), e);
+        	Logger.warn("file error with " + file.toString() + ": " + e.getMessage(), e);
             md5consumer.consume(md5FilechunkConsumer.poison);
             throw e;
         } finally {
@@ -183,10 +178,10 @@ public class Digest {
         try {
             return md5result.get().digest();
         } catch (final InterruptedException e) {
-            log.warn("", e);
+        	Logger.warn("", e);
             throw new IOException(e);
         } catch (final ExecutionException e) {
-            log.warn("", e);
+        	Logger.warn("", e);
             throw new IOException(e);
         }
     }
@@ -225,7 +220,7 @@ public class Digest {
             try {
                 this.filed.put(c);
             } catch (final InterruptedException e) {
-                log.warn("", e);
+            	Logger.warn("", e);
             }
         }
 
@@ -233,7 +228,7 @@ public class Digest {
             try {
                 return this.empty.take();
             } catch (final InterruptedException e) {
-                log.warn("", e);
+            	Logger.warn("", e);
                 throw new IOException(e);
             }
         }
@@ -249,7 +244,7 @@ public class Digest {
                     this.empty.put(c);
                 }
             } catch (final InterruptedException e) {
-                log.warn("", e);
+            	Logger.warn("", e);
             }
             return this.digest;
         }
@@ -295,7 +290,7 @@ public class Digest {
             try {
                 System.out.println("MD5 (" + f.getName() + ") = " + encodeMD5Hex(f));
             } catch (final IOException e) {
-                log.warn("", e);
+            	Logger.warn("", e);
             }
         }
 

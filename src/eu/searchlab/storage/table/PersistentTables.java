@@ -28,11 +28,10 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONTokener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.tools.Logger;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.io.Source;
 import tech.tablesaw.io.json.JsonReadOptions;
@@ -50,8 +49,6 @@ public class PersistentTables {
     private GenericIO io;
     private IOPath iop;
 
-    private static final Logger log = LoggerFactory.getLogger(PersistentTables.class);
-
     /**
      * create an empty TableServer
      */
@@ -65,7 +62,7 @@ public class PersistentTables {
      * @param urlstub
      * @return this
      */
-    public PersistentTables connect(String urlstub) {
+    public PersistentTables connect(final String urlstub) {
         this.urlstub = urlstub;
         return this;
     }
@@ -76,7 +73,7 @@ public class PersistentTables {
      * @param iop
      * @return this
      */
-    public PersistentTables connect(GenericIO io, IOPath iop) {
+    public PersistentTables connect(final GenericIO io, final IOPath iop) {
         this.io = io;
         this.iop = iop;
         return this;
@@ -92,7 +89,7 @@ public class PersistentTables {
      * @param table
      * @return this
      */
-    public PersistentTables addTable(String tablename, Table table) {
+    public PersistentTables addTable(final String tablename, final Table table) {
         final IndexedTable ti = new IndexedTable(table);
         this.indexes.put(tablename, ti);
         return this;
@@ -104,7 +101,7 @@ public class PersistentTables {
      * @param table
      * @return this
      */
-    public PersistentTables addTable(String tablename, IndexedTable table) {
+    public PersistentTables addTable(final String tablename, final IndexedTable table) {
         this.indexes.put(tablename, table);
         return this;
     }
@@ -115,7 +112,7 @@ public class PersistentTables {
      * @param table
      * @return this
      */
-    public PersistentTables extendTable(String tablename, IndexedTable table) {
+    public PersistentTables extendTable(final String tablename, final IndexedTable table) {
         final IndexedTable t = this.indexes.get(tablename);
         if (t == null) {
             this.indexes.put(tablename, table);
@@ -126,7 +123,7 @@ public class PersistentTables {
         return this;
     }
 
-    public void storeTable(String tablename) throws IOException {
+    public void storeTable(final String tablename) throws IOException {
         final IndexedTable t = this.indexes.get(tablename);
         if (t == null) return;
         if (this.io == null) throw new IOException("no io defined");
@@ -147,12 +144,12 @@ public class PersistentTables {
      * @param tablename
      * @return
      */
-    public IndexedTable getTable(String tablename) throws IOException {
+    public IndexedTable getTable(final String tablename) throws IOException {
         return where(tablename);
     }
 
 
-    public static Table head(Table table, int count) {
+    public static Table head(final Table table, final int count) {
         final Table t = table.emptyCopy();
         for (int r = 0; r < Math.min(count, table.rowCount()); r++) {
             t.addRow(table.row(r));
@@ -170,7 +167,7 @@ public class PersistentTables {
      * @param selects a list of strings where each string is a "key:value" pair - or one string with such pairs concatenated with ','
      * @return
      */
-    public IndexedTable where(String tablename, String... selects) throws IOException {
+    public IndexedTable where(final String tablename, String... selects) throws IOException {
         if (selects.length == 1 && selects[0].contains(",")) selects = selects[0].split(",");
 
         // try: load from remote server
@@ -179,12 +176,12 @@ public class PersistentTables {
                 final StringBuilder sb = new StringBuilder();
                 for (final String u: selects) sb.append(u).append(',');
                 final String url = this.urlstub + tablename + ".json" + ((selects.length == 0) ? "" : "?where=" + sb.substring(0, sb.length() - 1));
-                log.info("loading: " + url);
+                Logger.info("loading: " + url);
                 final Source source = Source.fromUrl(url);
                 final Table t = new JsonReader().read(JsonReadOptions.builder(source).sample(false).build());
                 return new IndexedTable(t);
             } catch (final IOException e) {
-                log.debug(e.getMessage(), e);
+                Logger.debug(e.getMessage(), e);
             }
         }
 

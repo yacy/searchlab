@@ -82,8 +82,8 @@ import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import eu.searchlab.tools.Logger;
 
 /**
  * To get data out of the elasticsearch index which is written with this client, try:
@@ -92,8 +92,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ElasticsearchClient implements FulltextIndex {
-
-    private static final Logger log = LoggerFactory.getLogger(ElasticsearchClient.class);
 
     private static final TimeValue scrollKeepAlive = TimeValue.timeValueSeconds(60);
     private static long throttling_time_threshold = 2000L; // update time high limit
@@ -110,7 +108,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @param clusterName
      */
     public ElasticsearchClient(final String[] addresses, final String clusterName) {
-        log.info("ElasticsearchClient initiated client, " + addresses.length + " address: " + addresses[0] + ", clusterName: " + clusterName);
+        Logger.info("ElasticsearchClient initiated client, " + addresses.length + " address: " + addresses[0] + ", clusterName: " + clusterName);
         this.addresses = addresses;
         this.clusterName = clusterName;
         connect();
@@ -131,7 +129,7 @@ public class ElasticsearchClient implements FulltextIndex {
             newClient = new PreBuiltTransportClient(settings.build());
             break;
         } catch (final Exception e) {
-            log.warn("failed to create an elastic client, retrying...", e);
+        	Logger.warn("failed to create an elastic client, retrying...", e);
             try { Thread.sleep(10000); } catch (final InterruptedException e1) {}
         }
 
@@ -143,10 +141,10 @@ public class ElasticsearchClient implements FulltextIndex {
                 final int port = Integer.parseInt(a.substring(p + 1));
                 //tc.addTransportAddress(new InetSocketTransportAddress(i, port));
                 final TransportAddress ta = new TransportAddress(i, port);
-                log.info("Elasticsearch: added TransportAddress " + ta.toString());
+                Logger.info("Elasticsearch: added TransportAddress " + ta.toString());
                 newClient.addTransportAddress(ta);
             } catch (final UnknownHostException e) {
-                log.warn("", e);
+            	Logger.warn("", e);
             }
         }
 
@@ -165,7 +163,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }.start();
 
         // check if client is ready
-        log.info("Elasticsearch: node is " + (clusterReady() ? "ready" : "not ready"));
+        Logger.info("Elasticsearch: node is " + (clusterReady() ? "ready" : "not ready"));
     }
 
     @SuppressWarnings("unused")
@@ -187,7 +185,7 @@ public class ElasticsearchClient implements FulltextIndex {
             this.clusterReadyCache = chr.getStatus() != ClusterHealthStatus.RED;
             return this.clusterReadyCache;
         } catch (final Exception e) {
-            log.warn("", e);
+        	Logger.warn("", e);
             return false;
         }
     }
@@ -258,7 +256,7 @@ public class ElasticsearchClient implements FulltextIndex {
                 .setSource(mapping, XContentType.JSON)
                 .setType("_default_").execute().actionGet();
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.warn("", e);
+        	Logger.warn("", e);
         };
     }
 
@@ -311,7 +309,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
         }
@@ -330,7 +328,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
         }
@@ -352,7 +350,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return existInternal(indexName, id);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient exist failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient exist failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
         }
@@ -373,7 +371,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return existBulkInternal(indexName, ids);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient existBulk failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient existBulk failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;
@@ -429,7 +427,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return deleteInternal(indexName, typeName, id);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient delete failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient delete failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;
@@ -457,7 +455,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return deleteByQuery(indexName, q);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient deleteByQuery failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient deleteByQuery failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;
@@ -536,7 +534,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return readMapInternal(indexName, id);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient readMap failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient readMap failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;
@@ -554,7 +552,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return readMapBulkInternal(indexName, ids);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient readMapBulk failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient readMapBulk failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;
@@ -601,7 +599,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return writeMapInternal(indexName, typeName, id, jsonMap);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient writeMap failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient writeMap failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;
@@ -628,7 +626,7 @@ public class ElasticsearchClient implements FulltextIndex {
         // TODO: error handling
         final boolean created = r != null && r.status() == RestStatus.CREATED; // true means created, false means updated
         final long duration = Math.max(1, System.currentTimeMillis() - start);
-        log.info("ElasticsearchClient write entry to index " + indexName + ": " + (created ? "created":"updated") + ", " + duration + " ms");
+        Logger.info("ElasticsearchClient write entry to index " + indexName + ": " + (created ? "created":"updated") + ", " + duration + " ms");
         return created;
     }
 
@@ -650,7 +648,7 @@ public class ElasticsearchClient implements FulltextIndex {
         while (true) try {
             return writeMapBulkInternal(indexName, jsonMapList);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.info("ElasticsearchClient writeMapBulk failed with " + e.getMessage() + ", retrying to connect node...");
+        	Logger.info("ElasticsearchClient writeMapBulk failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;
@@ -689,7 +687,7 @@ public class ElasticsearchClient implements FulltextIndex {
             regulator = (long) (throttling_factor * duration);
             try {Thread.sleep(regulator);} catch (final InterruptedException e) {}
         }
-        log.info("ElasticsearchClient write bulk to index " + indexName + ": " + jsonMapList.size() + " entries, " + result.created.size() + " created, " + result.errors.size() + " errors, " + duration + " ms" + (regulator == 0 ? "" : ", throttled with " + regulator + " ms") + ", " + ops + " objects/second");
+        Logger.info("ElasticsearchClient write bulk to index " + indexName + ": " + jsonMapList.size() + " entries, " + result.created.size() + " created, " + result.errors.size() + " errors, " + duration + " ms" + (regulator == 0 ? "" : ", throttled with " + regulator + " ms") + ", " + ops + " objects/second");
         return result;
     }
 
@@ -743,7 +741,7 @@ public class ElasticsearchClient implements FulltextIndex {
             query.aggregations = new HashMap<>();
             return query;
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.warn("ElasticsearchClient query failed with " + e.getMessage() + ", retrying attempt " + t + " ...", e);
+        	Logger.warn("ElasticsearchClient query failed with " + e.getMessage() + ", retrying attempt " + t + " ...", e);
             try {Thread.sleep(1000);} catch (final InterruptedException eee) {}
             connect();
             continue;
@@ -851,7 +849,7 @@ public class ElasticsearchClient implements FulltextIndex {
             return query;
 
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-            log.warn("ElasticsearchClient query failed with " + e.getMessage() + ", retrying attempt " + t + " ...", e);
+        	Logger.warn("ElasticsearchClient query failed with " + e.getMessage() + ", retrying attempt " + t + " ...", e);
             try {Thread.sleep(1000);} catch (final InterruptedException eee) {}
             connect();
             continue;
@@ -899,7 +897,7 @@ public class ElasticsearchClient implements FulltextIndex {
             final String mapping = new String(Files.readAllBytes(Paths.get("conf/mappings/web.json")));
             client.setMapping("test", mapping);
         } catch (final IOException e) {
-            log.warn("", e);
+        	Logger.warn("", e);
         }
 
         client.close();
