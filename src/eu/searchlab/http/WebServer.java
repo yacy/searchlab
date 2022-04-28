@@ -65,6 +65,7 @@ import io.undertow.Undertow.Builder;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
@@ -108,10 +109,11 @@ public class WebServer {
         ServiceMap.register(new CrawlStartService());
 
         // Start webserver
-        final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         final PathHandler ph = Handlers.path();
         ph.addPrefixPath("/", new Fileserver(new File[] {UI_PATH, APPS_PATH, HTDOCS_PATH}));
-        builder.setHandler(ph);
+        HttpHandler encodingHandler = new EncodingHandler.Builder().build(null).wrap(ph);
+        final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
+        builder.setHandler(encodingHandler);
         this.server = builder.build();
         this.server.start();
     }
