@@ -87,19 +87,19 @@ public class Searchlab {
 
     public static void readDefaultConfig() {
         final File conf_dir = FileSystems.getDefault().getPath("conf").toFile();
-		final Properties properties = new Properties();
-		final File f = new File(conf_dir, "config.properties");
-		if (f.exists()) try {
-			properties.load(new FileInputStream(f));
-		} catch (final IOException e1) {
-		    e1.printStackTrace();
-		}
+        final Properties properties = new Properties();
+        final File f = new File(conf_dir, "config.properties");
+        if (f.exists()) try {
+            properties.load(new FileInputStream(f));
+        } catch (final IOException e1) {
+            e1.printStackTrace();
+        }
 
-		for (final Object key: properties.keySet()) {
-		    final String value = properties.getProperty((String) key);
-		    // overwrite the system property only if it is not set already
-		    if (System.getProperty((String) key) == null) System.setProperty((String) key, value);
-		}
+        for (final Object key: properties.keySet()) {
+            final String value = properties.getProperty((String) key);
+            // overwrite the system property only if it is not set already
+            if (System.getProperty((String) key) == null) System.setProperty((String) key, value);
+        }
     }
 
     public static void main(final String[] args) {
@@ -108,7 +108,7 @@ public class Searchlab {
         final Properties sysprops = System.getProperties(); // system properties
         readDefaultConfig() ;
         System.getenv().forEach((k,v) -> {
-            if (k.startsWith("SEARCHLAB_")) sysprops.put(k.substring(10).replace('_', '.'), v);
+            if (k.startsWith("SEARCHLAB_")) sysprops.put(k.substring(10).toLowerCase().replace('_', '.'), v);
         }); // add also environment variables
         System.setProperty("java.awt.headless", "true");
 
@@ -181,7 +181,7 @@ public class Searchlab {
         }.start();
 
         // Start webserver
-        final String port = System.getProperty("PORT", "8400");
+        final String port = System.getProperty("port", "8400");
         Logger.info("starting server at port " + port);
         final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0");
 
@@ -195,25 +195,25 @@ public class Searchlab {
         // in case that the deletion of the kill file does not cause a termination, still a "fuser -k" on the pid file can be used to
         // terminate the process.
         try {
-	        final File data_dir = FileSystems.getDefault().getPath("data").toFile();
-	        if (!data_dir.exists()) data_dir.mkdirs();
-	        final File pidfile = new File(data_dir, "searchlab-" + port + ".pid");
-	        killfile = new File(data_dir, "searchlab-" + port + ".kill");
-	        if (pidfile.exists()) pidfile.delete();
-	        if (killfile.exists()) killfile.delete();
-	        if (!pidfile.exists()) try {
-	            pidfile.createNewFile();
-	            if (pidfile.exists()) {pidfile.deleteOnExit(); pidkillfileCreated = true;}
-	        } catch (final IOException e) {
-	            Logger.info("pid file " + pidfile.getAbsolutePath() + " creation failed: " + e.getMessage());
-	        }
-	        if (!killfile.exists()) try {
-	            killfile.createNewFile();
-	            if (killfile.exists()) killfile.deleteOnExit(); else pidkillfileCreated = false;
-	        } catch (final IOException e) {
-	            Logger.info("kill file " + killfile.getAbsolutePath() + " creation failed: " + e.getMessage());
-	            pidkillfileCreated = false;
-	        }
+            final File data_dir = FileSystems.getDefault().getPath("data").toFile();
+            if (!data_dir.exists()) data_dir.mkdirs();
+            final File pidfile = new File(data_dir, "searchlab-" + port + ".pid");
+            killfile = new File(data_dir, "searchlab-" + port + ".kill");
+            if (pidfile.exists()) pidfile.delete();
+            if (killfile.exists()) killfile.delete();
+            if (!pidfile.exists()) try {
+                pidfile.createNewFile();
+                if (pidfile.exists()) {pidfile.deleteOnExit(); pidkillfileCreated = true;}
+            } catch (final IOException e) {
+                Logger.info("pid file " + pidfile.getAbsolutePath() + " creation failed: " + e.getMessage());
+            }
+            if (!killfile.exists()) try {
+                killfile.createNewFile();
+                if (killfile.exists()) killfile.deleteOnExit(); else pidkillfileCreated = false;
+            } catch (final IOException e) {
+                Logger.info("kill file " + killfile.getAbsolutePath() + " creation failed: " + e.getMessage());
+                pidkillfileCreated = false;
+            }
         } catch (final Exception e) {}
 
         // wait for shutdown signal (kill on process)
@@ -223,16 +223,16 @@ public class Searchlab {
             while (!webserver.server.getWorker().isTerminated() && killfile.exists()) {
                 try {Thread.sleep(1000);} catch (final InterruptedException e) {}
             }
-    		webserver.server.stop();
+            webserver.server.stop();
             Logger.info("server kill termination requested");
             System.exit(1); // not soo nixe because it goes around the CronBox, but that is stateless so just exit here.
         } else {
             // something with the pid file creation did not work; fail-over to normal operation waiting for a kill command
-        	try {
-        		webserver.server.getWorker().awaitTermination();
-			} catch (final InterruptedException e) {
-				Logger.error(e);
-			}
+            try {
+                webserver.server.getWorker().awaitTermination();
+            } catch (final InterruptedException e) {
+                Logger.error(e);
+            }
         }
         Logger.info("server nominal termination");
     }
