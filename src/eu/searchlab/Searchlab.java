@@ -152,6 +152,7 @@ public class Searchlab {
                 final String endpoint = bucket_endpoint.substring(p + 1);
                 io = new S3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
                 settingsIop = new IOPath(bucket, s3SettingsPath);
+                Logger.info("Connected S3 at " + s3address);
             }
         }.start();
         new Thread() {
@@ -164,6 +165,7 @@ public class Searchlab {
                 crawlstartIndexName = System.getProperty("grid.elasticsearch.indexName.crawlstart", GridIndex.DEFAULT_INDEXNAME_CRAWLSTART);
                 crawlstartTypeName = System.getProperty("grid.elasticsearch.typeName", GridIndex.DEFAULT_TYPENAME);
                 ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
+                Logger.info("Connected elasticsearch at " + elasticsearchAddress[0]);
             }
         }.start();
         new Thread() {

@@ -111,7 +111,7 @@ public class WebServer {
         // Start webserver
         final PathHandler ph = Handlers.path();
         ph.addPrefixPath("/", new Fileserver(new File[] {UI_PATH, APPS_PATH, HTDOCS_PATH}));
-        HttpHandler encodingHandler = new EncodingHandler.Builder().build(null).wrap(ph);
+        final HttpHandler encodingHandler = new EncodingHandler.Builder().build(null).wrap(ph);
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         builder.setHandler(encodingHandler);
         this.server = builder.build();
@@ -213,8 +213,10 @@ public class WebServer {
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
+                	final String redirect = "https://community.searchlab.eu" + path;
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
-                    exchange.getResponseHeaders().put(Headers.LOCATION, "https://community.searchlab.eu" + path);
+                    exchange.getResponseHeaders().put(Headers.LOCATION, redirect);
+                    Logger.warn(e.getMessage() + " - redirecting to " + "https://community.searchlab.eu" + path);
                 } else {
                     exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR).setReasonPhrase(e.getMessage());
                 }
