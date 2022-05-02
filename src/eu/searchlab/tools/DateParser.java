@@ -39,7 +39,7 @@ public class DateParser {
     public final static long WEEK_MILLIS = DAY_MILLIS * 7;
 
     public final static String PATTERN_ISO8601 = "yyyy-MM-dd'T'HH:mm:ss'Z'"; // pattern for a W3C datetime variant of a non-localized ISO8601 date
-    public final static String PATTERN_ISO8601MILLIS = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"; // same with milliseconds
+    public final static String PATTERN_ISO8601MILLIS = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"; // same with milliseconds, called date_optimal_time in elastic
     public final static String PATTERN_MONTHDAY = "yyyy-MM-dd"; // the twitter search modifier format
     public final static String PATTERN_MONTHDAYHOURMINUTE = "yyyy-MM-dd HH:mm"; // this is the format which morris.js understands for date-histogram graphs
     public final static String PATTERN_RFC1123 = "EEE, dd MMM yyyy HH:mm:ss Z"; // with numeric time zone indicator as defined in RFC5322
@@ -74,7 +74,7 @@ public class DateParser {
      * @throws ParseException if the format of the date string is not well-formed
      */
     public static Calendar parse(String dateString, final int timezoneOffset) throws ParseException, NumberFormatException {
-        Calendar cal = Calendar.getInstance(UTCtimeZone);
+        final Calendar cal = Calendar.getInstance(UTCtimeZone);
         if ("now".equals(dateString)) return cal;
         if ("hour".equals(dateString)) {cal.setTime(oneHourAgo()); return cal;}
         if ("day".equals(dateString)) {cal.setTime(oneDayAgo()); return cal;}
@@ -95,7 +95,7 @@ public class DateParser {
         return cal;
     }
 
-    public static Date iso8601MillisParser(String date) {
+    public static Date iso8601MillisParser(final String date) {
         try {
             return iso8601MillisFormat.parse(date);
         } catch (ParseException | NumberFormatException e) {
@@ -103,13 +103,13 @@ public class DateParser {
         }
     }
 
-    public static String toPostDate(Date d) {
+    public static String toPostDate(final Date d) {
         return secondDateFormat.format(d).replace(' ', '_');
     }
 
     public static int getTimezoneOffset() {
-        Calendar calendar = new GregorianCalendar();
-        TimeZone timeZone = calendar.getTimeZone();
+        final Calendar calendar = new GregorianCalendar();
+        final TimeZone timeZone = calendar.getTimeZone();
         return - (int) TimeUnit.MILLISECONDS.toMinutes(timeZone.getRawOffset()); // we negate the offset because thats the value which is provided by the browser as well
     }
 

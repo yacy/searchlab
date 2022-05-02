@@ -70,29 +70,31 @@ public class Logger {
     }
 
     public static class LineFormatter extends Formatter {
+    	private static final String format = "%1$-7s [%2$s] %3$-48s \"%4$s\"%5$s%n";
 
         // format string for printing the log record
-        private static final String format = "%1$-7s %2$s [%3$s] \"%4$s\"%5$s%n";
         private final Date dat = new Date();
 
         @Override
         public synchronized String format(final LogRecord record) {
             this.dat.setTime(record.getMillis());
-            String source;
+            StringBuilder source = null;
             if (record.getSourceClassName() != null) {
-                source = record.getSourceClassName();
+                source = new StringBuilder(record.getSourceClassName());
                 if (record.getSourceMethodName() != null) {
-                   source += "." + record.getSourceMethodName();
+                   source.append('.').append(record.getSourceMethodName());
                 }
             } else {
-                source = record.getLoggerName();
+                source = new StringBuilder(record.getLoggerName());
             }
             String message = formatMessage(record);
             final int p = message.indexOf('$');
             if (p >= 0) {
-                source = message.substring(0, p);
+                source = new StringBuilder(message.substring(0, p));
                 message = message.substring(p + 1);
             }
+            message = message.replace('\"', '\''); // required to make the line parseable
+
             String throwable = "";
             if (record.getThrown() != null) {
                 final StringWriter sw = new StringWriter();
@@ -103,13 +105,15 @@ public class Logger {
                 throwable = sw.toString();
             }
             final String levelname = record.getLevel().getName();
-            final String line = String.format(format,
+            synchronized(DateParser.iso8601MillisFormat) {
+            	final String line = String.format(format,
                     levelname,
-                    source,
-                    DateParser.formatRFC1123(this.dat),
+                    DateParser.iso8601MillisFormat.format(this.dat), // this is date_optional_time in elastic
+                    source.toString(),
                     message,
                     throwable);
-            return line;
+            	return line;
+            }
         }
     }
 
