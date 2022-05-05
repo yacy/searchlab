@@ -84,6 +84,8 @@ public class ServiceMap {
         }
         if (service.getType() == Service.Type.OBJECT) {
             final JSONObject json = service.serveObject(post);
+            if (json == null) return null;
+
             if (path.endsWith(".json")) {
                 final String callback = post.optString("callback", ""); //  used like "callback=?", which encapsulates then json into <callback> "([" <json> "]);"
                 final boolean minified = post.optBoolean("minified", false);
@@ -112,6 +114,8 @@ public class ServiceMap {
             new IOException("extension not appropriate for JSONObject");
         } else if (service.getType() == Service.Type.ARRAY) {
             final JSONArray array = service.serveArray(post);
+            if (array == null) return null;
+
             if (path.endsWith(".json")) {
                 try {
                     return array.toString(2);
@@ -176,6 +180,8 @@ public class ServiceMap {
             new IOException("extension not appropriate for JSONArray");
         } else if (service.getType() == Service.Type.TABLE) {
             final IndexedTable table = service.serveTable(post);
+            if (table == null) return null;
+
             if (path.endsWith(".table")) {
                 try {
                     return new TableGenerator(path, table.toJSON(true)).getTable();

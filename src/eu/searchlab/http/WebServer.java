@@ -220,7 +220,7 @@ public class WebServer {
                     exchange.getResponseHeaders().put(Headers.LOCATION, redirect);
                     Logger.warn(e.getMessage() + " - redirecting to " + "https://community.searchlab.eu" + path);
                 } else {
-                    exchange.setStatusCode(StatusCodes.INTERNAL_SERVER_ERROR).setReasonPhrase(e.getMessage());
+                    exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE).setReasonPhrase(e.getMessage());
                 }
                 exchange.getResponseSender().send("");
             }
