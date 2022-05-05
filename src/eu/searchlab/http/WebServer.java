@@ -55,6 +55,7 @@ import eu.searchlab.http.services.MirrorService;
 import eu.searchlab.http.services.SuggestService;
 import eu.searchlab.http.services.TableGetService;
 import eu.searchlab.http.services.TablePutService;
+import eu.searchlab.http.services.ThreaddumpService;
 import eu.searchlab.http.services.YaCySearchService;
 import eu.searchlab.storage.io.AbstractIO;
 import eu.searchlab.tools.DateParser;
@@ -107,6 +108,7 @@ public class WebServer {
         ServiceMap.register(new IDGeneratorService());
         ServiceMap.register(new IDValidationService());
         ServiceMap.register(new CrawlStartService());
+        ServiceMap.register(new ThreaddumpService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
