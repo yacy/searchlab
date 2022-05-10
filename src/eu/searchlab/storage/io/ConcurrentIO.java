@@ -22,13 +22,10 @@ package eu.searchlab.storage.io;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-
-import eu.searchlab.tools.DateParser;
 
 /**
  * Use lock files to get exclusive access to shared files.
@@ -51,18 +48,13 @@ public class ConcurrentIO {
 
     private static IOPath lockFile(final IOPath iop) {
         if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
-        return new IOPath(iop.getBucket(), iop.getPath());
-    }
-
-    private static boolean isLockFile(final IOPath iop) {
-        if (iop.isFolder()) return false;
-        return iop.getPath().endsWith(".lock");
+        return new IOPath(iop.getBucket(), iop.getPath() + ".lock");
     }
 
     private JSONObject readLockFile(final IOPath iop) throws IOException {
-        assert isLockFile(iop);
-        assert this.io.exists(iop);
-        final byte[] a = this.io.readAll(iop);
+        final IOPath lockFile = lockFile(iop);
+        assert this.io.exists(lockFile);
+        final byte[] a = this.io.readAll(lockFile);
         try {
             final JSONObject json = new JSONObject(new JSONTokener(new String(a, StandardCharsets.UTF_8)));
             return json;
@@ -72,26 +64,25 @@ public class ConcurrentIO {
     }
 
     private void writeLockFile(final IOPath iop) throws IOException {
-        assert isLockFile(iop);
-        assert !this.io.exists(iop);
+        final IOPath lockFile = lockFile(iop);
+        assert !this.io.exists(lockFile);
         final InetAddress localhost = InetAddress.getLocalHost();
         final long time = System.currentTimeMillis();
         try {
             final JSONObject json = new JSONObject(true)
                     .put("host", localhost.getCanonicalHostName())
                     .put("ip", localhost.getHostAddress())
-                    .put("time", time)
-                    .put("date", DateParser.iso8601MillisFormat.format(new Date(time)));
-            final IOPath lockFile = lockFile(iop);
+                    .put("time", time);
             this.io.write(lockFile, json.toString(2).getBytes(StandardCharsets.UTF_8));
         } catch (final JSONException e) {
             throw new IOException(e.getMessage());
         }
     }
+
     private void releaseeLockFile(final IOPath iop) throws IOException {
-        assert isLockFile(iop);
-        assert this.io.exists(iop);
-        this.io.remove(iop);
+        final IOPath lockFile = lockFile(iop);
+        assert this.io.exists(lockFile);
+        this.io.remove(lockFile);
     }
 
     private boolean waitUntilUnlock(final IOPath iop, final long waitingtime) {
