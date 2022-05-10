@@ -27,7 +27,7 @@ import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
@@ -36,12 +36,12 @@ public class VolatileCord extends AbstractCord implements Cord {
 
     private boolean unwrittenChanges;
 
-    protected VolatileCord(GenericIO io, IOPath iop) {
+    protected VolatileCord(final ConcurrentIO io, final IOPath iop) {
         super(io, iop);
         this.unwrittenChanges = false;
     }
 
-    public VolatileCord append(Table table) throws IOException {
+    public VolatileCord append(final Table table) throws IOException {
         final Column<?>[] columns = table.columnArray();
         synchronized (this.mutex) {
             this.ensureLoaded();
@@ -64,7 +64,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public Cord append(JSONObject value) throws IOException {
+    public Cord append(final JSONObject value) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             this.array.put(value);
@@ -74,7 +74,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public Cord prepend(JSONObject value) throws IOException {
+    public Cord prepend(final JSONObject value) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             try {
@@ -88,7 +88,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public Cord insert(JSONObject value, int p) throws IOException {
+    public Cord insert(final JSONObject value, final int p) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             try {
@@ -102,7 +102,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public JSONObject remove(int p) throws IOException {
+    public JSONObject remove(final int p) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             final Object o = this.array.remove(p);
@@ -129,7 +129,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public List<JSONObject> removeAllWhere(String key, String value) throws IOException{
+    public List<JSONObject> removeAllWhere(final String key, final String value) throws IOException{
         final List<JSONObject> list = new ArrayList<>();
         synchronized (this.mutex) {
             this.ensureLoaded();
@@ -150,7 +150,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public List<JSONObject> removeAllWhere(String key, long value) throws IOException {
+    public List<JSONObject> removeAllWhere(final String key, final long value) throws IOException {
         final List<JSONObject> list = new ArrayList<>();
         synchronized (this.mutex) {
             this.ensureLoaded();
@@ -171,7 +171,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public JSONObject removeOneWhere(String key, String value) throws IOException {
+    public JSONObject removeOneWhere(final String key, final String value) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             final Iterator<Object> i = this.array.iterator();
@@ -191,7 +191,7 @@ public class VolatileCord extends AbstractCord implements Cord {
     }
 
     @Override
-    public JSONObject removeOneWhere(String key, long value) throws IOException {
+    public JSONObject removeOneWhere(final String key, final long value) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             final Iterator<Object> i = this.array.iterator();

@@ -21,6 +21,7 @@ package eu.searchlab.storage.json;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,7 +40,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import eu.searchlab.storage.io.AbstractIO;
-import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 
 public abstract class AbstractCord implements Cord {
@@ -47,18 +48,18 @@ public abstract class AbstractCord implements Cord {
     private static final char LF = (char) 10; // we don't use '\n' or System.getProperty("line.separator"); here to be consistent over all systems.
 
     protected final Object mutex; // Object on which to synchronize
-    protected final GenericIO io;
+    protected final ConcurrentIO io;
     protected final IOPath iop;
     protected JSONArray array;
 
-    protected AbstractCord(GenericIO io, IOPath iop) {
+    protected AbstractCord(final ConcurrentIO io, final IOPath iop) {
         this.io = io;
         this.iop = iop;
         this.array = null;
         this.mutex = this;
     }
 
-    public static void write(OutputStream os, JSONArray array) throws IOException {
+    public static void write(final OutputStream os, final JSONArray array) throws IOException {
         if (array == null) throw new IOException("array must not be null");
         final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
         writer.write('[');
@@ -92,7 +93,7 @@ public abstract class AbstractCord implements Cord {
         writer.close();
     }
 
-    public static JSONArray read(InputStream is) throws IOException {
+    public static JSONArray read(final InputStream is) throws IOException {
         JSONArray array = new JSONArray();
         // The file can be written in either of two ways:
         // - as a simple toString() or toString(2) from a JSONObject
@@ -153,19 +154,39 @@ public abstract class AbstractCord implements Cord {
         return array;
     }
 
+    protected final static long TIMEOUT = 10000;
+
     protected Cord commitInternal() throws IOException {
-        this.io.write(this.iop, this.array.toString().getBytes(StandardCharsets.UTF_8));
+        // now write our data back
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        write(baos, this.array);
+        final byte[] a = baos.toByteArray();
+        baos.close();
+        this.io.writeForced(this.iop, a, TIMEOUT);
+        this.lastLoadTime = System.currentTimeMillis();
         return this;
     }
 
+    private long lastLoadTime = 0;
+
     protected void ensureLoaded() throws IOException {
         if (this.array == null) {
-            try {
-                this.array = new JSONArray(new JSONTokener(new InputStreamReader(this.io.read(this.iop), StandardCharsets.UTF_8)));
-            } catch (final JSONException e) {
-                throw new IOException(e.getMessage());
-            }
+            this.array = load();
+        } else {
+        	final long lastModified = this.io.getIO().lastModified(this.iop);
+        	if (lastModified > this.lastLoadTime) {
+                this.array = load();
+                this.lastLoadTime = System.currentTimeMillis();
+        	}
         }
+    }
+
+    private JSONArray load() throws IOException {
+    	final byte[] a = this.io.readForced(this.iop, TIMEOUT);
+    	final ByteArrayInputStream bais = new ByteArrayInputStream(a);
+    	final JSONArray json = read(bais);
+        bais.close();
+        return json;
     }
 
     @Override
@@ -191,7 +212,7 @@ public abstract class AbstractCord implements Cord {
     }
 
     @Override
-    public JSONObject get(int p) throws IOException {
+    public JSONObject get(final int p) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             Object o;
@@ -226,7 +247,7 @@ public abstract class AbstractCord implements Cord {
     }
 
     @Override
-    public List<JSONObject> getAllWhere(String key, String value) throws IOException{
+    public List<JSONObject> getAllWhere(final String key, final String value) throws IOException{
         final List<JSONObject> list = new ArrayList<>();
         synchronized (this.mutex) {
             this.ensureLoaded();
@@ -245,7 +266,7 @@ public abstract class AbstractCord implements Cord {
     }
 
     @Override
-    public List<JSONObject> getAllWhere(String key, long value) throws IOException {
+    public List<JSONObject> getAllWhere(final String key, final long value) throws IOException {
         final List<JSONObject> list = new ArrayList<>();
         synchronized (this.mutex) {
             this.ensureLoaded();
@@ -264,7 +285,7 @@ public abstract class AbstractCord implements Cord {
     }
 
     @Override
-    public JSONObject getOneWhere(String key, String value) throws IOException {
+    public JSONObject getOneWhere(final String key, final String value) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             final Iterator<Object> i = this.array.iterator();
@@ -282,7 +303,7 @@ public abstract class AbstractCord implements Cord {
     }
 
     @Override
-    public JSONObject getOneWhere(String key, long value) throws IOException {
+    public JSONObject getOneWhere(final String key, final long value) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
             final Iterator<Object> i = this.array.iterator();

@@ -27,6 +27,9 @@ import org.json.JSONObject;
 
 import eu.searchlab.storage.io.IOPath;
 
+/**
+ * A Cord is a json-based implementation of a stack.
+ */
 public interface Cord {
 
     public IOPath getObject();

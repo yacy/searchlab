@@ -25,14 +25,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 
 public class VolatileTray extends AbstractTray implements Tray {
 
     private boolean unwrittenChanges;
 
-    public VolatileTray(final GenericIO io, final IOPath iop) {
+    public VolatileTray(final ConcurrentIO io, final IOPath iop) {
         super(io, iop);
         this.unwrittenChanges = false;
     }
@@ -43,7 +43,7 @@ public class VolatileTray extends AbstractTray implements Tray {
             ensureLoaded();
             try {
                 this.object.put(key, value);
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 throw new IOException(e.getMessage());
             }
             this.unwrittenChanges = true;
@@ -57,7 +57,7 @@ public class VolatileTray extends AbstractTray implements Tray {
             ensureLoaded();
             try {
                 this.object.put(key, value);
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 throw new IOException(e.getMessage());
             }
             this.unwrittenChanges = true;

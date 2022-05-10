@@ -41,7 +41,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import eu.searchlab.storage.io.AbstractIO;
-import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 
 public abstract class AbstractTray implements Tray {
@@ -49,7 +49,7 @@ public abstract class AbstractTray implements Tray {
     private static final char LF = (char) 10; // we don't use '\n' or System.getProperty("line.separator"); here to be consistent over all systems.
 
     protected final Object mutex; // Object on which to synchronize
-    protected final GenericIO io;
+    protected final ConcurrentIO io;
     protected final IOPath iop;
     protected JSONObject object;
 
@@ -59,7 +59,7 @@ public abstract class AbstractTray implements Tray {
      * @param iop
      * @param lineByLineStorage if true, each property in the object is written to a single line. If false, the file is pretty-printed
      */
-    protected AbstractTray(final GenericIO io, final IOPath iop) {
+    protected AbstractTray(final ConcurrentIO io, final IOPath iop) {
         this.io = io;
         this.iop = iop;
         this.object = null;
@@ -171,20 +171,39 @@ public abstract class AbstractTray implements Tray {
         return json;
     }
 
+    protected final static long TIMEOUT = 10000;
+
     protected Tray commitInternal() throws IOException {
-        // #completelyawarethatthisisnotoptional
+        // now write our data back
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         write(baos, this.object);
-        this.io.write(this.iop, baos.toByteArray());
+        final byte[] a = baos.toByteArray();
+        baos.close();
+        this.io.writeForced(this.iop, a, TIMEOUT);
+        this.lastLoadTime = System.currentTimeMillis();
         return this;
     }
 
+    private long lastLoadTime = 0;
+
     protected void ensureLoaded() throws IOException {
         if (this.object == null) {
-            final InputStream is = this.io.read(this.iop);
-            this.object = read(is);
-            is.close();
+            this.object = load();
+        } else {
+        	final long lastModified = this.io.getIO().lastModified(this.iop);
+        	if (lastModified > this.lastLoadTime) {
+                this.object = load();
+                this.lastLoadTime = System.currentTimeMillis();
+        	}
         }
+    }
+
+    private JSONObject load() throws IOException {
+    	final byte[] a = this.io.readForced(this.iop, TIMEOUT);
+    	final ByteArrayInputStream bais = new ByteArrayInputStream(a);
+    	final JSONObject json = read(bais);
+        bais.close();
+        return json;
     }
 
     @Override
