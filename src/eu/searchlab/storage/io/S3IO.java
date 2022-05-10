@@ -45,6 +45,8 @@ import io.minio.RemoveBucketArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.Result;
 import io.minio.SelectObjectContentArgs;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -343,7 +345,6 @@ public class S3IO extends AbstractIO implements GenericIO {
         }
     }
 
-
     public InputStream select(final IOPath iop, final String sqlExpression) throws IOException {
         //final String sqlExpression = "select * from S3Object";
         final InputSerialization is = new InputSerialization(null, false, null, null, FileHeaderInfo.USE, null, null, null);
@@ -497,9 +498,13 @@ public class S3IO extends AbstractIO implements GenericIO {
     @Override
     public boolean exists(final IOPath iop) {
         try {
-            size(iop);
-            return true;
-        } catch (final IOException e) {
+            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            return !sor.deleteMarker();
+        } catch (InvalidKeyException | ErrorResponseException
+                | InsufficientDataException | InternalException
+                | InvalidResponseException | NoSuchAlgorithmException
+                | ServerException | XmlParserException
+                | IllegalArgumentException | IOException e) {
             return false;
         }
     }
