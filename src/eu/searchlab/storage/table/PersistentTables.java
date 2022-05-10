@@ -29,7 +29,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONTokener;
 
-import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.Logger;
 import tech.tablesaw.api.Table;
@@ -46,7 +46,7 @@ public class PersistentTables {
 
     private final Map<String, IndexedTable> indexes;
     private String urlstub;
-    private GenericIO io;
+    private ConcurrentIO io;
     private IOPath iop;
 
     /**
@@ -55,6 +55,10 @@ public class PersistentTables {
     public PersistentTables() {
         this.indexes = new HashMap<>();
         this.urlstub = null;
+    }
+
+    public void clear() {
+        this.indexes.clear();
     }
 
     /**
@@ -73,7 +77,7 @@ public class PersistentTables {
      * @param iop
      * @return this
      */
-    public PersistentTables connect(final GenericIO io, final IOPath iop) {
+    public PersistentTables connect(final ConcurrentIO io, final IOPath iop) {
         this.io = io;
         this.iop = iop;
         return this;
@@ -83,15 +87,17 @@ public class PersistentTables {
         return this.indexes.keySet();
     }
 
+    private final static long TIMEOUT = 10000;
+
     /**
-     * Add a non-hosted table
+     * remove table, hosted and un-hosted
      * @param tablename
-     * @param table
      * @return this
      */
-    public PersistentTables addTable(final String tablename, final Table table) {
-        final IndexedTable ti = new IndexedTable(table);
-        this.indexes.put(tablename, ti);
+    public PersistentTables removeTable(final String tablename) {
+        final IOPath key = this.iop.append(tablename + ".json");
+        try {this.io.removeForced(key, TIMEOUT);} catch (final IOException e) {}
+        this.indexes.remove(tablename);
         return this;
     }
 
@@ -101,27 +107,29 @@ public class PersistentTables {
      * @param table
      * @return this
      */
-    public PersistentTables addTable(final String tablename, final IndexedTable table) {
-        this.indexes.put(tablename, table);
-        return this;
-    }
-
-    /**
-     * Add a non-hosted table
-     * @param tablename
-     * @param table
-     * @return this
-     */
-    public PersistentTables extendTable(final String tablename, final IndexedTable table) {
-        final IndexedTable t = this.indexes.get(tablename);
+    public PersistentTables appendTable(final String tablename, final IndexedTable table) {
+        IndexedTable t = this.indexes.get(tablename);
         if (t == null) {
-            this.indexes.put(tablename, table);
-        } else {
-            t.append(table);
+            t = table.emptyCopy();
             this.indexes.put(tablename, t);
         }
+        t.append(table);
         return this;
     }
+
+    /**
+     * Add a non-hosted table
+     * @param tablename
+     * @param table
+     * @return this
+     */
+    public PersistentTables setTable(final String tablename, final IndexedTable table) {
+        final IndexedTable t = table.emptyCopy();
+        this.indexes.put(tablename, t);
+        t.append(table);
+        return this;
+    }
+
 
     public void storeTable(final String tablename) throws IOException {
         final IndexedTable t = this.indexes.get(tablename);
@@ -130,7 +138,7 @@ public class PersistentTables {
         if (this.iop == null) throw new IOException("no io path defined");
         final IOPath key = this.iop.append(tablename + ".json");
         try {
-            this.io.write(key, t.toJSON(true).toString(2).getBytes(StandardCharsets.UTF_8));
+            this.io.writeForced(key, t.toJSON(true).toString(2).getBytes(StandardCharsets.UTF_8), TIMEOUT);
         } catch (final JSONException e) {
             throw new IOException(e.getMessage());
         }
@@ -188,15 +196,16 @@ public class PersistentTables {
         // try: load from local copy
         IndexedTable table = this.indexes.get(tablename);
         // in case the table is not inside the index, load it now
-        if (table == null) {
+        if (table == null) try {
+            // in case the table is not inside the index, load it now
             final IOPath key = this.iop.append(tablename + ".json");
-            final byte[] b = this.io.readAll(key);
-            try {
+            if (this.io.getIO().exists(key)) {
+                final byte[] b = this.io.readForced(key, TIMEOUT);
                 final JSONArray a = new JSONArray(new JSONTokener(new String(b, StandardCharsets.UTF_8)));
                 table = new IndexedTable(a);
-            } catch (final JSONException e) {
-                throw new IOException(e.getMessage());
             }
+        } catch (IOException | JSONException e) {
+            Logger.error("could not load table " + tablename + " from " + this.iop.toString() + tablename + ".json");
         }
         // process where statements
         if (selects.length == 0) return table;

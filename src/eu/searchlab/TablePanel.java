@@ -36,8 +36,8 @@ public class TablePanel {
     static {
         tables = new PersistentTables();
 
-        Table testTable = Table.create(StringColumn.create("a"), StringColumn.create("b"), StringColumn.create("c"));
-        tables.addTable("test", new IndexedTable(testTable));
+        final Table testTable = Table.create(StringColumn.create("a"), StringColumn.create("b"), StringColumn.create("c"));
+        tables.setTable("test", new IndexedTable(testTable));
     }
 
 }
