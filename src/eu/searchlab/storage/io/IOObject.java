@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -288,6 +289,89 @@ public final class IOObject {
             }
         }
         return json;
+    }
+
+    public static JSONObject readJSONObject0(final byte[] b) throws IOException {
+       return readJSONObject1(readJSONMap(b));
+    }
+
+    private static JSONObject readJSONObject1(final LinkedHashMap<String, String> map) throws IOException {
+        final JSONObject json = new JSONObject(true);
+        for (final Map.Entry<String, String> entry: map.entrySet()) {
+            try {
+                final String key = entry.getKey();
+                String value = entry.getValue();
+                if (value.endsWith(",")) value = value.substring(0, value.length() - 1);
+                if (value.charAt(0) == '{') {
+                    json.put(key, new JSONObject(new JSONTokener(value)));
+                } else if (value.charAt(0) == '[') {
+                    json.put(key, new JSONArray(new JSONTokener(value)));
+                } else if (value.charAt(0) == '"') {
+                    json.put(key, value.substring(1, value.length() - 1));
+                } else if (value.indexOf('.') > 0) {
+                    try {
+                        json.put(key, Double.parseDouble(value));
+                    } catch (final NumberFormatException e) {
+                        json.put(key, value);
+                    }
+                } else {
+                    try {
+                        json.put(key, Long.parseLong(value));
+                    } catch (final NumberFormatException e) {
+                        json.put(key, value);
+                    }
+                }
+            } catch (final JSONException e) {
+                throw new IOException(e);
+            }
+        }
+        return json;
+    }
+
+    private static LinkedHashMap<String, String> readJSONMap(final byte[] b) throws IOException {
+        final LinkedHashMap<String, String> map = new LinkedHashMap<>();
+        // The file can be written in either of two ways:
+        // - as a simple toString() or toString(2) from a JSONObject
+        // - as a list of properties, one in each line with one line in the front starting with "{" and one in the end, starting with "}"
+        // If the file was written in the first way, all property keys must be unique because we must use the JSONTokener to parse it.
+        // if the file was written in the second way, we can apply a reader which reads the file line by line, overwriting a property
+        // if it appears a second (third..) time. This has a big advantage: we can append new properties just at the end of the file.
+        if (b.length == 0) return map;
+        // check which variant is in b[]:
+        // in a toString() output, there is no line break
+        // in a toString(2) output, there is a line break but also two spaces in front
+        // in a line-by-line output, there is a line break at b[1] and no spaces after that because the first char is a '"' and the second a letter
+        final boolean lineByLine = (b.length == 3 && b[0] == '{' && b[1] == LF && b[2] == '}') || (b[1] < ' ' && b[2] != ' ' && b[3] != ' ');
+        final ByteArrayInputStream bais = new ByteArrayInputStream(b);
+        if (lineByLine) {
+            final int a = bais.read();
+            assert (a == '{');
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(bais, "UTF-8"));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.equals("}")) break;
+                if (line.length() == 0) continue;
+                final int p = line.indexOf("\":");
+                if (p < 0) continue;
+                final String key = line.substring(1, p).trim();
+                final String value = line.substring(p + 2).trim();
+                map.put(key, value);
+            }
+        } else {
+            try {
+                final JSONObject json = new JSONObject(new JSONTokener(new InputStreamReader(bais, StandardCharsets.UTF_8)));
+                for (final String key: json.keySet()) {
+                    @SuppressWarnings("deprecation")
+                    final Object value = json.get(key);
+                    map.put(key, value.toString());
+                }
+            } catch (final JSONException e) {
+                // could be a double key problem. In that case we should repeat the process with another approach
+                throw new IOException(e);
+            }
+        }
+        return map;
     }
 
     public static JSONArray readJSONArray(final byte[] b) throws IOException {
