@@ -20,16 +20,14 @@
 package eu.searchlab.storage.table;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONTokener;
 
 import eu.searchlab.storage.io.ConcurrentIO;
+import eu.searchlab.storage.io.IOObject;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.Logger;
 import tech.tablesaw.api.Table;
@@ -96,7 +94,7 @@ public class PersistentTables {
      */
     public PersistentTables removeTable(final String tablename) {
         final IOPath key = this.iop.append(tablename + ".json");
-        try {this.io.removeForced(key, TIMEOUT);} catch (final IOException e) {}
+        try {this.io.removeForced(TIMEOUT, key);} catch (final IOException e) {}
         this.indexes.remove(tablename);
         return this;
     }
@@ -130,20 +128,14 @@ public class PersistentTables {
         return this;
     }
 
-
     public void storeTable(final String tablename) throws IOException {
         final IndexedTable t = this.indexes.get(tablename);
         if (t == null) return;
         if (this.io == null) throw new IOException("no io defined");
         if (this.iop == null) throw new IOException("no io path defined");
         final IOPath key = this.iop.append(tablename + ".json");
-        try {
-            this.io.writeForced(key, t.toJSON(true).toString(2).getBytes(StandardCharsets.UTF_8), TIMEOUT);
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
-        }
+        this.io.writeForced(TIMEOUT, new IOObject(key, t.toJSON(true)));
     }
-
 
     /**
      * Retrieve named table from index
@@ -200,11 +192,11 @@ public class PersistentTables {
             // in case the table is not inside the index, load it now
             final IOPath key = this.iop.append(tablename + ".json");
             if (this.io.getIO().exists(key)) {
-                final byte[] b = this.io.readForced(key, TIMEOUT);
-                final JSONArray a = new JSONArray(new JSONTokener(new String(b, StandardCharsets.UTF_8)));
+                final IOObject o = this.io.readForced(TIMEOUT, key);
+                final JSONArray a = o.getJSONArray();
                 table = new IndexedTable(a);
             }
-        } catch (IOException | JSONException e) {
+        } catch (final IOException e) {
             Logger.error("could not load table " + tablename + " from " + this.iop.toString() + tablename + ".json");
         }
         // process where statements

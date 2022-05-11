@@ -43,7 +43,7 @@ public class ConcurrentIO {
     }
 
     public GenericIO getIO() {
-    	return this.io;
+        return this.io;
     }
 
     private static IOPath lockFile(final IOPath iop) {
@@ -85,62 +85,62 @@ public class ConcurrentIO {
         this.io.remove(lockFile);
     }
 
-    private boolean waitUntilUnlock(final IOPath iop, final long waitingtime) {
-		final IOPath lockFile = lockFile(iop);
-    	if (waitingtime <= 0) {
-    		return !this.io.exists(lockFile);
-    	} else {
-    		final long timeout = System.currentTimeMillis() + waitingtime;
-    		while (this.io.exists(lockFile)) {
-    			if (System.currentTimeMillis() > timeout) return false;
-    			try {Thread.sleep(1000);} catch (final InterruptedException e) {}
-    		}
-    		return true;
-    	}
+    private boolean waitUntilUnlock(final long waitingtime, final IOPath iop) {
+        final IOPath lockFile = lockFile(iop);
+        if (waitingtime <= 0) {
+            return !this.io.exists(lockFile);
+        } else {
+            final long timeout = System.currentTimeMillis() + waitingtime;
+            while (this.io.exists(lockFile)) {
+                if (System.currentTimeMillis() > timeout) return false;
+                try {Thread.sleep(1000);} catch (final InterruptedException e) {}
+            }
+            return true;
+        }
     }
 
-    public void write(final IOPath iop, final byte[] object, final long waitingtime) throws IOException {
-        if (waitUntilUnlock(iop, waitingtime)) {
-        	writeLockFile(iop);
-            this.io.write(iop, object);
-            releaseeLockFile(iop);
+    public void write(final long waitingtime, final IOObject ioo) throws IOException {
+        if (waitUntilUnlock(waitingtime, ioo.getPath())) {
+            writeLockFile(ioo.getPath());
+            this.io.write(ioo.getPath(), ioo.getObject());
+            releaseeLockFile(ioo.getPath());
         } else {
             throw new IOException("timeout waiting for lock disappearance");
         }
     }
 
-    public void writeForced(final IOPath iop, final byte[] object, final long waitingtime) throws IOException {
-    	try {
-			write(iop, object, waitingtime);
-		} catch (final IOException e) {
-			deleteLock(iop);
-			write(iop, object, -1);
-		}
+    public void writeForced(final long waitingtime, final IOObject ioo) throws IOException {
+        try {
+            write(waitingtime, ioo);
+        } catch (final IOException e) {
+            deleteLock(ioo.getPath());
+            write(-1, ioo);
+        }
     }
 
-    public byte[] read(final IOPath iop, final long waitingtime) throws IOException {
-    	if (waitUntilUnlock(iop, waitingtime)) {
-        	writeLockFile(iop);
-        	final byte[] a = this.io.readAll(iop);
+    public IOObject read(final long waitingtime, final IOPath iop) throws IOException {
+        if (waitUntilUnlock(waitingtime, iop)) {
+            writeLockFile(iop);
+            final byte[] a = this.io.readAll(iop);
             releaseeLockFile(iop);
-            return a;
+            return new IOObject(iop, a);
         } else {
             throw new IOException("timeout waiting for lock disappearance");
         }
     }
 
-    public byte[] readForced(final IOPath iop, final long waitingtime) throws IOException {
-    	try {
-			return read(iop, waitingtime);
-		} catch (final IOException e) {
-			deleteLock(iop);
-			return read(iop, -1);
-		}
+    public IOObject readForced(final long waitingtime, final IOPath iop) throws IOException {
+        try {
+            return read(waitingtime, iop);
+        } catch (final IOException e) {
+            deleteLock(iop);
+            return read(-1, iop);
+        }
     }
 
-    public void remove(final IOPath iop, final long waitingtime) throws IOException {
-    	if (waitUntilUnlock(iop, waitingtime)) {
-        	writeLockFile(iop);
+    public void remove(final long waitingtime, final IOPath iop) throws IOException {
+        if (waitUntilUnlock(waitingtime, iop)) {
+            writeLockFile(iop);
             this.io.remove(iop);
             releaseeLockFile(iop);
         } else {
@@ -148,13 +148,13 @@ public class ConcurrentIO {
         }
     }
 
-    public void removeForced(final IOPath iop, final long waitingtime) throws IOException {
-    	try {
-			remove(iop, waitingtime);
-		} catch (final IOException e) {
-			deleteLock(iop);
-			remove(iop, -1);
-		}
+    public void removeForced(final long waitingtime, final IOPath iop) throws IOException {
+        try {
+            remove(waitingtime, iop);
+        } catch (final IOException e) {
+            deleteLock(iop);
+            remove(-1, iop);
+        }
     }
 
     public boolean isLocked(final IOPath iop) {
