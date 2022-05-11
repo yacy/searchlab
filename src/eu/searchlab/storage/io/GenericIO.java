@@ -194,7 +194,7 @@ public interface GenericIO {
      * @return list of object names
      * @throws IOException
      */
-    public List<String> list(final String bucketName, final String prefix) throws IOException;
+    public List<IOMeta> list(final String bucketName, final String prefix) throws IOException;
 
 
     /**
