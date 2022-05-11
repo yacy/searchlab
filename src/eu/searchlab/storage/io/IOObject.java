@@ -23,7 +23,6 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -149,9 +148,7 @@ public final class IOObject {
         assert this.object != null;
         assert this.object.length > 0;
         assert this.object[0] == '{';
-        final ByteArrayInputStream bais = new ByteArrayInputStream(this.object);
-        final JSONObject json = readJSONObject(bais);
-        bais.close();
+        final JSONObject json = readJSONObject(this.object);
         return json;
     }
 
@@ -159,9 +156,7 @@ public final class IOObject {
         assert this.object != null;
         assert this.object.length > 0;
         assert this.object[0] == '[';
-        final ByteArrayInputStream bais = new ByteArrayInputStream(this.object);
-        final JSONArray json = readJSONArray(bais);
-        bais.close();
+        final JSONArray json = readJSONArray(this.object);
         return json;
     }
 
@@ -231,7 +226,7 @@ public final class IOObject {
         writer.close();
     }
 
-    public static JSONObject readJSONObject(final InputStream is) throws IOException {
+    public static JSONObject readJSONObject(final byte[] b) throws IOException {
         JSONObject json = new JSONObject(true);
         // The file can be written in either of two ways:
         // - as a simple toString() or toString(2) from a JSONObject
@@ -239,7 +234,6 @@ public final class IOObject {
         // If the file was written in the first way, all property keys must be unique because we must use the JSONTokener to parse it.
         // if the file was written in the second way, we can apply a reader which reads the file line by line, overwriting a property
         // if it appears a second (third..) time. This has a big advantage: we can append new properties just at the end of the file.
-        final byte[] b = AbstractIO.readAll(is, -1);
         if (b.length == 0) return json;
         // check which variant is in b[]:
         // in a toString() output, there is no line break
@@ -296,7 +290,7 @@ public final class IOObject {
         return json;
     }
 
-    public static JSONArray readJSONArray(final InputStream is) throws IOException {
+    public static JSONArray readJSONArray(final byte[] b) throws IOException {
         JSONArray array = new JSONArray();
         // The file can be written in either of two ways:
         // - as a simple toString() or toString(2) from a JSONObject
@@ -304,7 +298,6 @@ public final class IOObject {
         // If the file was written in the first way, all property keys must be unique because we must use the JSONTokener to parse it.
         // if the file was written in the second way, we can apply a reader which reads the file line by line, overwriting a property
         // if it appears a second (third..) time. This has a big advantage: we can append new properties just at the end of the file.
-        final byte[] b = AbstractIO.readAll(is, -1);
         if (b.length == 0) return array;
         // check which variant is in b[]:
         // in a toString() output, there is no line break

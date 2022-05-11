@@ -19,7 +19,6 @@
 
 package eu.searchlab.storage.json;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,9 +53,11 @@ public abstract class AbstractTray implements Tray {
     }
 
     public static JSONObject read(final File f) throws IOException {
-        final InputStream bis = new BufferedInputStream(new FileInputStream(f));
-        final JSONObject j = IOObject.readJSONObject(bis);
-        bis.close();
+        final InputStream fis = new FileInputStream(f);
+        final byte[] a = new byte[(int) f.length()];
+        fis.read(a);
+        fis.close();
+        final JSONObject j = IOObject.readJSONObject(a);
         return j;
     }
 
