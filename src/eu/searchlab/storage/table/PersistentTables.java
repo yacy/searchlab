@@ -192,8 +192,8 @@ public class PersistentTables {
             // in case the table is not inside the index, load it now
             final IOPath key = this.iop.append(tablename + ".json");
             if (this.io.getIO().exists(key)) {
-                final IOObject o = this.io.readForced(TIMEOUT, key);
-                final JSONArray a = o.getJSONArray();
+                final IOObject[] o = this.io.readForced(TIMEOUT, key);
+                final JSONArray a = o[0].getJSONArray();
                 table = new IndexedTable(a);
             }
         } catch (final IOException e) {

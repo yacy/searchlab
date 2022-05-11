@@ -85,8 +85,8 @@ public abstract class AbstractTray implements Tray {
     }
 
     private JSONObject load() throws IOException {
-        final IOObject o = this.io.readForced(TIMEOUT, this.iop);
-        final JSONObject json = o.getJSONObject();
+        final IOObject[] o = this.io.readForced(TIMEOUT, this.iop);
+        final JSONObject json = o[0].getJSONObject();
         return json;
     }
 

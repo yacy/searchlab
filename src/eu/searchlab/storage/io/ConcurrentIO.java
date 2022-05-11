@@ -45,156 +45,199 @@ public final class ConcurrentIO {
         return this.io;
     }
 
-    private final static IOPath lockFile(final IOPath iop) {
-        if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
-        return new IOPath(iop.getBucket(), iop.getPath() + ".lock");
-    }
-
-    private final static IOPath[] lockFiles(final IOPath... iop) {
-        final IOPath[] lockFiles = new IOPath[iop.length];
-        for (int i = 0; i < iop.length; i++) lockFiles[i] = lockFile(iop[i]);
+    private final static IOPath[] lockFile(final IOPath... iops) {
+        final IOPath[] lockFiles = new IOPath[iops.length];
+        for (int i = 0; i < iops.length; i++) {
+            final IOPath iop = iops[i];
+            if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
+            lockFiles[i] = new IOPath(iop.getBucket(), iop.getPath() + ".lock");
+        }
         return lockFiles;
     }
 
-    private IOObject readLockFile(final IOPath lockFile) throws IOException {
+    private final static IOPath[] lockFile(final IOObject... ioos) {
+        final IOPath[] iops = new IOPath[ioos.length];
+        for (int i = 0; i < ioos.length; i++) iops[i] = ioos[i].getPath();
+        return lockFile(iops);
+    }
+
+    private final IOObject readLockFile(final IOPath lockFile) throws IOException {
         assert this.io.exists(lockFile);
         final byte[] a = this.io.readAll(lockFile);
         return new IOObject(lockFile, a);
     }
 
-    private void writeLockFile(final IOPath lockFile) throws IOException {
-        assert !this.io.exists(lockFile);
-        final InetAddress localhost = InetAddress.getLocalHost();
-        final long time = System.currentTimeMillis();
-        try {
-            final JSONObject json = new JSONObject(true)
-                    .put("host", localhost.getCanonicalHostName())
-                    .put("ip", localhost.getHostAddress())
-                    .put("time", time);
-            this.io.write(lockFile, json.toString(2).getBytes(StandardCharsets.UTF_8));
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
+    private final void writeLockFile(final IOPath... lockFiles) throws IOException {
+        for (int i = 0; i < lockFiles.length; i++) {
+            final IOPath lockFile = lockFiles[i];
+            assert !this.io.exists(lockFile);
+            final InetAddress localhost = InetAddress.getLocalHost();
+            final long time = System.currentTimeMillis();
+            try {
+                final JSONObject json = new JSONObject(true)
+                        .put("host", localhost.getCanonicalHostName())
+                        .put("ip", localhost.getHostAddress())
+                        .put("time", time);
+                this.io.write(lockFile, json.toString(2).getBytes(StandardCharsets.UTF_8));
+            } catch (final JSONException e) {
+                throw new IOException(e.getMessage());
+            }
         }
     }
 
-    private void releaseeLockFile(final IOPath lockFile) throws IOException {
-        assert this.io.exists(lockFile);
-        this.io.remove(lockFile);
+    private final void releaseeLockFile(final IOPath... lockFiles) throws IOException {
+        for (int i = 0; i < lockFiles.length; i++) {
+            final IOPath lockFile = lockFiles[i];
+            assert this.io.exists(lockFile);
+            this.io.remove(lockFile);
+        }
     }
 
-    private boolean waitUntilUnlock(final long waitingtime, final IOPath lockFile) {
-        if (waitingtime <= 0) {
-            return !this.io.exists(lockFile);
-        } else {
-            final long timeout = System.currentTimeMillis() + waitingtime;
-            while (this.io.exists(lockFile)) {
-                if (System.currentTimeMillis() > timeout) return false;
-                try {Thread.sleep(1000);} catch (final InterruptedException e) {}
+    private final boolean waitUntilUnlock(final long waitingtime, final IOPath... lockFiles) {
+        if (waitingtime <= 0) return true;
+        final long timeout = System.currentTimeMillis() + waitingtime;
+        waitloop: while (System.currentTimeMillis() < timeout) {
+            for (int i = 0; i < lockFiles.length; i++) {
+                if (this.io.exists(lockFiles[i])) {
+                    try {Thread.sleep(1000);} catch (final InterruptedException e) {}
+                    continue waitloop;
+                }
             }
+            // none of the lock files exist, this is a success!
             return true;
         }
+        return false;
     }
 
-    public void write(final long waitingtime, final IOObject ioo) throws IOException {
-        final IOPath lockFile = lockFile(ioo.getPath());
-        if (waitUntilUnlock(waitingtime, lockFile)) {
-            writeLockFile(lockFile);
-            this.io.write(ioo.getPath(), ioo.getObject());
-            releaseeLockFile(lockFile);
+    public final void write(final long waitingtime, final IOObject... ioos) throws IOException {
+        final IOPath[] lockFiles = lockFile(ioos);
+        if (waitUntilUnlock(waitingtime, lockFiles)) {
+            writeLockFile(lockFiles);
+            for (int i = 0; i < ioos.length; i++) {
+                this.io.write(ioos[i].getPath(), ioos[i].getObject());
+            }
+            releaseeLockFile(lockFiles);
         } else {
             throw new IOException("timeout waiting for lock disappearance");
         }
     }
 
-    public void writeForced(final long waitingtime, final IOObject ioo) throws IOException {
+    public final void writeForced(final long waitingtime, final IOObject... ioos) throws IOException {
         try {
-            write(waitingtime, ioo);
+            write(waitingtime, ioos);
         } catch (final IOException e) {
-            deleteLock(ioo.getPath());
-            write(-1, ioo);
+            for (int i = 0; i < ioos.length; i++) deleteLock(ioos[i].getPath());
+            write(-1, ioos);
         }
     }
 
-    public IOObject read(final long waitingtime, final IOPath iop) throws IOException {
-        final IOPath lockFile = lockFile(iop);
-        if (waitUntilUnlock(waitingtime, lockFile)) {
-            writeLockFile(lockFile);
-            final byte[] a = this.io.readAll(iop);
-            releaseeLockFile(lockFile);
-            return new IOObject(iop, a);
+    public final IOObject[] read(final long waitingtime, final IOPath... iops) throws IOException {
+        final IOPath[] lockFiles = lockFile(iops);
+        final IOObject[] as = new IOObject[iops.length];
+        if (waitUntilUnlock(waitingtime, lockFiles)) {
+            writeLockFile(lockFiles);
+            for (int i = 0; i < iops.length; i++) {
+                final byte[] a = this.io.readAll(iops[i]);
+                as[i] = new IOObject(iops[i], a);
+            }
+            releaseeLockFile(lockFiles);
+            return as;
         } else {
             throw new IOException("timeout waiting for lock disappearance");
         }
     }
 
-    public IOObject readForced(final long waitingtime, final IOPath iop) throws IOException {
+    public final IOObject[] readForced(final long waitingtime, final IOPath... iops) throws IOException {
         try {
-            return read(waitingtime, iop);
+            return read(waitingtime, iops);
         } catch (final IOException e) {
-            deleteLock(iop);
-            return read(-1, iop);
+            deleteLock(iops);
+            return read(-1, iops);
         }
     }
 
-    public void remove(final long waitingtime, final IOPath iop) throws IOException {
-        final IOPath lockFile = lockFile(iop);
-        if (waitUntilUnlock(waitingtime, lockFile)) {
-            writeLockFile(lockFile);
-            this.io.remove(iop);
-            releaseeLockFile(lockFile);
+    public final void remove(final long waitingtime, final IOPath... iops) throws IOException {
+        final IOPath[] lockFiles = lockFile(iops);
+        if (waitUntilUnlock(waitingtime, lockFiles)) {
+            writeLockFile(lockFiles);
+            for (int i = 0; i < iops.length; i++) {
+                this.io.remove(iops[i]);
+            }
+            releaseeLockFile(lockFiles);
         } else {
             throw new IOException("timeout waiting for lock disappearance");
         }
     }
 
-    public void removeForced(final long waitingtime, final IOPath iop) throws IOException {
+    public final void removeForced(final long waitingtime, final IOPath... iops) throws IOException {
         try {
-            remove(waitingtime, iop);
+            remove(waitingtime, iops);
         } catch (final IOException e) {
-            deleteLock(iop);
-            remove(-1, iop);
+            deleteLock(iops);
+            remove(-1, iops);
         }
     }
 
-    public boolean isLocked(final IOPath iop) {
-        final IOPath lockFile = lockFile(iop);
-        return this.io.exists(lockFile);
+    public final boolean isLocked(final IOPath... iop) {
+        final IOPath[] lockFiles = lockFile(iop);
+        for (int i = 0; i < lockFiles.length; i++) {
+            if (this.io.exists(lockFiles[i])) return true;
+        }
+        return false;
     }
 
-    public void deleteLock(final IOPath iop) {
+    public final void deleteLock(final IOPath... iop) {
+        final IOPath[] lockFiles = lockFile(iop);
         try {
-            this.io.remove(lockFile(iop));
+            for (int i = 0; i < lockFiles.length; i++) {
+                this.io.remove(lockFiles[i]);
+            }
         } catch (final IOException e) {}
     }
 
-    public String lockedByHost(final IOPath iop) throws IOException {
-        final IOPath lockFile = lockFile(iop);
-        final IOObject ioo = readLockFile(lockFile);
-        try {
-            return ioo.getJSONObject().getString("host");
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
+    public final String lockedByHost(final IOPath iop) throws IOException {
+        final IOPath[] lockFiles = lockFile(iop);
+        for (int i = 0; i < lockFiles.length; i++) {
+            if (this.io.exists(lockFiles[i])) {
+                final IOObject ioo = readLockFile(lockFiles[i]);
+                try {
+                    return ioo.getJSONObject().getString("host");
+                } catch (final JSONException e) {
+                    throw new IOException(e.getMessage());
+                }
+            }
         }
+        throw new IOException("no lockfile exist");
     }
 
-    public String lockedByIP(final IOPath iop) throws IOException {
-        final IOPath lockFile = lockFile(iop);
-        final IOObject ioo = readLockFile(lockFile);
-        try {
-            return ioo.getJSONObject().getString("ip");
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
+    public final String lockedByIP(final IOPath iop) throws IOException {
+        final IOPath[] lockFiles = lockFile(iop);
+        for (int i = 0; i < lockFiles.length; i++) {
+            if (this.io.exists(lockFiles[i])) {
+                final IOObject ioo = readLockFile(lockFiles[i]);
+                try {
+                    return ioo.getJSONObject().getString("ip");
+                } catch (final JSONException e) {
+                    throw new IOException(e.getMessage());
+                }
+            }
         }
+        throw new IOException("no lockfile exist");
     }
 
-    public long lockedByTime(final IOPath iop) throws IOException {
-        final IOPath lockFile = lockFile(iop);
-        final IOObject ioo = readLockFile(lockFile);
-        try {
-            return ioo.getJSONObject().getLong("time");
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
+    public final long lockedByTime(final IOPath iop) throws IOException {
+        final IOPath[] lockFiles = lockFile(iop);
+        for (int i = 0; i < lockFiles.length; i++) {
+            if (this.io.exists(lockFiles[i])) {
+                final IOObject ioo = readLockFile(lockFiles[i]);
+                try {
+                    return ioo.getJSONObject().getLong("time");
+                } catch (final JSONException e) {
+                    throw new IOException(e.getMessage());
+                }
+            }
         }
+        throw new IOException("no lockfile exist");
     }
 
 }

@@ -75,8 +75,8 @@ public abstract class AbstractCord implements Cord {
     }
 
     private JSONArray load() throws IOException {
-        final IOObject o = this.io.readForced(TIMEOUT, this.iop);
-        final JSONArray json = o.getJSONArray();
+        final IOObject[] o = this.io.readForced(TIMEOUT, this.iop);
+        final JSONArray json = o[0].getJSONArray();
         return json;
     }
 
