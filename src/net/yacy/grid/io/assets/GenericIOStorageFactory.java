@@ -23,25 +23,25 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import eu.searchlab.storage.io.AWSS3IO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
-import eu.searchlab.storage.io.S3IO;
 
 public class GenericIOStorageFactory implements StorageFactory<byte[]> {
 
     private URL url;
-    private String endpointURL, bucketName;
+    private final String endpointURL, bucketName;
     private GenericIO io;
 
     public GenericIOStorageFactory(final String endpointURL, final String bucketName, final String accessKey, final String secretKey) {
         try {
             this.url = new URL(endpointURL);
-        } catch (MalformedURLException e) {
+        } catch (final MalformedURLException e) {
             this.url = null;
         }
         this.endpointURL = endpointURL;
         this.bucketName = bucketName;
-        this.io = new S3IO(endpointURL, accessKey, secretKey);
+        this.io = new AWSS3IO(endpointURL, accessKey, secretKey);
     }
 
     @Override
@@ -82,16 +82,16 @@ public class GenericIOStorageFactory implements StorageFactory<byte[]> {
 
             @Override
             public StorageFactory<byte[]> store(String path, byte[] asset) throws IOException {
-                IOPath iop = new IOPath(GenericIOStorageFactory.this.bucketName, path);
+                final IOPath iop = new IOPath(GenericIOStorageFactory.this.bucketName, path);
                 GenericIOStorageFactory.this.io.write(iop, asset);
                 return GenericIOStorageFactory.this;
             }
 
             @Override
             public Asset<byte[]> load(String path) throws IOException {
-                IOPath iop = new IOPath(GenericIOStorageFactory.this.bucketName, path);
-                byte[] b = GenericIOStorageFactory.this.io.readAll(iop);
-                return new Asset<byte[]>(GenericIOStorageFactory.this, b);
+                final IOPath iop = new IOPath(GenericIOStorageFactory.this.bucketName, path);
+                final byte[] b = GenericIOStorageFactory.this.io.readAll(iop);
+                return new Asset<>(GenericIOStorageFactory.this, b);
             }
 
             @Override

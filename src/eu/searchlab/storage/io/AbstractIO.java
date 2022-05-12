@@ -39,8 +39,8 @@ public abstract class AbstractIO implements GenericIO {
         if (len <= 0) return b;
         if (b.length < len) throw new IOException("only " + b.length + " bytes available in stream");
         if (b.length == len) return b;
-        final byte[] a = new byte[(int) len];
-        System.arraycopy(b, 0, a, 0, (int) len);
+        final byte[] a = new byte[len];
+        System.arraycopy(b, 0, a, 0, len);
         return a;
     }
 
@@ -69,11 +69,15 @@ public abstract class AbstractIO implements GenericIO {
         InputStream is = this.read(fromIOp0);
         final byte[] buffer = new byte[4096];
         int l;
-        while ((l = is.read(buffer)) > 0) pos.write(buffer, 0, l);
-        is.close();
+        try {
+            while ((l = is.read(buffer)) > 0) pos.write(buffer, 0, l);
+            is.close();
+        } catch (final IOException e) {}
         is = this.read(fromIOp1);
-        while ((l = is.read(buffer)) > 0) pos.write(buffer, 0, l);
-        is.close();
+        try {
+            while ((l = is.read(buffer)) > 0) pos.write(buffer, 0, l);
+            is.close();
+        } catch (final IOException e) {}
         pos.close();
     }
 

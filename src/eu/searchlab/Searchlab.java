@@ -35,9 +35,9 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
 import eu.searchlab.http.WebServer;
+import eu.searchlab.storage.io.AWSS3IO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
-import eu.searchlab.storage.io.S3IO;
 import eu.searchlab.storage.queues.QueueFactory;
 import eu.searchlab.storage.queues.RabbitQueueFactory;
 import eu.searchlab.tools.Logger;
@@ -150,7 +150,7 @@ public class Searchlab {
                 assert p > 0;
                 final String bucket = bucket_endpoint.substring(0, p);
                 final String endpoint = bucket_endpoint.substring(p + 1);
-                io = new S3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
+                io = new AWSS3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
                 settingsIop = new IOPath(bucket, s3SettingsPath);
                 Logger.info("Connected S3 at " + s3address);
             }
@@ -179,7 +179,7 @@ public class Searchlab {
                 } catch (final IOException e) {
                     Logger.error(e);
                 }
-           }
+            }
         }.start();
 
         // Start webserver

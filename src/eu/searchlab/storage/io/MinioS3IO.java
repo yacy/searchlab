@@ -60,7 +60,7 @@ import io.minio.messages.Item;
 import io.minio.messages.OutputSerialization;
 import io.minio.messages.QuoteFields;
 
-public class S3IO extends AbstractIO implements GenericIO {
+public class MinioS3IO extends AbstractIO implements GenericIO {
 
     // one "proper" part size
     private final long partSize = 10 * 1024 * 1024; // proper is a number between 5MB and 5GB
@@ -73,7 +73,7 @@ public class S3IO extends AbstractIO implements GenericIO {
     private final MinioClient mc;
     private final String accessKey, secretKey;
 
-    public S3IO(final String endpointURL, final String accessKey, final String secretKey) {
+    public MinioS3IO(final String endpointURL, final String accessKey, final String secretKey) {
         this.mc =
                 MinioClient.builder()
                 .endpoint(endpointURL)
@@ -182,7 +182,7 @@ public class S3IO extends AbstractIO implements GenericIO {
             public void run() {
                 this.setName("S3IO writer for " + iop.toString());
                 try {
-                    S3IO.this.write(iop, is, len);
+                    MinioS3IO.this.write(iop, is, len);
                 } catch (final IOException e) {
                     e.printStackTrace();
                     ea[0] = e;
@@ -207,19 +207,19 @@ public class S3IO extends AbstractIO implements GenericIO {
             if (len < 0) {
                 this.mc.putObject(
                         PutObjectArgs.builder()
-                            .bucket(iop.getBucket())
-                            .object(iop.getPath())
-                            .stream(stream, -1, this.partSize)
-                            .contentType("application/octet-stream")
-                            .build());
+                        .bucket(iop.getBucket())
+                        .object(iop.getPath())
+                        .stream(stream, -1, this.partSize)
+                        .contentType("application/octet-stream")
+                        .build());
             } else {
                 this.mc.putObject(
                         PutObjectArgs.builder()
-                            .bucket(iop.getBucket())
-                            .object(iop.getPath())
-                            .stream(stream, len, -1)
-                            .contentType("application/octet-stream")
-                            .build());
+                        .bucket(iop.getBucket())
+                        .object(iop.getPath())
+                        .stream(stream, len, -1)
+                        .contentType("application/octet-stream")
+                        .build());
             }
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -248,13 +248,13 @@ public class S3IO extends AbstractIO implements GenericIO {
         try {
             this.mc.copyObject(
                     CopyObjectArgs.builder()
-                        .bucket(toIOp.getBucket())
-                        .object(toIOp.getPath())
-                        .source(
+                    .bucket(toIOp.getBucket())
+                    .object(toIOp.getPath())
+                    .source(
                             CopySource.builder()
                             .bucket(fromIOp.getBucket())
                             .object(fromIOp.getPath()).build())
-                        .build());
+                    .build());
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException
@@ -276,9 +276,9 @@ public class S3IO extends AbstractIO implements GenericIO {
         try {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
-                        .bucket(iop.getBucket())
-                        .object(iop.getPath())
-                        .build());
+                    .bucket(iop.getBucket())
+                    .object(iop.getPath())
+                    .build());
             return stream;
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -302,10 +302,10 @@ public class S3IO extends AbstractIO implements GenericIO {
         try {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
-                        .bucket(iop.getBucket())
-                        .object(iop.getPath())
-                        .offset(offset)
-                        .build());
+                    .bucket(iop.getBucket())
+                    .object(iop.getPath())
+                    .offset(offset)
+                    .build());
             return stream;
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -330,11 +330,11 @@ public class S3IO extends AbstractIO implements GenericIO {
         try {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
-                        .bucket(iop.getBucket())
-                        .object(iop.getPath())
-                        .offset(offset)
-                        .length(len)
-                        .build());
+                    .bucket(iop.getBucket())
+                    .object(iop.getPath())
+                    .offset(offset)
+                    .length(len)
+                    .build());
             return stream;
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -350,17 +350,17 @@ public class S3IO extends AbstractIO implements GenericIO {
         final InputSerialization is = new InputSerialization(null, false, null, null, FileHeaderInfo.USE, null, null, null);
         final OutputSerialization os = new OutputSerialization(null, null, null, QuoteFields.ASNEEDED, null);
         try {
-           final InputStream stream =
-                this.mc.selectObjectContent(
-                  SelectObjectContentArgs.builder()
-                  .bucket(iop.getBucket())
-                  .object(iop.getPath())
-                  .sqlExpression(sqlExpression)
-                  .inputSerialization(is)
-                  .outputSerialization(os)
-                  .requestProgress(true)
-                  .build());
-           return stream;
+            final InputStream stream =
+                    this.mc.selectObjectContent(
+                            SelectObjectContentArgs.builder()
+                            .bucket(iop.getBucket())
+                            .object(iop.getPath())
+                            .sqlExpression(sqlExpression)
+                            .inputSerialization(is)
+                            .outputSerialization(os)
+                            .requestProgress(true)
+                            .build());
+            return stream;
         } catch (InvalidKeyException | ErrorResponseException | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
@@ -510,4 +510,5 @@ public class S3IO extends AbstractIO implements GenericIO {
             return false;
         }
     }
+
 }
