@@ -20,14 +20,35 @@
 package eu.searchlab.aaa;
 
 import eu.searchlab.storage.io.IOPath;
+import io.findify.s3mock.S3Mock;
 
 public class UserDB {
 
-	IOPath basePath;
+    IOPath aaaBasePath, assignmentBasePath;
 
-	public UserDB(final IOPath basePath) {
-		this.basePath = basePath;
-	}
+    public UserDB(final IOPath aaaBasePath, final IOPath assignmentBasePath) {
+        this.aaaBasePath = aaaBasePath;
+        this.assignmentBasePath = assignmentBasePath;
+    }
 
+    public IOPath getAuthenticationBasePath() {
+        return this.aaaBasePath;
+    }
 
+    public IOPath getAuthorizationBasePath() {
+        return this.aaaBasePath;
+    }
+
+    public IOPath getAccountingBasePath() {
+        return this.aaaBasePath;
+    }
+
+    public IOPath getAssignmentBasePath() {
+        return this.assignmentBasePath;
+    }
+
+    public static void main(String[] args) {
+        final S3Mock api = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
+        api.start();
+    }
 }
