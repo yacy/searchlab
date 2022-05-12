@@ -190,7 +190,6 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
         final List<IOMeta> list = new ArrayList<>();
         for (final S3ObjectSummary summary: os) {
             final IOMeta meta = new IOMeta(new IOPath(summary.getBucketName(), summary.getKey()));
-            meta.setIsDir(summary.getKey().endsWith("/"));
             meta.setLastModified(summary.getLastModified().getTime());
             meta.setSize(summary.getSize());
             list.add(meta);

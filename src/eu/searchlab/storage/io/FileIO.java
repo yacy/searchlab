@@ -213,7 +213,7 @@ public class FileIO extends AbstractIO implements GenericIO {
         for (final String objectName: u) {
             final File fc = new File(f, objectName);
             final IOMeta meta = new IOMeta(new IOPath(bucketName, (prefix + "/" + objectName).replaceAll("//", "/")));
-            meta.setSize(fc.length()).setLastModified(fc.lastModified()).setIsDir(fc.isDirectory());
+            meta.setSize(fc.length()).setLastModified(fc.lastModified());
             list.add(meta);
         }
         return list;

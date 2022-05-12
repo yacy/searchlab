@@ -33,7 +33,7 @@ public class IOMeta {
         this.iop = iop;
         this.lastModified = -1;
         this.size = -1;
-        this.isDir = false;
+        this.isDir = iop.isFolder();
     }
 
     public IOMeta setLastModified(final long lastModified) {
@@ -43,11 +43,6 @@ public class IOMeta {
 
     public IOMeta setSize(final long size) {
         this.size = size;
-        return this;
-    }
-
-    public IOMeta setIsDir(final boolean isDir) {
-        this.isDir = isDir;
         return this;
     }
 

@@ -420,7 +420,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 if (!item.isDir()) {
                     cache.put(item.objectName(), item);
                     final IOMeta meta = new IOMeta(new IOPath(bucketName, item.objectName()));
-                    meta.setSize(item.size()).setLastModified(item.lastModified().toEpochSecond() * 1000L).setIsDir(item.isDir());
+                    meta.setSize(item.size()).setLastModified(item.lastModified().toEpochSecond() * 1000L);
                     objectMetas.add(meta);
                 }
             }
