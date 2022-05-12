@@ -20,16 +20,27 @@
 package eu.searchlab.aaa;
 
 import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.IOPath;
 import io.findify.s3mock.S3Mock;
 
 public class UserDB {
 
+	private final static String AUTHENTICATION_PATH = "authn"; // who is the user & identification
+	private final static String AUTHORIZATION_PATH  = "authr"; // what is the user allowed to do
+	private final static String ACCOUNTING_PATH     = "acctg"; // what has the user done / audit log
+	private final static String ASSIGNMENT_PATH     = "asgmt"; // what is due to be done (technical)
+	
 	private final GenericIO aaaIO, assignmentIO;
+	private final IOPath authnPath, authrPath, acctgPath, asgmtPath;
 	
 
-    public UserDB(final GenericIO aaaIO, final GenericIO assignmentIO) {
+    public UserDB(final GenericIO aaaIO, final GenericIO assignmentIO, IOPath basePath) {
         this.aaaIO = aaaIO;
         this.assignmentIO = assignmentIO;
+        this.authnPath = basePath.append(AUTHENTICATION_PATH);
+        this.authrPath = basePath.append(AUTHORIZATION_PATH);
+        this.acctgPath = basePath.append(ACCOUNTING_PATH);
+        this.asgmtPath = basePath.append(ASSIGNMENT_PATH);
     }
 
     public GenericIO getAuthenticationIO() {
@@ -47,7 +58,23 @@ public class UserDB {
     public GenericIO getAssignmentIO() {
         return this.assignmentIO;
     }
+    
+    public IOPath getAuthenticationPath() {
+        return this.authnPath;
+    }
 
+    public IOPath getAuthorizationPath() {
+        return this.authrPath;
+    }
+
+    public IOPath getAccountingPath() {
+        return this.acctgPath;
+    }
+
+    public IOPath getAssignmentPath() {
+        return this.asgmtPath;
+    }
+    
     public static void main(String[] args) {
         final S3Mock api = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
         api.start();
