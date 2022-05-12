@@ -19,32 +19,33 @@
 
 package eu.searchlab.aaa;
 
-import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.io.GenericIO;
 import io.findify.s3mock.S3Mock;
 
 public class UserDB {
 
-    IOPath aaaBasePath, assignmentBasePath;
+	private final GenericIO aaaIO, assignmentIO;
+	
 
-    public UserDB(final IOPath aaaBasePath, final IOPath assignmentBasePath) {
-        this.aaaBasePath = aaaBasePath;
-        this.assignmentBasePath = assignmentBasePath;
+    public UserDB(final GenericIO aaaIO, final GenericIO assignmentIO) {
+        this.aaaIO = aaaIO;
+        this.assignmentIO = assignmentIO;
     }
 
-    public IOPath getAuthenticationBasePath() {
-        return this.aaaBasePath;
+    public GenericIO getAuthenticationIO() {
+        return this.aaaIO;
     }
 
-    public IOPath getAuthorizationBasePath() {
-        return this.aaaBasePath;
+    public GenericIO getAuthorizationIO() {
+        return this.aaaIO;
     }
 
-    public IOPath getAccountingBasePath() {
-        return this.aaaBasePath;
+    public GenericIO getAccountingIO() {
+        return this.aaaIO;
     }
 
-    public IOPath getAssignmentBasePath() {
-        return this.assignmentBasePath;
+    public GenericIO getAssignmentIO() {
+        return this.assignmentIO;
     }
 
     public static void main(String[] args) {
