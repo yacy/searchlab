@@ -54,7 +54,6 @@ dependencies {
   implementation 'org.slf4j:log4j-over-slf4j:1.7.+'
   implementation 'org.slf4j:slf4j-jdk14:1.7.+'
   implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.17.+'
-  implementation 'org.rocksdb:rocksdbjni:7.0.+'
   implementation 'io.minio:minio:8.4.+'
   implementation 'com.amazonaws:aws-java-sdk-s3:1.12.+'
   implementation 'io.findify:s3mock_2.13:0.2.+'
