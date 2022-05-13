@@ -19,15 +19,36 @@
 
 package eu.searchlab.storage.io;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public abstract class AbstractIO implements GenericIO {
 
 
-    public static byte[] readAll(InputStream is, int len) throws IOException {
+    @Override
+    public void writeGZIP(final IOPath iop, final byte[] object) throws IOException {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final GZIPOutputStream zipStream = new GZIPOutputStream(baos);
+        zipStream.write(object);
+        zipStream.close();
+        baos.close();
+        write(iop, baos.toByteArray());
+    }
+
+    @Override
+    public InputStream readGZIP(final IOPath iop) throws IOException {
+        final byte[] a = readAll(iop);
+        final ByteArrayInputStream bais = new ByteArrayInputStream(a);
+        final GZIPInputStream gis = new GZIPInputStream(bais);
+        return gis;
+    }
+
+    public static byte[] readAll(final InputStream is, final int len) throws IOException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int c;
         byte[] b = new byte[16384];
@@ -45,22 +66,22 @@ public abstract class AbstractIO implements GenericIO {
     }
 
     @Override
-    public byte[] readAll(IOPath iop) throws IOException {
+    public byte[] readAll(final IOPath iop) throws IOException {
         return readAll(read(iop), -1);
     }
 
     @Override
-    public byte[] readAll(IOPath iop, long offset) throws IOException {
+    public byte[] readAll(final IOPath iop, final long offset) throws IOException {
         return readAll(read(iop, offset), -1);
     }
 
     @Override
-    public byte[] readAll(IOPath iop, long offset, long len) throws IOException {
+    public byte[] readAll(final IOPath iop, final long offset, final long len) throws IOException {
         return readAll(read(iop, offset), (int) len);
     }
 
     @Override
-    public void merge(IOPath fromIOp0, IOPath fromIOp1, IOPath toIOp) throws IOException {
+    public void merge(final IOPath fromIOp0, final IOPath fromIOp1, final IOPath toIOp) throws IOException {
         final long size0 = this.size(fromIOp0);
         final long size1 = this.size(fromIOp1);
         final long size = size0 < 0 || size1 < 0 ? -1 : size0 + size1;
@@ -82,7 +103,7 @@ public abstract class AbstractIO implements GenericIO {
     }
 
     @Override
-    public void mergeFrom(IOPath iop, IOPath... fromIOps) throws IOException {
+    public void mergeFrom(final IOPath iop, final IOPath... fromIOps) throws IOException {
         long size = 0;
         for (final IOPath fromIOp: fromIOps) {
             final long sizeN = this.size(fromIOp);
@@ -105,7 +126,7 @@ public abstract class AbstractIO implements GenericIO {
     }
 
     @Override
-    public void move(IOPath fromIOp, IOPath toIOp) throws IOException {
+    public void move(final IOPath fromIOp, final IOPath toIOp) throws IOException {
         // there is unfortunately no server-side move
         this.copy(fromIOp, toIOp);
         this.remove(fromIOp);

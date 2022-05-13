@@ -19,9 +19,11 @@
 
 package eu.searchlab.storage.io;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPOutputStream;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -129,6 +131,15 @@ public final class ConcurrentIO {
             for (int i = 0; i < ioos.length; i++) deleteLock(ioos[i].getPath());
             write(-1, ioos);
         }
+    }
+
+    public void writeGZIPForced(final long waitingtime, final IOPath iopgz, final byte[] object) throws IOException {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final GZIPOutputStream zipStream = new GZIPOutputStream(baos);
+        zipStream.write(object);
+        zipStream.close();
+        baos.close();
+        writeForced(waitingtime, new IOObject(iopgz, baos.toByteArray()));
     }
 
     public final IOObject[] read(final long waitingtime, final IOPath... iops) throws IOException {
