@@ -49,25 +49,41 @@ import io.findify.s3mock.S3Mock;
 public class AWSS3IO extends AbstractIO implements GenericIO {
 
     final AmazonS3Client s3;
+    private final String endpointURL, accessKey, secretKey;
 
-    public AWSS3IO(String url, String accessKey, String secretKey) {
+    public AWSS3IO(final String endpointURL, final String accessKey, final String secretKey) {
         final BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
         final AWSStaticCredentialsProvider provider = new AWSStaticCredentialsProvider(credentials);
-        final EndpointConfiguration endpoint = new EndpointConfiguration(url, Regions.EU_CENTRAL_1.getName());
+        final EndpointConfiguration endpoint = new EndpointConfiguration(endpointURL, Regions.EU_CENTRAL_1.getName());
         this.s3 = (AmazonS3Client) AmazonS3ClientBuilder
                 .standard()
                 .withEndpointConfiguration(endpoint)
                 .withCredentials(provider)
                 .build();
+        this.endpointURL = endpointURL;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+    }
+
+    public String getEndpointURL() {
+        return this.endpointURL;
+    }
+
+    public String getAccessKey() {
+        return this.accessKey;
+    }
+
+    public String getSecretKey() {
+        return this.secretKey;
     }
 
     @Override
-    public void makeBucket(String bucketName) throws IOException {
+    public void makeBucket(final String bucketName) throws IOException {
         this.s3.createBucket(bucketName);
     }
 
     @Override
-    public boolean bucketExists(String bucketName) throws IOException {
+    public boolean bucketExists(final String bucketName) throws IOException {
         return this.s3.doesBucketExistV2(bucketName);
     }
 
@@ -91,19 +107,19 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public long bucketCreation(String bucketName) throws IOException {
+    public long bucketCreation(final String bucketName) throws IOException {
         final Bucket bucket = getBucketsMap().get(bucketName);
         if (bucket == null) throw new IOException("bucket " + bucket + " not found");
         return bucket.getCreationDate().getTime();
     }
 
     @Override
-    public void removeBucket(String bucketName) throws IOException {
+    public void removeBucket(final String bucketName) throws IOException {
         this.s3.deleteBucket(bucketName);
     }
 
     @Override
-    public void write(IOPath iop, byte[] object) throws IOException {
+    public void write(final IOPath iop, final byte[] object) throws IOException {
         //this.s3.putObject(iop.getBucket(), iop.getPath(), new String(object, StandardCharsets.UTF_8));
         final InputStream is = new ByteArrayInputStream(object);
         final ObjectMetadata metadata = new ObjectMetadata();
@@ -113,7 +129,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public void write(IOPath iop, PipedOutputStream pos, long len) throws IOException {
+    public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException {
         final InputStream is = new PipedInputStream(pos, 4096);
         final IOException[] ea = new IOException[1];
         ea[0] = null;
@@ -150,18 +166,18 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public void copy(IOPath fromIOp, IOPath toIOp) throws IOException {
+    public void copy(final IOPath fromIOp, final IOPath toIOp) throws IOException {
         this.s3.copyObject(fromIOp.getBucket(), fromIOp.getPath(), toIOp.getBucket(), toIOp.getPath());
     }
 
     @Override
-    public InputStream read(IOPath iop) throws IOException {
+    public InputStream read(final IOPath iop) throws IOException {
         final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
         return obj.getObjectContent();
     }
 
     @Override
-    public InputStream read(IOPath iop, long offset) throws IOException {
+    public InputStream read(final IOPath iop, final long offset) throws IOException {
         final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
         if (obj == null) throw new IOException("object does not exist: " + iop.toString());
         final S3ObjectInputStream s3is = obj.getObjectContent();
@@ -170,7 +186,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public InputStream read(IOPath iop, long offset, long len) throws IOException {
+    public InputStream read(final IOPath iop, final long offset, final long len) throws IOException {
         final InputStream is = read(iop, offset);
         final int l = (int) Math.min(is.available(), len);
         final byte[] a = new byte[l];
@@ -179,12 +195,12 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public void remove(IOPath iop) throws IOException {
+    public void remove(final IOPath iop) throws IOException {
         this.s3.deleteObject(iop.getBucket(), iop.getPath());
     }
 
     @Override
-    public List<IOMeta> list(String bucketName, String prefix) throws IOException {
+    public List<IOMeta> list(final String bucketName, final String prefix) throws IOException {
         final ObjectListing ol = this.s3.listObjects(bucketName, prefix);
         final List<S3ObjectSummary> os = ol.getObjectSummaries();
         final List<IOMeta> list = new ArrayList<>();
@@ -198,28 +214,28 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public long diskUsage(String bucketName, String prefix) throws IOException {
+    public long diskUsage(final String bucketName, final String prefix) throws IOException {
         long du = 0;
         for (final IOMeta meta: list(bucketName, prefix)) du += meta.getSize();
         return du;
     }
 
     @Override
-    public long lastModified(IOPath iop) throws IOException {
+    public long lastModified(final IOPath iop) throws IOException {
         final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
         if (obj == null) throw new IOException("object does not exist: " + iop.toString());
         return obj.getObjectMetadata().getLastModified().getTime();
     }
 
     @Override
-    public long size(IOPath iop) throws IOException {
+    public long size(final IOPath iop) throws IOException {
         final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
         if (obj == null) throw new IOException("object does not exist: " + iop.toString());
         return obj.getObjectMetadata().getContentLength();
     }
 
     @Override
-    public boolean exists(IOPath iop) {
+    public boolean exists(final IOPath iop) {
         final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
         if (obj == null) return false;
         final Date date = obj.getObjectMetadata().getExpirationTime();
@@ -227,7 +243,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
         return date.getTime() < System.currentTimeMillis();
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         final S3Mock s3mock = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
         s3mock.start();
 
