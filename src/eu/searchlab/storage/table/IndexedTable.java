@@ -39,6 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
@@ -48,6 +49,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.tools.Logger;
 import tech.tablesaw.api.BooleanColumn;
 import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.api.DateColumn;
@@ -60,9 +62,12 @@ import tech.tablesaw.api.Row;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
+import tech.tablesaw.index.DoubleIndex;
+import tech.tablesaw.index.Index;
 import tech.tablesaw.index.LongIndex;
 import tech.tablesaw.index.StringIndex;
 import tech.tablesaw.io.csv.CsvReadOptions;
+import tech.tablesaw.selection.Selection;
 
 /**
  * TableIndex
@@ -81,6 +86,8 @@ public class IndexedTable implements Iterable<JSONObject> {
     private final Map<Integer, StringIndex> intrfStringIndex;
     private final Map<String, LongIndex> namedLongIndex;
     private final Map<Integer, LongIndex> intrfLongIndex;
+    private final Map<String, DoubleIndex> namedDoubleIndex;
+    private final Map<Integer, DoubleIndex> intrfDoubleIndex;
 
     /**
      * Create a table with indexing of given columns
@@ -95,6 +102,8 @@ public class IndexedTable implements Iterable<JSONObject> {
         this.intrfStringIndex = new HashMap<>();
         this.namedLongIndex = new HashMap<>();
         this.intrfLongIndex = new HashMap<>();
+        this.namedDoubleIndex = new HashMap<>();
+        this.intrfDoubleIndex = new HashMap<>();
     }
 
     /**
@@ -107,7 +116,7 @@ public class IndexedTable implements Iterable<JSONObject> {
      * @throws IOException
      */
     public IndexedTable(GenericIO io, IOPath iop, char separator, Charset charset) throws IOException {
-        IOPath iopgz = new IOPath(iop.getBucket(), iop.getPath() + ".gz");
+        final IOPath iopgz = new IOPath(iop.getBucket(), iop.getPath() + ".gz");
         if (!io.exists(iop) && io.exists(iopgz)) iop = iopgz;
         final InputStream ris = iopgz.getPath().endsWith(".gz") ? new GZIPInputStream(io.read(iopgz)) : io.read(iopgz);
         final InputStream is = new InputStream() {
@@ -126,11 +135,11 @@ public class IndexedTable implements Iterable<JSONObject> {
         colTypes.add(ColumnType.STRING); // this is required to prevent that the reader detext TEXT column types where we are not able to create a column index
         final CsvReadOptions options =
                 CsvReadOptions.builder(reader)
-                    .separator(separator)
-                    .locale(Locale.GERMAN)
-                    .header(true)
-                    .columnTypesToDetect(colTypes)
-                    .build();
+                .separator(separator)
+                .locale(Locale.GERMAN)
+                .header(true)
+                .columnTypesToDetect(colTypes)
+                .build();
         try {
             this.table = Table.read().usingOptions(options);
         } catch (final IllegalArgumentException e) {
@@ -144,6 +153,8 @@ public class IndexedTable implements Iterable<JSONObject> {
         this.intrfStringIndex = new HashMap<>();
         this.namedLongIndex = new HashMap<>();
         this.intrfLongIndex = new HashMap<>();
+        this.namedDoubleIndex = new HashMap<>();
+        this.intrfDoubleIndex = new HashMap<>();
     }
 
     /**
@@ -159,6 +170,8 @@ public class IndexedTable implements Iterable<JSONObject> {
         this.intrfStringIndex = new HashMap<>();
         this.namedLongIndex = new HashMap<>();
         this.intrfLongIndex = new HashMap<>();
+        this.namedDoubleIndex = new HashMap<>();
+        this.intrfDoubleIndex = new HashMap<>();
 
 
         try {
@@ -394,8 +407,8 @@ public class IndexedTable implements Iterable<JSONObject> {
     public void addRow(Row row) {
         final List<String> names = row.columnNames();
         for (int i = 0; i < row.columnCount(); i++) {
-           final Column<?> c = this.table.column(names.get(i));
-           c.appendObj(row.getObject(i));
+            final Column<?> c = this.table.column(names.get(i));
+            c.appendObj(row.getObject(i));
         }
     }
 
@@ -442,32 +455,63 @@ public class IndexedTable implements Iterable<JSONObject> {
         }
     }
 
-    public String getString(int r, String columnName) {
+    public DoubleIndex addDoubleIndex(final String colName) {
+        final Column<?> col = this.table.column(colName);
+        if (col instanceof DoubleColumn) {
+            final DoubleColumn dc = (DoubleColumn) col;
+            final DoubleIndex di = new DoubleIndex(dc);
+            final int colIndex = this.table.columnIndex(colName);
+            this.namedDoubleIndex.put(colName, di);
+            this.intrfDoubleIndex.put(colIndex, di);
+            return di;
+        } else {
+            System.out.println("DoubleIndex Error: column " + colName + " has type " + col.getClass().getName());
+            return null;
+        }
+    }
+
+    public String getString(final int r, final String columnName) {
         return this.table.getString(r, columnName);
     }
 
-    public IntColumn intColumn(String columnName) {
+    public IntColumn intColumn(final String columnName) {
         return this.table.intColumn(columnName);
-      }
+    }
 
-    public IntColumn intColumn(int columnIndex) {
+    public IntColumn intColumn(final int columnIndex) {
         return this.table.intColumn(columnIndex);
     }
 
-    public DateColumn dateColumn(String columnName) {
+    public LongColumn longColumn(final String columnName) {
+        return this.table.longColumn(columnName);
+    }
+
+    public LongColumn longColumn(final int columnIndex) {
+        return this.table.longColumn(columnIndex);
+    }
+
+    public DateColumn dateColumn(final String columnName) {
         return this.table.dateColumn(columnName);
     }
 
-    public NumericColumn<?> numberColumn(String columnName) {
+    public NumericColumn<?> numberColumn(final String columnName) {
         return this.table.numberColumn(columnName);
     }
 
-    public StringColumn stringColumn(String columnName) {
+    public StringColumn stringColumn(final String columnName) {
         return this.table.stringColumn(columnName);
     }
 
-    public StringColumn stringColumn(int columnIndex) {
+    public StringColumn stringColumn(final int columnIndex) {
         return this.table.stringColumn(columnIndex);
+    }
+
+    public DoubleColumn doubleColumn(final String columnName) {
+        return this.table.doubleColumn(columnName);
+    }
+
+    public DoubleColumn doubleColumn(final int columnIndex) {
+        return this.table.doubleColumn(columnIndex);
     }
 
     public boolean isEmpty() {
@@ -521,7 +565,7 @@ public class IndexedTable implements Iterable<JSONObject> {
      * @param value
      * @return
      */
-    public IndexedTable searchFulltext(Map<String, List<Integer>> index, String value) {
+    public IndexedTable searchFulltext(final Map<String, List<Integer>> index, final String value) {
         final Table t = this.table.emptyCopy();
         final List<Integer> l = index.get(value);
         if (l == null) return new IndexedTable(t);
@@ -567,20 +611,96 @@ public class IndexedTable implements Iterable<JSONObject> {
         }
     }
 
-    public IndexedTable whereSelects(String... selects) {
-        if (selects.length == 0) return this;
+    private static Selection not(final Selection s) {
+        return s.flip(0, s.size());
+    }
 
-        // handle first select (may use indexed where selection
-        SplitSelect s = new SplitSelect(selects[0]);
-        IndexedTable rtable = this.where(s.col, s.val);
-
-        // handle remaining selects
-        for (int i = 1; i < selects.length; i++) {
-            s = new SplitSelect(selects[i]);
-            if (s.val.length() > 0) rtable = rtable.where(s.col, s.val);
+    private Index getIndex(final String column) {
+        Index i = this.namedStringIndex.get(column);
+        if (i == null) i = this.namedLongIndex.get(column);
+        if (i != null) return i;
+        // create the index, but find out which kind
+        final Column<?> c = this.table.column(column);
+        if (c == null) {
+            Logger.error("column " + column + " does not exist in " + this.table.name());
+            return null;
         }
+        if (c instanceof StringColumn) return this.addStringIndex(column);
+        if (c instanceof LongColumn) return this.addLongIndex(column);
+        if (c instanceof DoubleColumn) return this.addDoubleIndex(column);
+        Logger.error("column " + column + " type in " + this.table.name() + " unknown: " + c.getClass().getName());
+        return null;
+    }
 
-        return rtable;
+    private Selection whereSelection(final String columnName, String value) {
+        // convert into one single selection
+        final String[] values = value.split(";"); // this is considering a disjunction of values
+
+        if (values.length == 1) {
+            final Index i = getIndex(columnName);
+            final boolean negation = value.startsWith("!");
+            if (negation) value = value.substring(1);
+            final Selection selection =
+                    i instanceof StringIndex ? ((StringIndex) i).get(value) :
+                        i instanceof LongIndex ? ((LongIndex) i).get(Long.parseLong(value)) :
+                            i instanceof DoubleIndex ? ((DoubleIndex) i).get(Double.parseDouble(value)) :
+                                null;
+            return negation ? not(selection) : selection;
+        } else {
+            Selection dis = null;
+            for (String v: values) {
+                final Index i = getIndex(columnName);
+                final boolean negation = v.startsWith("!");
+                if (negation) v = v.substring(1);
+                final Selection selection =
+                        i instanceof StringIndex ? ((StringIndex) i).get(v) :
+                            i instanceof LongIndex ? ((LongIndex) i).get(Long.parseLong(v)) :
+                                i instanceof DoubleIndex ? ((DoubleIndex) i).get(Double.parseDouble(v)) :
+                                    null;;
+                                    if (negation) {
+                                        if (dis == null) dis = not(selection); else dis.or(not(selection));
+                                    } else {
+                                        if (dis == null) dis = selection; else dis.or(selection);
+                                    }
+            }
+            return dis;
+        }
+    }
+
+    private Selection whereSelection(final String columnName, final long value) {
+        return ((LongIndex) getIndex(columnName)).get(value);
+    }
+
+    private Selection whereSelection(final String columnName, final double value) {
+        return ((DoubleIndex) getIndex(columnName)).get(value);
+    }
+
+    private Selection whereSelection(final String... selects) {
+        if (selects.length == 0) return null;
+
+        final SplitSelect[] ss = new SplitSelect[selects.length];
+        for (int i = 0; i < selects.length; i++) ss[i] = new SplitSelect(selects[i]);
+
+        // convert into one single selection
+        Selection con = null;
+        for (final SplitSelect s: ss) {
+            final Selection selection = whereSelection(s.col, s.val);
+            if (con == null) con = selection; else con.and(selection);
+        }
+        return con;
+    }
+
+    /**
+     * Create a new table which is selected by a conjunctive set of select statements.
+     * Each select statement is a string with syntax "<key>:<value>" that must match with all values <value>
+     * within the column <key> of the table.
+     * @param selects
+     * @return new table with rows selected
+     */
+    public IndexedTable whereSelects(final String... selects) {
+        if (selects.length == 0) return this;
+        final Table select = this.table.where(whereSelection(selects));
+        return new IndexedTable(select);
     }
 
     public IndexedTable whereSelects(List<String> selects) {
@@ -602,11 +722,11 @@ public class IndexedTable implements Iterable<JSONObject> {
 
     @Override
     public String toString() {
-        try {
-            return this.toJSON(true).toString(2);
-        } catch (final JSONException e) {
-            return this.print();
-        }
+        return this.table.toString();
+    }
+
+    public String printAll() {
+        return this.table.printAll();
     }
 
     public IndexedTable head(int count) {
@@ -617,201 +737,37 @@ public class IndexedTable implements Iterable<JSONObject> {
         return new IndexedTable(t);
     }
 
-    public IndexedTable where(String columnName, String value) {
-        final Column<?> c;
-        try {
-            c = this.table.column(columnName);
-        } catch (final IllegalStateException e) {
-            return new IndexedTable(this.table.emptyCopy());
-        }
-        if (c instanceof IntColumn) return this.where(columnName, Integer.parseInt(value));
-        if (c instanceof LongColumn) return this.where(columnName, Long.parseLong(value));
-
-        StringIndex si = this.namedStringIndex.get(columnName);
-        if (si == null) {
-            si = this.addStringIndex(columnName);
-        }
-        if (si != null) {
-            return new IndexedTable(this.table.where(si.get(value)));
-        }
-
-        // for some reason (maybe column type not StringColumn) we cannot have an index.
-        // do an iteration
-        final Table t = this.table.emptyCopy();
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            if (value.equals(row.getString(columnName))) t.addRow(row);
-        }
-        return new IndexedTable(t);
+    public IndexedTable where(final String columnName, final String value) {
+        final Selection con = whereSelection(columnName, value);
+        return new IndexedTable(this.table.where(con));
     }
 
-    public IndexedTable where(int columnNum, String value) {
-        final Column<?> c;
-        try {
-            c = this.table.column(columnNum);
-        } catch (final IllegalStateException e) {
-            return new IndexedTable(this.table.emptyCopy());
-        }
-        if (c instanceof IntColumn) return this.where(columnNum, Integer.parseInt(value));
-        if (c instanceof LongColumn) return this.where(columnNum, Long.parseLong(value));
-
-        StringIndex si = this.intrfStringIndex.get(columnNum);
-        if (si == null) {
-            si = this.addStringIndex(columnNum);
-        }
-        if (si != null) {
-            return new IndexedTable(this.table.where(si.get(value)));
-        }
-
-        // for some reason (maybe column type not StringColumn) we cannot have an index.
-        // do an iteration
-        final Table t = this.table.emptyCopy();
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            if (value.equals(row.getString(columnNum))) t.addRow(row);
-        }
-        return new IndexedTable(t);
+    public IndexedTable where(final String columnName, final long value) {
+        final Selection con = whereSelection(columnName, value);
+        return new IndexedTable(this.table.where(con));
     }
 
-    public IndexedTable where(StringColumn column, String value) {
-        final Table t = this.table.emptyCopy();
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            if (value.equals(column.getString(r))) t.addRow(row);
-        }
-        return new IndexedTable(t);
+    public IndexedTable whereNot(final String columnName, final long value) {
+        final Selection con = whereSelection(columnName, value);
+        return new IndexedTable(this.table.where(not(con)));
     }
 
-    public IndexedTable where(int column, int value) {
-        final Table t = this.table.emptyCopy();
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            if (value == row.getInt(column)) t.addRow(row);
-        }
-        return new IndexedTable(t);
-    }
-
-    public IndexedTable where(String column, int value) {
-        final Table t = this.table.emptyCopy();
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            if (value == row.getInt(column)) t.addRow(row);
-        }
-        return new IndexedTable(t);
-    }
-
-    public IndexedTable where(int column, long value) {
-        final Table t = this.table.emptyCopy();
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            if (value == row.getLong(column)) t.addRow(row);
-        }
-        return new IndexedTable(t);
-    }
-
-    public IndexedTable where(String column, long value) {
-        final Table t = this.table.emptyCopy();
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            if (value == row.getLong(column)) t.addRow(row);
-        }
-        return new IndexedTable(t);
-    }
-
-    public String selectStringFrom(int select, int column, int value) {
+    public String selectStringFrom(final String select, final String column, final long value) {
         final IndexedTable row = this.where(column, value);
         if (row == null || row.isEmpty()) return null;
         return row.stringColumn(select).get(0);
     }
 
-    public String selectStringFrom(String select, int column, int value) {
+    public String selectStringFrom(final String select, final String column, final String value) {
         final IndexedTable row = this.where(column, value);
         if (row == null || row.isEmpty()) return null;
         return row.stringColumn(select).get(0);
     }
 
-    public String selectStringFrom(int select, String column, int value) {
+    public double selectDoubleFrom(final String select, final String column, final String value) {
         final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.stringColumn(select).get(0);
-    }
-
-    public String selectStringFrom(String select, String column, int value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.stringColumn(select).get(0);
-    }
-
-    public String selectStringFrom(int select, int column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.stringColumn(select).get(0);
-    }
-
-    public String selectStringFrom(String select, int column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.stringColumn(select).get(0);
-    }
-
-    public String selectStringFrom(int select, String column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.stringColumn(select).get(0);
-    }
-
-    public String selectStringFrom(String select, String column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.stringColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(int select, int column, int value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(String select, int column, int value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(int select, String column, int value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(String select, String column, int value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(int select, int column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(String select, int column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(int select, String column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
-    }
-
-    public Integer selectIntFrom(String select, String column, String value) {
-        final IndexedTable row = this.where(column, value);
-        if (row == null || row.isEmpty()) return null;
-        return row.intColumn(select).get(0);
+        if (row == null || row.isEmpty()) return Double.NaN;
+        return row.doubleColumn(select).get(0);
     }
 
     public final static long getCellLong(final Row row, final String columnName) {
@@ -844,10 +800,10 @@ public class IndexedTable implements Iterable<JSONObject> {
             return a;
         } else if (columnType == ColumnType.LONG) {
             final long a = row.getLong(columnName);
-            return (double) a;
+            return a;
         } else if (columnType == ColumnType.INTEGER) {
             final int a = row.getInt(columnName);
-            return (double) a;
+            return a;
         } else if (columnType == ColumnType.DOUBLE) {
             final double a = row.getDouble(columnName);
             return a;
@@ -858,13 +814,30 @@ public class IndexedTable implements Iterable<JSONObject> {
         return 0.0d;
     }
 
-    public Map<String, Integer> facet(String column) {
+    public Map<String, Integer> stringFacet(final String column) {
         final Map<String, Integer> facet = new LinkedHashMap<>();
-        final StringColumn c = this.table.stringColumn(column);
+        final Column<?> b = this.table.column(column);
+        if (!(b instanceof StringColumn)) return facet;
+        final StringColumn c = (StringColumn) b;
         final Set<String> s = c.asSet();
         for (final String a: s) {
             final int o = c.countOccurrences(a);
             facet.put(a, o);
+        }
+        return facet;
+    }
+
+    public Map<Long, Integer> longFacet(final String column) {
+        final Map<Long, Integer> facet = new LinkedHashMap<>();
+        final Column<?> b = this.table.column(column);
+        if (!(b instanceof LongColumn)) return facet;
+        final LongColumn c = (LongColumn) b;
+        final Set<Long> s = new TreeSet<>();
+        c.forEach(x -> s.add(x));
+        for (final Long a: s) {
+            final AtomicInteger o = new AtomicInteger(0);
+            c.forEach(x -> {if (x == a) o.incrementAndGet();});
+            facet.put(a, o.get());
         }
         return facet;
     }
