@@ -73,12 +73,6 @@ public class HourSeriesTable {
         }
     }
 
-    /**
-     * Kalenderwochen - Zeitserie erzeugen
-     * @param viewCols views sind potentielle Suchfacetten im Datensatz zur Eingrenzung auf Teil-Zeitserien. Um eine Zeitserie zu erhalten, müssen alle Facetten fixiert werden.
-     * @param metaCols metas sind Kontextinformationen zum Datensatz
-     * @param dataCols datas sind Nutzwert der Zeitserie um einen Datenwert darstellen zu können.
-     */
     public HourSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final DoubleColumn[] dataCols) {
         this();
         this.viewCols = viewCols;
@@ -95,12 +89,6 @@ public class HourSeriesTable {
         initZeroes(dataCols.length);
     }
 
-    /**
-     * Kalenderwochen - Zeitserie erzeugen
-     * @param viewCols views sind potentielle Suchfacetten im Datensatz zur Eingrenzung auf Teil-Zeitserien. Um eine Zeitserie zu erhalten, müssen alle Facetten fixiert werden.
-     * @param metaCols metas sind Kontextinformationen zum Datensatz
-     * @param dataCols datas sind Nutzwert der Zeitserie um einen Datenwert darstellen zu können.
-     */
     public HourSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames) {
         this();
         this.viewCols = new StringColumn[viewColNames.length];
@@ -122,12 +110,6 @@ public class HourSeriesTable {
         initZeroes(this.dataCols.length);
     }
 
-    /**
-     * Aus einer Indexed Table eine Zeitserie erzeugen. Dabei müssen folgende Eigenschaften der Tabelle bestehen:
-     * - Es muss die long-Felder tsh_TIME, tsh_YEAR, tsh_WEEK, tshSYKWCol und tshCALDCol haben,
-     * - Weitere Tabellennamen müssen Prefixe "view", "meta", "data" und "unit" haben.
-     * @param table
-     */
     public HourSeriesTable(final IndexedTable table) {
         this.table = table;
         this.tshTimeCol = this.table.table().longColumn(TSH_TIME);
