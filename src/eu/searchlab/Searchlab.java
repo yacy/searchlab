@@ -85,31 +85,48 @@ public class Searchlab {
         return p < 0 ? d : a.substring(p + 1);
     }
 
-    public static void readDefaultConfig() {
+    public static void readConfig() {
         final File conf_dir = FileSystems.getDefault().getPath("conf").toFile();
         final Properties properties = new Properties();
         final File f = new File(conf_dir, "config.properties");
         if (f.exists()) try {
             properties.load(new FileInputStream(f));
-        } catch (final IOException e1) {
-            e1.printStackTrace();
+        } catch (final IOException e) {
+            Logger.error(e);
         }
 
-        for (final Object key: properties.keySet()) {
-            final String value = properties.getProperty((String) key);
-            // overwrite the system property only if it is not set already
-            if (System.getProperty((String) key) == null) System.setProperty((String) key, value);
+        final Map<String, String> sysenv = System.getenv();
+        for (final Object keyo: properties.keySet()) {
+            final String key = (String) keyo;
+            String value = properties.getProperty(key);
+            if (System.getProperty(key) != null) continue; // we do not overwrite system properties that are already set
+
+            // option to overwrite the config with environment variables.
+            // Because a '.' (dot) is not allowed in system environments
+            // the dot can be replaced by "_" (underscore), i.e. like:
+            // grid_broker_address="anonymous:yacy@127.0.0.1:5672" java -jar build/libs/yacy_grid_mcp-0.0.1-SNAPSHOT.jar
+            final String envkey0 = key.replace('.', '_');
+            final String envkey1 = "SEARCHLAB_" + envkey0.toUpperCase();
+            final String envval0 = sysenv.get(envkey0);
+            final String envval1 = sysenv.get(envkey1);
+            if (envval0 != null) {
+                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value '" + envval0 + "'");
+                value = envval0;
+            }
+            if (envval1 != null) {
+                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value '" + envval1 + "'");
+                value = envval1;
+            }
+
+            // set a system property with the new value
+            System.setProperty(key, value);
         }
     }
 
     public static void main(final String[] args) {
 
         // prepare configuration
-        final Properties sysprops = System.getProperties(); // system properties
-        readDefaultConfig() ;
-        System.getenv().forEach((k,v) -> {
-            if (k.startsWith("SEARCHLAB_")) sysprops.put(k.substring(10).toLowerCase().replace('_', '.'), v);
-        }); // add also environment variables
+        readConfig();
         System.setProperty("java.awt.headless", "true");
 
         // check assertion status
@@ -117,7 +134,6 @@ public class Searchlab {
         boolean assertionenabled = false;
         assert (assertionenabled = true) == true; // compare to true to remove warning: "Possible accidental assignement"
         if (assertionenabled) Logger.info("Asserts are enabled");
-
 
         // initialize data services (in the background)
         new Thread() {
