@@ -71,7 +71,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
 
     // the connection
     private final MinioClient mc;
-    private final String accessKey, secretKey;
+    private final String endpointURL, accessKey, secretKey;
 
     public MinioS3IO(final String endpointURL, final String accessKey, final String secretKey) {
         this.mc =
@@ -79,12 +79,13 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 .endpoint(endpointURL)
                 .credentials(accessKey, secretKey)
                 .build();
+        this.endpointURL = endpointURL;
         this.accessKey = accessKey;
         this.secretKey = secretKey;
     }
 
     public String getEndpointURL() {
-        return this.getEndpointURL();
+        return this.endpointURL;
     }
 
     public String getAccessKey() {

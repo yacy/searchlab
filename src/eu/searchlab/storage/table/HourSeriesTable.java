@@ -1,5 +1,5 @@
 /**
- *  DaySeriesTable
+ *  HourSeriesTable
  *  Copyright 09.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 package eu.searchlab.storage.table;
 
 import java.time.LocalDateTime;
@@ -30,35 +31,39 @@ import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.plotly.traces.ScatterTrace;
 
-public class DaySeriesTable {
+public class HourSeriesTable {
 
     public IndexedTable table;
 
-    public DateTimeColumn tsdDateCol;
-    public LongColumn tsdTimeCol;
-    public LongColumn tsdYearCol;
-    public LongColumn tsdMonthCol;
-    public LongColumn tsdDayCol;
-    public StringColumn tsdCALDCol;
+    public DateTimeColumn tshDateCol;
+    public LongColumn tshTimeCol;
+    public LongColumn tshYearCol;
+    public LongColumn tshMonthCol;
+    public LongColumn tshDayCol;
+    public LongColumn tshHourCol;
+    public StringColumn tshSYKWCol;
+    public StringColumn tshCALDCol;
     public StringColumn[] viewCols;
     public StringColumn[] metaCols;
     public DoubleColumn[] dataCols;
     private double[] zeroData;
 
-    public final static String TSD_DATE  = "tsd.date";
-    public final static String TSD_TIME  = "tsd.time";
-    public final static String TSD_YEAR  = "tsd.year";
-    public final static String TSD_MONTH = "tsd.month";
-    public final static String TSD_DAY   = "tsd.day";
-    public final static String TSD_CALD  = "tsd.cald"; // LocalDate format yyy-mm-dd hh:mm
+    public final static String TSH_DATE  = "tsh.date";
+    public final static String TSH_TIME  = "tsh.time";
+    public final static String TSH_YEAR  = "tsh.year";
+    public final static String TSH_MONTH = "tsh.month";
+    public final static String TSH_DAY   = "tsh.day";
+    public final static String TSH_HOUR  = "tsh.hour";
+    public final static String TSH_CALD  = "tsh.cald"; // LocalDate format yyy-mm-dd hh:mm
 
-    private DaySeriesTable() {
-        this.tsdDateCol  = DateTimeColumn.create(TSD_DATE);
-        this.tsdTimeCol  = LongColumn.create(TSD_TIME);
-        this.tsdYearCol  = LongColumn.create(TSD_YEAR);
-        this.tsdMonthCol = LongColumn.create(TSD_MONTH);
-        this.tsdDayCol   = LongColumn.create(TSD_DAY);
-        this.tsdCALDCol  = StringColumn.create(TSD_CALD);
+    private HourSeriesTable() {
+        this.tshDateCol  = DateTimeColumn.create(TSH_DATE);
+        this.tshTimeCol  = LongColumn.create(TSH_TIME);
+        this.tshYearCol  = LongColumn.create(TSH_YEAR);
+        this.tshMonthCol = LongColumn.create(TSH_MONTH);
+        this.tshDayCol   = LongColumn.create(TSH_DAY);
+        this.tshHourCol  = LongColumn.create(TSH_HOUR);
+        this.tshCALDCol  = StringColumn.create(TSH_CALD);
     }
 
     private void initZeroes(final int len) {
@@ -68,19 +73,13 @@ public class DaySeriesTable {
         }
     }
 
-    /**
-     * Kalenderwochen - Zeitserie erzeugen
-     * @param viewCols views sind potentielle Suchfacetten im Datensatz zur Eingrenzung auf Teil-Zeitserien. Um eine Zeitserie zu erhalten, müssen alle Facetten fixiert werden.
-     * @param metaCols metas sind Kontextinformationen zum Datensatz
-     * @param dataCols datas sind Nutzwert der Zeitserie um einen Datenwert darstellen zu können.
-     */
-    public DaySeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final DoubleColumn[] dataCols) {
+    public HourSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final DoubleColumn[] dataCols) {
         this();
         this.viewCols = viewCols;
         this.metaCols = metaCols;
         this.dataCols = dataCols;
         final Table t = Table.create()
-                .addColumns(this.tsdDateCol, this.tsdTimeCol, this.tsdYearCol, this.tsdMonthCol, this.tsdDayCol, this.tsdCALDCol)
+                .addColumns(this.tshDateCol, this.tshTimeCol, this.tshYearCol, this.tshMonthCol, this.tshDayCol, this.tshHourCol, this.tshSYKWCol, this.tshCALDCol)
                 .addColumns(this.viewCols)
                 .addColumns(this.metaCols);
         for (int i = 0; i < this.dataCols.length; i++) {
@@ -90,13 +89,7 @@ public class DaySeriesTable {
         initZeroes(dataCols.length);
     }
 
-    /**
-     * Kalenderwochen - Zeitserie erzeugen
-     * @param viewCols views sind potentielle Suchfacetten im Datensatz zur Eingrenzung auf Teil-Zeitserien. Um eine Zeitserie zu erhalten, müssen alle Facetten fixiert werden.
-     * @param metaCols metas sind Kontextinformationen zum Datensatz
-     * @param dataCols datas sind Nutzwert der Zeitserie um einen Datenwert darstellen zu können.
-     */
-    public DaySeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames) {
+    public HourSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames) {
         this();
         this.viewCols = new StringColumn[viewColNames.length];
         for (int i = 0; i < viewColNames.length; i++) this.viewCols[i] = StringColumn.create(viewColNames[i]);
@@ -107,7 +100,7 @@ public class DaySeriesTable {
             this.dataCols[i] = DoubleColumn.create(dataColNames[i]);
         }
         final Table t = Table.create()
-                .addColumns(this.tsdDateCol, this.tsdTimeCol, this.tsdYearCol, this.tsdMonthCol, this.tsdDayCol, this.tsdCALDCol)
+                .addColumns(this.tshDateCol, this.tshTimeCol, this.tshYearCol, this.tshMonthCol, this.tshDayCol, this.tshHourCol, this.tshSYKWCol, this.tshCALDCol)
                 .addColumns(this.viewCols)
                 .addColumns(this.metaCols);
         for (int i = 0; i < this.dataCols.length; i++) {
@@ -117,19 +110,14 @@ public class DaySeriesTable {
         initZeroes(this.dataCols.length);
     }
 
-    /**
-     * Aus einer Indexed Table eine Zeitserie erzeugen. Dabei müssen folgende Eigenschaften der Tabelle bestehen:
-     * - Es muss die long-Felder tsh_TIME, tsh_YEAR, tsh_WEEK, tshSYKWCol und tshCALDCol haben,
-     * - Weitere Tabellennamen müssen Prefixe "view", "meta", "data" und "unit" haben.
-     * @param table
-     */
-    public DaySeriesTable(final IndexedTable table) {
+    public HourSeriesTable(final IndexedTable table) {
         this.table = table;
-        this.tsdTimeCol = this.table.table().longColumn(TSD_TIME);
-        this.tsdYearCol = this.table.table().longColumn(TSD_YEAR);
-        this.tsdMonthCol = this.table.table().longColumn(TSD_MONTH);
-        this.tsdDayCol = this.table.table().longColumn(TSD_DAY);
-        this.tsdCALDCol = this.table.table().stringColumn(TSD_CALD);
+        this.tshTimeCol = this.table.table().longColumn(TSH_TIME);
+        this.tshYearCol = this.table.table().longColumn(TSH_YEAR);
+        this.tshMonthCol = this.table.table().longColumn(TSH_MONTH);
+        this.tshDayCol = this.table.table().longColumn(TSH_DAY);
+        this.tshHourCol = this.table.table().longColumn(TSH_HOUR);
+        this.tshCALDCol = this.table.table().stringColumn(TSH_CALD);
         int viewColCount = 0, metaColCount = 0, dataColCount = 0;
         for (int col = 0; col < table.columnCount(); col++) {
             final String name = table.table().columnArray()[col].name();
@@ -155,19 +143,20 @@ public class DaySeriesTable {
     }
 
     public void deleteBefore(final long jahr) {
-        for (int i = 0; i < this.tsdYearCol.size(); i++) {
-            final long j = this.tsdYearCol.getLong(i);
+        for (int i = 0; i < this.tshYearCol.size(); i++) {
+            final long j = this.tshYearCol.getLong(i);
             if (j >= jahr) {
                 final Table t = this.table.table().emptyCopy();
                 for (int k = i; k < this.table.rowCount(); k++) {
                     t.addRow(this.table.row(k));
                 }
-                this.tsdDateCol = t.dateTimeColumn(TSD_DATE);
-                this.tsdTimeCol = t.longColumn(TSD_TIME);
-                this.tsdYearCol = t.longColumn(TSD_YEAR);
-                this.tsdMonthCol = t.longColumn(TSD_MONTH);
-                this.tsdDayCol = t.longColumn(TSD_DAY);
-                this.tsdCALDCol = t.stringColumn(TSD_CALD);
+                this.tshDateCol = t.dateTimeColumn(TSH_DATE);
+                this.tshTimeCol = t.longColumn(TSH_TIME);
+                this.tshYearCol = t.longColumn(TSH_YEAR);
+                this.tshMonthCol = t.longColumn(TSH_MONTH);
+                this.tshDayCol = t.longColumn(TSH_DAY);
+                this.tshHourCol = t.longColumn(TSH_HOUR);
+                this.tshCALDCol = t.stringColumn(TSH_CALD);
                 for (int k = 0; k < this.viewCols.length; k++) this.viewCols[k] = t.stringColumn(this.viewCols[k].name());
                 for (int k = 0; k < this.metaCols.length; k++) this.metaCols[k] = t.stringColumn(this.metaCols[k].name());
                 for (int k = 0; k < this.dataCols.length; k++) this.dataCols[k] = t.doubleColumn(this.dataCols[k].name());
@@ -177,12 +166,12 @@ public class DaySeriesTable {
         }
     }
 
-    public LocalDateTime getLocalDate(final int year, final int month, final int day) {
+    public LocalDateTime getLocalDate(final int year, final int month, final int day, final int hour) {
         return LocalDateTime.now()
                 .with(ChronoField.YEAR, year)
                 .with(ChronoField.MONTH_OF_YEAR, month)
                 .with(ChronoField.DAY_OF_MONTH, day)
-                .with(ChronoField.HOUR_OF_DAY, 0)
+                .with(ChronoField.HOUR_OF_DAY, hour)
                 .with(ChronoField.MINUTE_OF_HOUR, 0)
                 .with(ChronoField.SECOND_OF_MINUTE, 0)
                 .with(ChronoField.MILLI_OF_SECOND, 0)
@@ -190,18 +179,19 @@ public class DaySeriesTable {
                 ;
     }
 
-    public void addValues(final int year, final int month, final int day, final String[] view, final String[] meta, final double[] data) {
+    public void addValues(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta, final double[] data) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
         assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
-        final LocalDateTime date = getLocalDate(year, month, day);
-        final long time = date.toEpochSecond(ZoneOffset.UTC) * 1000;
-        this.tsdDateCol.appendObj(LocalDateTime.ofEpochSecond(time / 1000, 0, ZoneOffset.ofHours(0)));
-        this.tsdTimeCol.append(time);
-        this.tsdYearCol.append(year);
-        this.tsdMonthCol.append(month);
-        this.tsdDayCol.append(day);
-        this.tsdCALDCol.append(date.toString().substring(0, 10)); // ISO-8601 format yyy-mm-dd
+        final LocalDateTime date = getLocalDate(year, month, day, hour);
+        final long time = date.toEpochSecond(ZoneOffset.UTC);
+        this.tshDateCol.appendObj(LocalDateTime.ofEpochSecond(time / 1000, 0, ZoneOffset.ofHours(0)));
+        this.tshTimeCol.append(time);
+        this.tshYearCol.append(year);
+        this.tshMonthCol.append(month);
+        this.tshDayCol.append(day);
+        this.tshHourCol.append(hour);
+        this.tshCALDCol.append(date.toString()); // ISO-8601 format yyy-mm-dd
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
         for (int i = 0; i < data.length; i++) this.dataCols[i].append(data[i]);
@@ -220,13 +210,13 @@ public class DaySeriesTable {
      * @param meta
      * @param data
      */
-    public void setValuesWhere(final int year, final int month, final int day, final String[] view, final String[] meta, final double[] data) {
+    public void setValuesWhere(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta, final double[] data) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
         assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
-            if (this.tsdYearCol.get(r) != year || this.tsdMonthCol.get(r) != month || this.tsdDayCol.get(r) != day) continue;
+            if (this.tshYearCol.get(r) != year || this.tshMonthCol.get(r) != month || this.tshDayCol.get(r) != day || this.tshHourCol.get(r) != hour) continue;
 
             // try to match with view constraints
             for (int t = 0; t < view.length; t++) {
@@ -240,7 +230,55 @@ public class DaySeriesTable {
         }
     }
 
-    public double[] getDataColsRow(final int row) {
+    public double[] getValues(final int year, final int month, final int day, final int hour, final String[] view) {
+        assert view == null || view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
+
+        // execute select
+        search: for (int i = 0; i < this.table.size(); i++) {
+            if (this.tshYearCol.getLong(i) == year && this.tshMonthCol.getLong(i) == month && this.tshDayCol.getLong(i) == day && this.tshHourCol.getLong(i) == hour) {
+                if (view != null) for (int j = 0; j < view.length; j++) {
+                    if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
+                }
+                return getDouble(i);
+            }
+        }
+        return null;
+    }
+
+    public long getYear(final int row) {
+        return this.table.longColumn(TSH_YEAR).get(row);
+    }
+
+    public long getMonth(final int row) {
+        return this.table.longColumn(TSH_MONTH).get(row);
+    }
+
+    public long getDay(final int row) {
+        return this.table.longColumn(TSH_DAY).get(row);
+    }
+
+    public long getHour(final int row) {
+        return this.table.longColumn(TSH_HOUR).get(row);
+    }
+
+    public LocalDateTime getFirstDate() {
+        final long year = getYear(0);
+        final long month = getMonth(0);
+        final long day = getDay(0);
+        final long hour = getHour(0);
+        return getLocalDate((int) year, (int) month, (int) day, (int) hour);
+    }
+
+    public LocalDateTime getLastDate() {
+        final int row = this.table.size() - 1;
+        final long year = getYear(row);
+        final long month = getMonth(row);
+        final long day = getDay(row);
+        final long hour = getHour(row);
+        return getLocalDate((int) year, (int) month, (int) day, (int) hour);
+    }
+
+    public double[] getDouble(final int row) {
         final double[] d = new double[this.dataCols.length];
         int c = 0;
         for (int i = 0; i < this.dataCols.length; i++) {
@@ -251,55 +289,13 @@ public class DaySeriesTable {
         return d;
     }
 
-    public double[] getDataColsRow(final int year, final int month, final int day, final String[] view) {
-        assert view == null || view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
-
-        // execute select
-        search: for (int i = 0; i < this.table.size(); i++) {
-            if (this.tsdYearCol.getLong(i) == year && this.tsdMonthCol.getLong(i) == month && this.tsdDayCol.getLong(i) == day) {
-                if (view != null) for (int j = 0; j < view.length; j++) {
-                    if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
-                }
-                return getDataColsRow(i);
-            }
-        }
-        return null;
-    }
-
-    public int getYear(final int row) {
-        return this.table.longColumn(TSD_YEAR).get(row).intValue();
-    }
-
-    public int getMonth(final int row) {
-        return this.table.longColumn(TSD_MONTH).get(row).intValue();
-    }
-
-    public int getDay(final int row) {
-        return this.table.longColumn(TSD_DAY).get(row).intValue();
-    }
-
-    public LocalDateTime getFirstDate() {
-        final long year = getYear(0);
-        final long month = getMonth(0);
-        final long day = getDay(0);
-        return getLocalDate((int) year, (int) month, (int) day);
-    }
-
-    public LocalDateTime getLastDate() {
-        final int row = this.table.size() - 1;
-        final long year = getYear(row);
-        final long month = getMonth(row);
-        final long day = getDay(row);
-        return getLocalDate((int) year, (int) month, (int) day);
-    }
-
-    public void addValuesOverWeek(final int year, final int month, final int day, final String[] view, final String[] meta, final double[] data) {
+    public void addValuesOverWeek(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta, final double[] data) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
         assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
         assert data.length == this.dataCols.length;
         //final long stop = start + weekLengthMilliseconds - 1;
-        addValues(year, month, day, view, meta, data);
+        addValues(year, month, day, hour, view, meta, data);
         //addValues(stop, year, week, view, meta, data, unit);
     }
 
