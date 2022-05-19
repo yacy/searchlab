@@ -9,12 +9,9 @@
 
 # prepare front-end
 FROM python:3.9-alpine AS sitebuilder
-
-ADD searchlab /app
+ADD searchlab/ui /app/ui
 WORKDIR /app
 ENV PYTHONHTTPSVERIFY 0
-
-# build ui
 RUN \
     apk add --update ca-certificates bash build-base && \
     export PYTHONHTTPSVERIFY=0 && \
@@ -26,16 +23,28 @@ RUN \
     mkdocs build
 
 # prepare server
-FROM adoptopenjdk/openjdk8:alpine AS appbuilder
+FROM eclipse-temurin:8-jdk-alpine AS appbuilder
+ADD searchlab/src /app/src/
+ADD searchlab/build.gradle /app/
+ADD searchlab/.gradle /app/
+ADD searchlab/gradle /app/gradle/
+ADD searchlab/gradle.properties /app/
+ADD searchlab/gradlew /app/
+WORKDIR /app
+RUN ./gradlew assemble
+
+# prepare distribution image
+FROM eclipse-temurin:8-jre-alpine
 LABEL maintainer="Michael Peter Christen <mc@yacy.net>"
 ENV DEBIAN_FRONTEND noninteractive
 ARG default_branch=master
-EXPOSE 8400
 
-ADD searchlab /app
-ADD searchlab_apps /searchlab_apps
+ADD searchlab_apps /searchlab_apps/
+ADD searchlab/conf /app/conf/
+ADD searchlab/htdocs /app/htdocs/
 COPY --from=sitebuilder /app/ui/site/ ./app/ui/site/
-WORKDIR /app
-RUN ./gradlew assemble
-CMD ["java", "-jar", "/app/build/libs/searchlab-0.0.1-SNAPSHOT-all.jar"]
+COPY --from=appbuilder /app/build/libs/searchlab-0.0.1-SNAPSHOT-all.jar ./app/build/libs/
 
+EXPOSE 8400
+WORKDIR /app
+CMD ["java", "-jar", "/app/build/libs/searchlab-0.0.1-SNAPSHOT-all.jar"]
