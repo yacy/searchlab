@@ -61,7 +61,7 @@ public class CrawlStart {
             defaultValues.put("collection", "user"); // corpus name
             defaultValues.put("agentName", "");
             defaultValues.put("priority", 0);
-            defaultValues.put("loaderHeadless", "true");
+            defaultValues.put("loaderHeadless", "false");
             defaultValues.put("userId", Authentication.ANONYMOUS_ID);
             defaultValues.put("storeAssets", "false");
             defaultValues.put("archiveWARC", "true");
