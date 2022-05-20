@@ -26,6 +26,12 @@ import eu.searchlab.aaa.Authentication;
 
 public class CrawlStart {
 
+
+
+
+
+
+
     public static JSONObject defaultValues = new JSONObject(true);
     static {
         try {
@@ -52,11 +58,15 @@ public class CrawlStart {
             defaultValues.put("crawlingDomMaxPages", 1000);
             defaultValues.put("crawlingQ", "off");
             defaultValues.put("cachePolicy", "if fresh");
+            defaultValues.put("collection", "user"); // corpus name
             defaultValues.put("agentName", "");
             defaultValues.put("priority", 0);
             defaultValues.put("loaderHeadless", "true");
             defaultValues.put("userId", Authentication.ANONYMOUS_ID);
-            defaultValues.put("collection", "user"); // corpus name
+            defaultValues.put("storeAssets", "false");
+            defaultValues.put("archiveWARC", "true");
+            defaultValues.put("archiveIndex", "true");
+            defaultValues.put("archiveGraph", "true");
         } catch (final JSONException e) {
         }
     }
