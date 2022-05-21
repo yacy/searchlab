@@ -1,4 +1,4 @@
-package eu.searchlab.aaa;
+package eu.searchlab.aaaaa;
 
 public class Assignment {
 

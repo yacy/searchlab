@@ -1,5 +1,5 @@
 /**
- *  Authorization
+ *  Accounting
  *  Copyright 19.04.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
@@ -17,29 +17,35 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.aaa;
+package eu.searchlab.aaaaa;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class Authorization {
+import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.IOPath;
 
-	private final JSONObject json;
+/**
+ * This class helps to collect the digital gold: assets from crawls which the user
+ * is able to process themselves. The assets are:
+ * - warc files from the crawl loader
+ * - index files from the parser that can be used directly for indexing
+ * - a crawl start audit log which also contains index deletions in one timeline
+ * - a corpora set of index corpus definitions for each index collection
+ */
+public class Accounting {
 
-	public Authorization() {
-		this.json = new JSONObject();
+	private GenericIO io;
+	private IOPath iop;
+	
+	public Accounting(GenericIO io, IOPath iop) {
+		this.io = io;
+		this.iop = iop;
 	}
 
-	public JSONObject getJSON() {
-		return this.json;
+	public void storeIndex(JSONArray indexObjArray) {
+		
 	}
-
-	@Override
-	public String toString() {
-		try {
-			return this.json.toString(2);
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+	
 }

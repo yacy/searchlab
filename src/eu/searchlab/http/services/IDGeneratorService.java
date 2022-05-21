@@ -23,7 +23,7 @@ package eu.searchlab.http.services;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.aaa.Authentication;
+import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.Service;
 
 public class IDGeneratorService  extends AbstractService implements Service {

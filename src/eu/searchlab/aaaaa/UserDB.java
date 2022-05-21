@@ -17,7 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.aaa;
+package eu.searchlab.aaaaa;
 
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;

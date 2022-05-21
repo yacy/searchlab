@@ -22,7 +22,7 @@ package eu.searchlab.corpus;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.aaa.Authentication;
+import eu.searchlab.aaaaa.Authentication;
 
 public class CrawlStart {
 

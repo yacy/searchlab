@@ -37,7 +37,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
-import eu.searchlab.aaa.Authentication;
+import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.corpus.Action;
 import eu.searchlab.corpus.ActionSequence;
 import eu.searchlab.corpus.CrawlStart;
