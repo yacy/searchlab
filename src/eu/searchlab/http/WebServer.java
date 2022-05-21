@@ -47,6 +47,7 @@ import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.services.AppsService;
+import eu.searchlab.http.services.AssetDirectoryService;
 import eu.searchlab.http.services.CrawlStartService;
 import eu.searchlab.http.services.IDGeneratorService;
 import eu.searchlab.http.services.IDValidationService;
@@ -109,6 +110,7 @@ public class WebServer {
         ServiceMap.register(new IDValidationService());
         ServiceMap.register(new CrawlStartService());
         ServiceMap.register(new ThreaddumpService());
+        ServiceMap.register(new AssetDirectoryService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();

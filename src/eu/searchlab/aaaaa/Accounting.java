@@ -19,6 +19,8 @@
 
 package eu.searchlab.aaaaa;
 
+import java.util.Date;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,13 +39,29 @@ import eu.searchlab.storage.io.IOPath;
 public class Accounting {
 
 	private GenericIO io;
-	private IOPath iop;
+	private IOPath aaaaaIop, accountingIop;
 	
-	public Accounting(GenericIO io, IOPath iop) {
+/*
+the path in crawler to assets is defined by:
+        final String basepath  = "/data/aaaaa/accounting/" + userId + "/";
+        final String docname  = "d" + intf(depth) + "-t" + FORMAT_TIMEF.format(new Date(timestamp)) + "-p" + intf(partition);
+        final String warcasset  =  basepath + "warc/"  + id + "/" + docname + ".warc.gz";
+        final String indexasset =  basepath + "index/" + id + "/" + docname + ".index.jsonlist";
+        final String graphasset =  basepath + "graph/" + id + "/" + docname + ".graph.jsonlist";
+ */
+	
+	public Accounting(GenericIO io, IOPath aaaaaIop) {
 		this.io = io;
-		this.iop = iop;
+		this.aaaaaIop = aaaaaIop;
+		this.accountingIop = this.aaaaaIop.append("accounting");
+	}
+	
+	public IOPath getAssetPathForUser(String userID) {
+		return this.accountingIop.append(userID);
 	}
 
+	
+	
 	public void storeIndex(JSONArray indexObjArray) {
 		
 	}

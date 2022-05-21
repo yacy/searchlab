@@ -80,7 +80,13 @@ public final class IOPath {
         if (p < 0) throw new RuntimeException("IOPath must have at leas one folder to truncate: " + this.toString());
         return new IOPath(this.bucket, this.path.substring(0, p));
     }
-
+    
+    public String name() {
+        int p = this.path.lastIndexOf('/');
+        if (p < 0) throw new RuntimeException("IOPath must have at leas one folder to truncate: " + this.toString());
+        return this.path.substring(p + 1);
+    }
+    
     @Override
     public String toString() {
         return this.bucket + "/" + this.path;

@@ -207,12 +207,19 @@ public interface GenericIO {
      * listing of object names in a given prefix path
      * @param bucketName
      * @param prefix
-     * @return list of object names
+     * @return list of object meta descriptions
      * @throws IOException
      */
     public List<IOMeta> list(final String bucketName, final String prefix) throws IOException;
 
-
+    /**
+     * listing of object names in a given prefix path
+     * @param path the path to bucket and directory
+     * @return list of object meta descriptions
+     * @throws IOException
+     */
+    public List<IOMeta> list(final IOPath path) throws IOException;
+    
     /**
      * calculate the disk usage in a given path
      * @param bucketName

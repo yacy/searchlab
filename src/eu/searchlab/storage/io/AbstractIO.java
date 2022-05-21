@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -130,6 +131,12 @@ public abstract class AbstractIO implements GenericIO {
         // there is unfortunately no server-side move
         this.copy(fromIOp, toIOp);
         this.remove(fromIOp);
+    }
+    
+    @Override
+    public List<IOMeta> list(final IOPath path) throws IOException {
+    	List<IOMeta> list = list(path.getBucket(), path.getPath());
+    	return list;
     }
 
 }

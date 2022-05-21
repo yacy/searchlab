@@ -34,10 +34,12 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
+import eu.searchlab.aaaaa.Accounting;
 import eu.searchlab.http.WebServer;
 import eu.searchlab.storage.io.AWSS3IO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.io.MinioS3IO;
 import eu.searchlab.storage.queues.QueueFactory;
 import eu.searchlab.storage.queues.RabbitQueueFactory;
 import eu.searchlab.tools.Logger;
@@ -52,7 +54,7 @@ public class Searchlab {
 
     // IO and MinIO
     public static GenericIO io;
-    public static IOPath settingsIop;
+    public static IOPath dataIop, settingsIop, aaaaaIop;
 
     // elastic client
     public static ElasticsearchClient ec;
@@ -60,6 +62,9 @@ public class Searchlab {
 
     // Messaging client
     public static QueueFactory queues;
+    
+    // AAAAA
+    public static Accounting accounting;
 
     public static String getHost(final String address) {
         final String hp = t(address, '@', address);
@@ -159,16 +164,21 @@ public class Searchlab {
             @Override
             public void run() {
                 // get connection to minio
-                final String s3address = System.getProperty("grid.s3.address", "admin:12345678@searchlab.b00:9000");
-                final String s3SettingsPath = System.getProperty("grid.s3.path", "data/settings");
+                final String s3address = System.getProperty("grid.s3.address", "admin:12345678@yacygrid.b00:9000");
+                final String s3DataPath = System.getProperty("grid.s3.datapath", "/data");
                 final String bucket_endpoint = getHost(s3address);
                 final int p = bucket_endpoint.indexOf('.');
                 assert p > 0;
                 final String bucket = bucket_endpoint.substring(0, p);
                 final String endpoint = bucket_endpoint.substring(p + 1);
-                io = new AWSS3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
-                settingsIop = new IOPath(bucket, s3SettingsPath);
+                io = new MinioS3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
+                dataIop = new IOPath(bucket, s3DataPath);
+                settingsIop = dataIop.append("settings");
+                aaaaaIop  = dataIop.append("aaaaa");
                 Logger.info("Connected S3 at " + s3address);
+                
+                // initialize aaaaa
+                accounting = new Accounting(io, aaaaaIop);
             }
         }.start();
         new Thread() {
