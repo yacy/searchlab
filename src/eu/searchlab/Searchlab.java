@@ -36,7 +36,6 @@ import com.hazelcast.core.HazelcastInstance;
 
 import eu.searchlab.aaaaa.Accounting;
 import eu.searchlab.http.WebServer;
-import eu.searchlab.storage.io.AWSS3IO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.io.MinioS3IO;
@@ -62,7 +61,7 @@ public class Searchlab {
 
     // Messaging client
     public static QueueFactory queues;
-    
+
     // AAAAA
     public static Accounting accounting;
 
@@ -176,7 +175,7 @@ public class Searchlab {
                 settingsIop = dataIop.append("settings");
                 aaaaaIop  = dataIop.append("aaaaa");
                 Logger.info("Connected S3 at " + s3address);
-                
+
                 // initialize aaaaa
                 accounting = new Accounting(io, aaaaaIop);
             }

@@ -470,8 +470,14 @@ public class ElasticsearchClient implements FulltextIndex {
             .setScroll(scrollKeepAlive)
             .setQuery(q)
             .setSize(100);
-        SearchResponse response = request.execute().actionGet();
-        while (true) {
+        SearchResponse response = null;
+        try {
+            response = request.execute().actionGet();
+        } catch (final Exception e) {
+            // catch IndexNotFoundException
+            Logger.warn(e);
+        }
+        while (response != null) {
             // accumulate the ids here, don't delete them right now to prevent an interference of the delete with the
             // scroll
             for (final SearchHit hit : response.getHits().getHits()) {
@@ -598,8 +604,11 @@ public class ElasticsearchClient implements FulltextIndex {
     public boolean writeMap(final String indexName, final String typeName, final String id, final Map<String, Object> jsonMap) {
         while (true) try {
             return writeMapInternal(indexName, typeName, id, jsonMap);
-        } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
-        	Logger.info("ElasticsearchClient writeMap failed with " + e.getMessage() + ", retrying to connect node...");
+        } catch (final ClusterBlockException e) {
+            Logger.info("ElasticsearchClient writeMap failed with " + e.getMessage());
+            return false;
+        } catch (NoNodeAvailableException | IllegalStateException | SearchPhaseExecutionException e) {
+            Logger.info("ElasticsearchClient writeMap failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
             connect();
             continue;

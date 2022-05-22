@@ -67,7 +67,7 @@ public class CrawlStartService  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/crawlStart.json", "/production/crawler/"};
+        return new String[] {"/api/crawlstart.json", "/production/crawler/"};
     }
 
     @Override
@@ -97,7 +97,7 @@ public class CrawlStartService  extends AbstractService implements Service {
             this.crawlingURLArray = new ArrayList<>();
             this.badURLStrings = new ArrayList<>();
             for (final String u: crawlingURLs) {
-            	if (u.length() == 0) continue;
+                if (u.length() == 0) continue;
                 try {
                     final MultiProtocolURL url = new MultiProtocolURL(u);
                     Logger.info(this.getClass(), "splitted url: " + url.toNormalform(true));
@@ -133,20 +133,20 @@ public class CrawlStartService  extends AbstractService implements Service {
         // read call attributes using the default crawlstart key names
         final String userId = call.optString("USER", Authentication.ANONYMOUS_ID);
         try {
-	        for (final String key: crawlstart.keySet()) {
-	            final Object object = crawlstart.get(key);
-	            if (object instanceof String) crawlstart.put(key, call.optString(key, crawlstart.getString(key)));
-	            else if (object instanceof Integer) crawlstart.put(key, call.optInt(key, crawlstart.getInt(key)));
-	            else if (object instanceof Long) crawlstart.put(key, call.optLong(key, crawlstart.getLong(key)));
-	            else if (object instanceof JSONArray) {
-	                final JSONArray a = crawlstart.getJSONArray(key);
-	                final Object cv = call.get(key);
-	                if (cv != null) crawlstart.put(key, cv);
-	            } else {
-	                System.out.println("unrecognized type: " + object.getClass().toString());
-	            }
-	        }
-	        crawlstart.put("userId", userId); // we MUST overwrite that property otherwise the use is able to fake another user ID
+            for (final String key: crawlstart.keySet()) {
+                final Object object = crawlstart.get(key);
+                if (object instanceof String) crawlstart.put(key, call.optString(key, crawlstart.getString(key)));
+                else if (object instanceof Integer) crawlstart.put(key, call.optInt(key, crawlstart.getInt(key)));
+                else if (object instanceof Long) crawlstart.put(key, call.optLong(key, crawlstart.getLong(key)));
+                else if (object instanceof JSONArray) {
+                    final JSONArray a = crawlstart.getJSONArray(key);
+                    final Object cv = call.get(key);
+                    if (cv != null) crawlstart.put(key, cv);
+                } else {
+                    System.out.println("unrecognized type: " + object.getClass().toString());
+                }
+            }
+            crawlstart.put("userId", userId); // we MUST overwrite that property otherwise the use is able to fake another user ID
         } catch (final JSONException e) {}
 
         // fix attributes
@@ -163,7 +163,7 @@ public class CrawlStartService  extends AbstractService implements Service {
             final Date now = new Date();
             // start the crawls; each of the url in a separate crawl to enforce parallel loading from different hosts
             int count = 0;
-            for (final MultiProtocolURL url: crawlstartURLs.getURLs()) {
+            crawlstarturls: for (final MultiProtocolURL url: crawlstartURLs.getURLs()) {
                 final JSONObject singlecrawl = new JSONObject();
                 for (final String key: crawlstart.keySet()) singlecrawl.put(key, crawlstart.get(key)); // create a clone of crawlstart
                 final String crawlId = getCrawlID(url, now, count++);
@@ -187,7 +187,11 @@ public class CrawlStartService  extends AbstractService implements Service {
                         .setInitDate(now)
                         .setData(singlecrawl);
                 String crawlid = crawlstartDoc.getCrawlID();
-                Searchlab.ec.writeMap(Searchlab.crawlstartIndexName, Searchlab.crawlstartTypeName, crawlid, crawlstartDoc.toMap());
+                final boolean success = Searchlab.ec.writeMap(Searchlab.crawlstartIndexName, Searchlab.crawlstartTypeName, crawlid, crawlstartDoc.toMap());
+                if (!success) {
+                    Logger.warn("NOT CRAWLED: " + url.toString());
+                    continue crawlstarturls;
+                }
 
                 // Create a crawler url tracking index entry: this will keep track of single urls and their status
                 // While it is processed. The entry also serves as a double-check entry to terminate a crawl even if the
