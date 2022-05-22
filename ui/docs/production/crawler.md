@@ -1,17 +1,107 @@
 # Crawl Start
 
-## <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> This is Work-In-Progress
 
-This is a placeholder page that will migrate into the actual application as soon as it is finished.
-What we want to implemted is described in the [milestones M1-M6](https://github.com/yacy/searchlab/issues).
+Start a Web crawl:
 
-<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Follow messages from YaCy maitainer [@orbiterlab](https://twitter.com/orbiterlab) and the project updates from [@yacy_search](https://twitter.com/yacy_search) to get news about the project milestones. Please share and <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> like to help building this page!
+<form action=".">
 
-<div class="alert alert-warning" role="alert">everything below is work-in-progress</div>
+<div class="form-group">
+    <label for="crawlingURL">Start-URL</label>
+    <input class="form-control" name="crawlingURL" id="crawlingURL" type="text" size="50" maxlength="256" value="" placeholder="https://..."/>
+    <p class="help-block">The start-URL is a link on crawl depth 0</p>
+</div>
 
-<form action="." class="navbar-form navbar-left">
-  <div class="form-group">
-    <input name="crawlingURL" id="crawlingURL" type="text" size="50" maxlength="256" value="" placeholder="https://..." style="font-size:20px"/>
-  </div>
-  <button type="submit" name="crawlingstart" value="Start New Crawl" class="btn btn-primary"/>Start</button>
+<div class="form-group">
+    <label for="crawlingDepth">Crawl Depth</label>
+    <input class="form-control" name="crawlingDepth" id="crawlingDepth" type="text" size="2" maxlength="2" value="2"/>
+    <p class="help-block">Depth 1 means: all linked documents from the start url are included.</p>
+</div>
+
+<div class="form-group">
+    <label for="collection">Collection</label>
+    <input class="form-control" name="collection" id="collection" type="text" size="50" maxlength="256" value="user"/>
+    <p class="help-block">The start-URL is a link on crawl depth 0</p>
+</div>
+
+<div class="checkbox">
+  <label>
+    <input type="checkbox">Priority
+  </label>
+</div>
+
+<div class="checkbox">
+  <label>
+    <input type="checkbox">Headless Browser Loading
+  </label>
+</div>
+
+<button type="submit" name="crawlingstart" value="Start New Crawl" class="btn btn-primary"/>Start</button>
 </form>
+
+[//]: #           defaultValues.put("priority", 0);
+[//]: #           defaultValues.put("loaderHeadless", "false");
+[//]: #           defaultValues.put("storeAssets", "false");
+[//]: #           defaultValues.put("archiveWARC", "true");
+[//]: #           defaultValues.put("archiveIndex", "true");
+[//]: #           defaultValues.put("archiveGraph", "true");
+
+
+[//]: #{
+[//]: #  "actions": [
+[//]: #    {
+[//]: #      "type": "crawler",
+[//]: #      "queue": "crawler_webcrawler_00",
+[//]: #      "id": "klg.de-2022-05-22-06-34-18-0",
+[//]: #      "userId": "en",
+[//]: #      "depth": 0,
+[//]: #      "sourcegraph": "rootasset",
+[//]: #      "assets": {
+[//]: #        "rootasset": [
+[//]: #          {
+[//]: #            "canonical_s": "http:\/\/klg.de\/"
+[//]: #          }
+[//]: #        ]
+[//]: #      }
+[//]: #    }
+[//]: #  ],
+[//]: #  "data": [
+[//]: #    {
+[//]: #      "crawlingMode": "url",
+[//]: #      "crawlingURL": "klg.de",
+[//]: #      "sitemapURL": "",
+[//]: #      "crawlingFile": "",
+[//]: #      "crawlingDepth": 3,
+[//]: #      "crawlingDepthExtension": "",
+[//]: #      "range": "domain",
+[//]: #      "mustmatch": ".*",
+[//]: #      "mustnotmatch": ".*\\.(js|css|jpg|jpeg|png|dmg|mpg|mpeg|zip|gz|exe|pkg)",
+[//]: #      "ipMustmatch": ".*",
+[//]: #      "ipMustnotmatch": "",
+[//]: #      "indexmustmatch": ".*",
+[//]: #      "indexmustnotmatch": "",
+[//]: #      "deleteold": "off",
+[//]: #      "deleteIfOlderNumber": 0,
+[//]: #      "deleteIfOlderUnit": "day",
+[//]: #      "recrawl": "nodoubles",
+[//]: #      "reloadIfOlderNumber": 0,
+[//]: #      "reloadIfOlderUnit": "day",
+[//]: #      "crawlingDomMaxCheck": "off",
+[//]: #      "crawlingDomMaxPages": 1000,
+[//]: #      "crawlingQ": "off",
+[//]: #      "cachePolicy": "if fresh",
+[//]: #      "collection": "user",
+[//]: #      "agentName": "",
+[//]: #      "priority": 0,
+[//]: #      "loaderHeadless": "false",
+[//]: #      "userId": "en",
+[//]: #      "storeAssets": "false",
+[//]: #      "archiveWARC": "true",
+[//]: #      "archiveIndex": "true",
+[//]: #      "archiveGraph": "true"
+[//]: #    }
+[//]: #  ],
+[//]: #  "metadata": {
+[//]: #    "count": 1
+[//]: #  },
+[//]: #  "success": true
+[//]: #}
