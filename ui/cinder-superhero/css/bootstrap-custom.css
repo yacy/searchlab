@@ -583,13 +583,21 @@ pre code {
     .container {
     width: 970px;
 }
-}@media(min-width:1200px) {
+}@media(min-width:1260px) {
     .container {
-    width: 1200px;
+    width: 1260px;
+}
+}@media(min-width:1440px) {
+    .container {
+    width: 1400px;
+}
+}@media(min-width:1600px) {
+    .container {
+    width: 1560px;
 }
 }@media(min-width:1920px) {
     .container {
-    width: 1890px;
+    width: 1880px;
 }
 }.row {
     margin-right: -15px;

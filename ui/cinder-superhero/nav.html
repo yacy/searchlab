@@ -52,34 +52,55 @@
             {%- endblock %}
 
             <ul class="nav navbar-nav navbar-right">
-            
-                    <li id="userid">
+                    <li id="userid" title="User">
                     </li>
-                    <li id="logout">
+                    <li id="logout" title="Login">
                         <a href="/en/login/"><span class="glyphicon glyphicon-log-in" aria-hidden="true"></span> Login</a>
                     </li>
-                    <script>
-                        var id = location.pathname.split('/')[1];
-                        if (id != 'en') {
-                            document.getElementById("userid").innerHTML = '<a href="/' + id + '/user/"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> ' + id + '</a>';
-                            document.getElementById("logout").innerHTML = '<a href="/' + id + '/logout/"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout</a>';
-                        }
-                    </script>
-                    
-		            <li>
-                        <a href="https://community.searchlab.eu">
-                            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Community Forum
-                        </a>
+		            <li id="community" title="Community Forum">
+                        <a href="https://community.searchlab.eu"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Community Forum</a>
                     </li>
 
                 {%- block repo %}
-                    <li>
-                        <a href="https://github.com/yacy/searchlab">
-                            <i class="fab fa-github"></i> GitHub
-                        </a>
+                    <li id="github" title="Github">
+                        <a href="https://github.com/yacy/searchlab"><i class="fab fa-github"></i> Github</a>
                     </li>
                 {%- endblock %}
             </ul>
         </div>
     </div>
 </div>
+<script>
+var id = location.pathname.split('/')[1];
+function sizecheck() {
+    if (window.innerWidth < 1260) {
+        if (id != 'en') {
+            document.getElementById("userid").innerHTML = '<a href="/' + id + '/user/"><span class="glyphicon glyphicon-user" aria-hidden="true"></span></a>';
+            document.getElementById("logout").innerHTML = '<a href="/' + id + '/logout/"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a>';
+            document.getElementById("logout").setAttribute('title', 'Logout');
+        } else {
+            document.getElementById("logout").setAttribute('title', 'Login');
+        }
+        document.getElementById("community").innerHTML = '<a href="https://community.searchlab.eu"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span></a>';
+        document.getElementById("github").innerHTML = '<a href="https://github.com/yacy/searchlab"><i class="fab fa-github"></i></a>';
+        
+        document.getElementById("userid").setAttribute('title', 'User');
+        document.getElementById("community").setAttribute('title', 'Community Forum');
+        document.getElementById("github").setAttribute('title', 'Github');
+    } else {
+        if (id != 'en') {
+            document.getElementById("userid").innerHTML = '<a href="/' + id + '/user/"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> ' + id + '</a>';
+            document.getElementById("logout").innerHTML = '<a href="/' + id + '/logout/"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout</a>';
+        }
+        document.getElementById("community").innerHTML = '<a href="https://community.searchlab.eu"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Community Forum</a>';
+        document.getElementById("github").innerHTML = '<a href="https://github.com/yacy/searchlab"><i class="fab fa-github"></i> GitHub</a>';
+        
+        document.getElementById("userid").removeAttribute('title');
+        document.getElementById("logout").removeAttribute('title');
+        document.getElementById("community").removeAttribute('title');
+        document.getElementById("github").removeAttribute('title');
+    }
+}
+sizecheck();
+window.addEventListener('resize', function(event) {sizecheck();}, true);
+</script>
