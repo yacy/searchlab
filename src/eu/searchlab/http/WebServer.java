@@ -155,13 +155,13 @@ public class WebServer {
             final JSONObject post = getQueryParams(exchange);
             final String path = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
             final String user = post.optString("USER", null);
-            Logger.info("WebServer request: USER=" + user + ", PATH=" + path);
 
             // we force using of a user/language path
             if (user == null) {
                 exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                 exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path);
                 exchange.getResponseSender().send("");
+                Logger.info("HTTP(" + StatusCodes.PERMANENT_REDIRECT + ") /NULL" + path);
                 return;
             }
 
@@ -189,10 +189,11 @@ public class WebServer {
 	                exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
 	                exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
 	                exchange.getResponseSender().send(bb);
+	                Logger.info("HTTP(" + StatusCodes.OK + ") /" + user + path);
                 } catch (final IOException e) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found");
                     exchange.getResponseSender().send("");
-                    exchange.endExchange();
+                    Logger.info("HTTP(" + StatusCodes.NOT_FOUND + ") /" + user + path);
                 }
                 return;
             }
@@ -209,10 +210,12 @@ public class WebServer {
                 // send html to client
                 if (html == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
+                    Logger.info("HTTP(" + StatusCodes.NOT_FOUND + ") /" + user + path);
                 } else {
                 	exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
                     exchange.getResponseSender().send(html);
+                    Logger.info("HTTP(" + StatusCodes.OK + ") /" + user + path);
                 }
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
@@ -220,11 +223,13 @@ public class WebServer {
                 	final String redirect = "https://community.searchlab.eu" + path;
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, redirect);
-                    Logger.warn(e.getMessage() + " - redirecting to " + "https://community.searchlab.eu" + path);
+                    exchange.getResponseSender().send("");
+                    Logger.info("HTTP(" + StatusCodes.PERMANENT_REDIRECT + ") /" + user + path + " - redirecting to " + "https://community.searchlab.eu" + path);
                 } else {
                     exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE).setReasonPhrase(e.getMessage());
+                    exchange.getResponseSender().send("");
+                    Logger.info("HTTP(" + StatusCodes.SERVICE_UNAVAILABLE + ") /" + user + path);
                 }
-                exchange.getResponseSender().send("");
             }
         }
 
