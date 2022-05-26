@@ -26,6 +26,7 @@ import java.nio.file.FileSystems;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.Config;
@@ -64,6 +65,10 @@ public class Searchlab {
 
     // AAAAA
     public static Accounting accounting;
+
+    // Ready
+    private static AtomicInteger readyCounter = new AtomicInteger(0);
+    public static boolean ready = false;
 
     public static String getHost(final String address) {
         final String hp = t(address, '@', address);
@@ -178,6 +183,7 @@ public class Searchlab {
 
                 // initialize aaaaa
                 accounting = new Accounting(io, aaaaaIop);
+                if (readyCounter.incrementAndGet() >= 3) ready = true;
             }
         }.start();
         new Thread() {
@@ -189,8 +195,13 @@ public class Searchlab {
                 crawlerIndexName = System.getProperty("grid.elasticsearch.indexName.crawler", GridIndex.DEFAULT_INDEXNAME_CRAWLER);
                 crawlstartIndexName = System.getProperty("grid.elasticsearch.indexName.crawlstart", GridIndex.DEFAULT_INDEXNAME_CRAWLSTART);
                 crawlstartTypeName = System.getProperty("grid.elasticsearch.typeName", GridIndex.DEFAULT_TYPENAME);
-                ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
-                Logger.info("Connected elasticsearch at " + elasticsearchAddress[0]);
+                try {
+                    ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
+                    Logger.info("Connected elasticsearch at " + elasticsearchAddress[0]);
+                    if (readyCounter.incrementAndGet() >= 3) ready = true;
+                } catch (final IOException e) {
+                    Logger.warn("No connection to elasticsearch");
+                }
             }
         }.start();
         new Thread() {
@@ -201,6 +212,7 @@ public class Searchlab {
                     final String brokerAddress = System.getProperty("grid.broker.address", "");
                     queues = new RabbitQueueFactory(getHost(brokerAddress), getPort(brokerAddress, "-1"), getUser(brokerAddress, "anonymous"), getPassword(brokerAddress, "yacy"), true, 0);
                     Logger.info("Connected Broker at " + getHost(brokerAddress));
+                    if (readyCounter.incrementAndGet() >= 3) ready = true;
                 } catch (final IOException e) {
                     Logger.error(e);
                 }
