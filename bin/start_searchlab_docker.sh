@@ -26,7 +26,7 @@ elif [ ${containerExists} -gt 0 ]; then
 else
   if [[ $imagename != "yacy/"*":latest" ]] && [[ "$(docker images -q ${imagename} 2> /dev/null)" == "" ]]; then
       cd ../..
-      docker build -t ${containername} -f searchlab/Dockerfile .
+      docker build -t ${imagename} -f searchlab/Dockerfile .
       cd searchlab/bin
   fi
   docker run -d --restart=unless-stopped -p ${bindhost}:8400:8400 \
