@@ -31,7 +31,7 @@ ADD searchlab/gradle /app/gradle/
 ADD searchlab/gradle.properties /app/
 ADD searchlab/gradlew /app/
 WORKDIR /app
-RUN ./gradlew assemble
+RUN ./gradlew clean shadowDistTar
 
 # prepare distribution image
 FROM eclipse-temurin:8-jre-alpine
