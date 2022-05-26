@@ -75,12 +75,14 @@ function deploy {
 function wait4port {
     port=$1
     while :; do
-	ready=$(curl --write-out '%{http_code}' --silent --output /dev/null http://${callhost}:${port}/en/api/ready.json)
+	sleep 1
+	ready=$(curl --retry 10 --retry-connrefused --retry-delay 1 --write-out '%{http_code}' --silent --output /dev/null http://${callhost}:${port}/en/api/ready.json)
 	if [ $ready -eq 200 ]; then break; fi
 	echo "service at port $port is not ready, waiting..."
-	sleep 1
     done
 }
+
+
 
 # CI process: build - deploy
 build
