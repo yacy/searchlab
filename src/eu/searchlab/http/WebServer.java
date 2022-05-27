@@ -53,6 +53,7 @@ import eu.searchlab.http.services.IDGeneratorService;
 import eu.searchlab.http.services.IDValidationService;
 import eu.searchlab.http.services.IndexService;
 import eu.searchlab.http.services.MirrorService;
+import eu.searchlab.http.services.QueueStatusService;
 import eu.searchlab.http.services.ReadyService;
 import eu.searchlab.http.services.SuggestService;
 import eu.searchlab.http.services.TableGetService;
@@ -113,6 +114,7 @@ public class WebServer {
         ServiceMap.register(new ThreaddumpService());
         ServiceMap.register(new AssetDirectoryService());
         ServiceMap.register(new ReadyService());
+        ServiceMap.register(new QueueStatusService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
