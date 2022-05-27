@@ -27,7 +27,6 @@ import org.json.JSONObject;
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
 import eu.searchlab.storage.queues.Queue;
-import eu.searchlab.tools.Logger;
 
 /**
  * http://localhost:8400/en/api/queues.json
@@ -56,38 +55,58 @@ public class QueueStatusService extends AbstractService implements Service {
             "elasticsearch_00"
     };
 
-    private static JSONObject getStatus(final String serviceName, final String[] queueNames) throws IOException {
+    private static JSONObject getStatus(final String serviceName, final String[] queueNames) throws JSONException, IOException {
         final JSONObject json = new JSONObject(true);
         for (final String queueName: queueNames) {
             final String queueFullName = serviceName + "_" + queueName;
-            try {
-                final Queue queue = Searchlab.queues.getQueue(queueFullName);
-                final long available = queue.available();
-                json.put(queueFullName, available);
-            } catch (final JSONException e) {
-                Logger.error(e);
-            }
+            final Queue queue = Searchlab.queues.getQueue(queueFullName);
+            final long available = queue.available();
+            json.put(queueFullName, available);
         }
         return json;
     }
 
-     @Override
-     public String[] getPaths() {
-         return new String[] {"/api/queues.json"};
-     }
+    public static long aggregateStatus(final JSONObject json) {
+        long a = 0;
+        for (final String key: json.keySet()) {
+            long b = 0;
+            try {b = json.getLong(key);} catch (final JSONException e) {}
+            a += b;
+        }
+        return a;
+    }
 
-     @Override
-     public JSONObject serveObject(final JSONObject post) throws IOException {
-         final JSONObject json = new JSONObject(true);
-         try {
-             json.put("crawler", getStatus("crawler", queuesCrawler));
-             json.put("loader", getStatus("loader", queuesLoader));
-             json.put("parser", getStatus("parser", queuesParser));
-             json.put("indexer", getStatus("indexer", queuesIndexer));
-         } catch (final JSONException e) {
-             throw new IOException(e.getMessage());
-         }
-         return json;
-     }
+    @Override
+    public String[] getPaths() {
+        return new String[] {"/api/queues.json"};
+    }
+
+    @Override
+    public JSONObject serveObject(final JSONObject post) throws IOException {
+        final JSONObject json = new JSONObject(true);
+        try {
+            final JSONObject crawlerStatus = getStatus("crawler", queuesCrawler);
+            final JSONObject loaderStatus = getStatus("loader", queuesLoader);
+            final JSONObject parserStatus = getStatus("parser", queuesParser);
+            final JSONObject indexerStatus = getStatus("indexer", queuesIndexer);
+
+            final JSONObject sizes = new JSONObject(true);
+            sizes.put("crawler", aggregateStatus(crawlerStatus));
+            sizes.put("loader", aggregateStatus(loaderStatus));
+            sizes.put("parser", aggregateStatus(parserStatus));
+            sizes.put("indexer", aggregateStatus(indexerStatus));
+            json.put("sizes", sizes);
+
+            final JSONObject queues = new JSONObject(true);
+            queues.put("crawler", crawlerStatus);
+            queues.put("loader", loaderStatus);
+            queues.put("parser", parserStatus);
+            queues.put("indexer", indexerStatus);
+            json.put("queues", queues);
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+        return json;
+    }
 
 }
