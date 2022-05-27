@@ -21,7 +21,7 @@ package eu.searchlab.storage.io;
 
 /**
  * IOPath
- * An IOPath denote an object stored with a GenericIO endpoint.
+ * An IOPath denotes an object stored with a GenericIO endpoint.
  * It is used to bundle bucket and path together while leaving the information
  * which endpoint is storing the object aside. IOPaths are used for higher level
  * data structures which require a single object as denominator.
@@ -29,16 +29,17 @@ package eu.searchlab.storage.io;
  * By conventional definition:
  * -  an IOPath is a file if the last element of the path
  *    after the last "/" contains an extension separator, a ".".
- * - a path does not start and does not end with a "/".
+ * - a path always starts with a "/".
+ * - a path does never end with a "/".
  */
 public final class IOPath {
 
     private final String bucket, path;
 
-    public IOPath(String bucket, String path) {
+    public IOPath(final String bucket, String path) {
         this.bucket = bucket;
-        if (path.startsWith("/")) path = path.substring(1);
-        if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
+        if (!path.startsWith("/")) path = "/" + path;
+        if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
         this.path = path;
     }
 
@@ -57,39 +58,81 @@ public final class IOPath {
      * @return
      */
     public final boolean isRootFolder() {
-        int p = this.path.lastIndexOf('/');
+        final int p = this.path.lastIndexOf('/');
         assert p != 0;
         return p > 0;
     }
 
+    /**
+     * get the bucket name
+     * @return the bucket name
+     */
     public final String getBucket() {
         return this.bucket;
     }
 
+    /**
+     * get the path inside the bucket
+     * The path starts with "/" but does never and with "/"
+     * @return the path inside the bucket
+     */
     public final String getPath() {
         return this.path;
     }
 
+    /**
+     * Append a subpath to the existing path.
+     * The new path should not have a beginnt "/" and no ending "/" but if it exist, it is cutted away.
+     * New subpaths are appended with a "/" in between, so IOPaths where you are appending anything
+     * must be considered as a folder before.
+     * @param spath
+     * @return
+     */
     public IOPath append(String spath) {
+    	assert this.isFolder();
         if (!isFolder()) throw new RuntimeException("IOPath must be a folder to append a path: " + this.toString());
-        return new IOPath(this.bucket, this.path + "/" + spath);
+        if (!spath.startsWith("/")) spath = "/" + spath;
+        if (spath.length() > 1 && spath.endsWith("/")) spath = spath.substring(0, spath.length() - 1);
+        return new IOPath(this.bucket, this.path + spath); // can be appended directly becaue now spath starts with "/"
     }
 
+    /**
+     * Truncate the path: remove the last path element after the latest "/".
+     * The resulting path must be considered as a folder.
+     * @return the tuncated path
+     */
     public IOPath truncate() {
-        int p = this.path.lastIndexOf('/');
+    	if (this.path.length() <= 1) return new IOPath(this.bucket, ""); // should be an error
+        final int p = this.path.lastIndexOf('/');
         if (p < 0) throw new RuntimeException("IOPath must have at leas one folder to truncate: " + this.toString());
-        return new IOPath(this.bucket, this.path.substring(0, p));
+        final IOPath t = new IOPath(this.bucket, this.path.substring(0, p));
+        assert t.isFolder();
+        return t;
     }
-    
+
+    /**
+     * get the name of an object. This is the last parth of the path after the last "/".
+     * @return a name of an object without the path to it.
+     */
     public String name() {
-        int p = this.path.lastIndexOf('/');
-        if (p < 0) throw new RuntimeException("IOPath must have at leas one folder to truncate: " + this.toString());
+        final int p = this.path.lastIndexOf('/');
+        if (p < 0) throw new RuntimeException("IOPath must have at least one folder to truncate: " + this.toString());
         return this.path.substring(p + 1);
     }
-    
+
+    /**
+     * the head of a path is the first part of it
+     * @return
+     */
+    public String head() {
+        final int p = this.path.indexOf('/', 1);
+        if (p < 0) throw new RuntimeException("IOPath must have at least one folder to truncate: " + this.toString());
+        return this.path.substring(1, p);
+    }
+
     @Override
     public String toString() {
-        return this.bucket + "/" + this.path;
+        return this.bucket + this.path;
     }
 
     @Override

@@ -22,7 +22,9 @@ package eu.searchlab.http.services;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,7 +42,7 @@ import eu.searchlab.tools.Logger;
 public class AssetDirectoryService extends AbstractService implements Service {
 
 	private final static long kb = 1024L, mb = 1024L * kb, gb = 1024L * mb;
-	
+
     @Override
     public String[] getPaths() {
         return new String[] {"/api/assetdir.json"};
@@ -60,31 +62,46 @@ public class AssetDirectoryService extends AbstractService implements Service {
         if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
         while (path.length() > 3 && path.endsWith("/..")) {
         	path = path.substring(0, path.length() - 3);
-        	int p = path.lastIndexOf('/');
+        	final int p = path.lastIndexOf('/');
         	path = p < 0 ? "" : path.substring(0, p);
         }
-        IOPath assets = Searchlab.accounting.getAssetPathForUser(userId);
-        IOPath dirpath = assets.append(path);
+        final IOPath assets = Searchlab.accounting.getAssetPathForUser(userId);
+        final String assetsPath = assets.getPath();
+        final IOPath dirpath = assets.append(path);
         final JSONArray json = new JSONArray();
+        final Set<String> knownDir = new HashSet<>();
         try {
-			List<IOMeta> dir = Searchlab.io.list(dirpath);
-			for (IOMeta meta: dir) {
-				JSONObject d = new JSONObject(true);
-				IOPath o = meta.getIOPath();
-				long size = meta.getSize();
-				String sizes = size > gb ? (size / mb) + " MB" : size > mb ? (size / kb) + " KB" : size + " bytes";
-				d.append("name", o.name());
-				d.append("size", size);
-				d.append("sizes", sizes);
-				d.append("isdir", o.isFolder());
-				d.append("date", DateParser.iso8601Format.format(new Date(meta.getLastModified())));
-				d.append("time", meta.getLastModified());
+			final List<IOMeta> dir = Searchlab.io.list(dirpath);
+			for (final IOMeta meta: dir) {
+				final JSONObject d = new JSONObject(true);
+				final IOPath o = meta.getIOPath();
+				final long size = meta.getSize();
+				final String sizes = size > gb ? (size / mb) + " MB" : size > mb ? (size / kb) + " KB" : size + " bytes";
+				final String fullpath = o.getPath();
+				final String subpath = fullpath.substring(assetsPath.length());
+				final int p = subpath.indexOf('/', 1);
+				String name = null;
+				boolean isDir = false;
+				if (p < 0) {
+					name = subpath.substring(1);
+				} else {
+					name = subpath.substring(1, p);
+					isDir = true;
+					if (knownDir.contains(name)) continue;
+					knownDir.add(name);
+				}
+				d.append("name", name);
+				d.append("size", isDir ? 0 : size);
+				d.append("sizes", isDir ? "" : sizes);
+				d.append("isdir", isDir);
+				d.append("date", isDir ? "" : DateParser.iso8601Format.format(new Date(meta.getLastModified())));
+				d.append("time", isDir ? 0 : meta.getLastModified());
 				json.put(d);
 			}
 		} catch (IOException | JSONException e) {
 			Logger.warn("attempt to list " + dirpath.toString(), e);
 		}
-        
+
         return json;
     }
 
