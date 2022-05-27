@@ -26,6 +26,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -72,6 +74,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.encoding.EncodingHandler;
+import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
@@ -141,11 +144,23 @@ public class WebServer {
         @Override
         public void handleRequest(final HttpServerExchange exchange) throws Exception {
 
+            final String client = "-";
             final String method = exchange.getRequestMethod().toString();
+            final SocketAddress address = exchange.getConnection().getPeerAddress();
+            String ip = address.toString();
+            if (address instanceof InetSocketAddress) {
+                ip = ((InetSocketAddress) address).getAddress().getHostAddress();
+            }
+            int p = ip.indexOf("/");
+            if (p > 0) ip = ip.substring(p + 1);
 
-            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
-            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Methods, Access-Control-Request-Headers");
+            final HeaderMap requestHeader = exchange.getRequestHeaders();
+            if (requestHeader.contains("X-Real-IP")) ip = requestHeader.getFirst("X-Real-IP"); // X-Forwarded-For ??
+
+            final HeaderMap responseHeader = exchange.getResponseHeaders();
+            responseHeader.put(new HttpString("Access-Control-Allow-Origin"), "*");
+            responseHeader.put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
+            responseHeader.put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Methods, Access-Control-Request-Headers");
 
             if (method.toLowerCase().equals("options")) {
                 exchange.getResponseSender().send("");
@@ -169,21 +184,21 @@ public class WebServer {
                 exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                 exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path);
                 exchange.getResponseSender().send("");
-                Logger.info("HTTP(" + StatusCodes.PERMANENT_REDIRECT + ") /NULL" + path);
+                log(ip, client, user, method, path, StatusCodes.PERMANENT_REDIRECT, 0);
                 return;
             }
 
             if (user.length() != 2) {
                 // add a canonical and noindex tag to the response header
-            	// see:
-            	// https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls?hl=de#rel-canonical-header-method
+                // see:
+                // https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls?hl=de#rel-canonical-header-method
                 exchange.getResponseHeaders().put(new HttpString("X-Robots-Tag"), "noindex");
                 exchange.getResponseHeaders().put(new HttpString("Link"), "<https://searchlab.eu/en" + path + ">; rel=\"canonical\"");
             }
 
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
             final File f = findFile(path);
-            final int p = path.lastIndexOf('.');
+            p = path.lastIndexOf('.');
             final String ext = p < 0 ? "html" : path.substring(p + 1);
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
@@ -191,17 +206,17 @@ public class WebServer {
             if (!isTemplatingFileType(ext) && f != null) {
                 // just serve the file
                 try {
-	                final ByteBuffer bb = file2bytebuffer(f);
-	                final long d = f.lastModified();
-	                exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date(d))); // like a proper file server
-	                exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
-	                exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
-	                exchange.getResponseSender().send(bb);
-	                Logger.info("HTTP(" + StatusCodes.OK + ") /" + user + path);
+                    final ByteBuffer bb = file2bytebuffer(f);
+                    final long d = f.lastModified();
+                    exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date(d))); // like a proper file server
+                    exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
+                    exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
+                    exchange.getResponseSender().send(bb);
+                    log(ip, client, user, method, path, StatusCodes.OK, f.length());
                 } catch (final IOException e) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found");
                     exchange.getResponseSender().send("");
-                    Logger.info("HTTP(" + StatusCodes.NOT_FOUND + ") /" + user + path);
+                    log(ip, client, user, method, path, StatusCodes.NOT_FOUND, 0);
                 }
                 return;
             }
@@ -218,27 +233,31 @@ public class WebServer {
                 // send html to client
                 if (html == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
-                    Logger.info("HTTP(" + StatusCodes.NOT_FOUND + ") /" + user + path);
+                    log(ip, client, user, method, path, StatusCodes.NOT_FOUND, 0);
                 } else {
-                	exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
+                    exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
                     exchange.getResponseSender().send(html);
-                    Logger.info("HTTP(" + StatusCodes.OK + ") /" + user + path);
+                    log(ip, client, user, method, path, StatusCodes.OK, html.length());
                 }
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
-                	final String redirect = "https://community.searchlab.eu" + path;
+                    final String redirect = "https://community.searchlab.eu" + path;
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, redirect);
                     exchange.getResponseSender().send("");
-                    Logger.info("HTTP(" + StatusCodes.PERMANENT_REDIRECT + ") /" + user + path + " - redirecting to " + "https://community.searchlab.eu" + path);
+                    log(ip, client, user, method, path, StatusCodes.PERMANENT_REDIRECT, 0);
                 } else {
                     exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE).setReasonPhrase(e.getMessage());
                     exchange.getResponseSender().send("");
-                    Logger.info("HTTP(" + StatusCodes.SERVICE_UNAVAILABLE + ") /" + user + path);
+                    log(ip, client, user, method, path, StatusCodes.SERVICE_UNAVAILABLE, 0);
                 }
             }
+        }
+
+        private final static void log(final String ip, final String client, final String user, final String method, final String path, final int response, final long size) {
+            Logger.info(ip + " " + client + " " + user + " " + method + " " + path + " " + response + " " + size);
         }
 
         /**
@@ -336,8 +355,8 @@ public class WebServer {
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String var = html.substring(ssip + 15, rightquote);
                 if ("CANONICAL_TAG".equals(var)) {
-                	final String include = "<link rel=\"canonical\" href=\"" + "https://searchlab.eu/en" + path + "\">";
-                	html = html.substring(0, ssip) + include + html.substring(end + 3);
+                    final String include = "<link rel=\"canonical\" href=\"" + "https://searchlab.eu/en" + path + "\">";
+                    html = html.substring(0, ssip) + include + html.substring(end + 3);
                     ssip = html.indexOf("<!--#echo var=\"", ssip + include.length());
                 } else {
                     html = html.substring(0, ssip) + html.substring(end + 3);
