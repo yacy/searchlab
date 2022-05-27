@@ -25,83 +25,43 @@ Start a Web crawl:
 
 <div class="checkbox">
   <label>
-    <input type="checkbox">Priority
+    <input type="checkbox" name="priority" disabled="true">Priority
   </label>
 </div>
 
 <div class="checkbox">
   <label>
-    <input type="checkbox">Headless Browser Loading
+    <input type="checkbox" name="loaderHeadless" disabled>Headless Browser Loading
+  </label>
+</div>
+
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="archiveWARC" disabled>Store WARC Asset
+  </label>
+</div>
+
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="archiveIndex" checked="true">Store Index Asset
+  </label>
+</div>
+
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="archiveGraph">Store Link Graph Asset
   </label>
 </div>
 
 <button type="submit" name="crawlingstart" value="Start New Crawl" class="btn btn-primary"/>Start</button>
 </form>
 
-[//]: #           defaultValues.put("priority", 0);
-[//]: #           defaultValues.put("loaderHeadless", "false");
-[//]: #           defaultValues.put("storeAssets", "false");
-[//]: #           defaultValues.put("archiveWARC", "true");
-[//]: #           defaultValues.put("archiveIndex", "true");
-[//]: #           defaultValues.put("archiveGraph", "true");
 
-
-[//]: #{
-[//]: #  "actions": [
-[//]: #    {
-[//]: #      "type": "crawler",
-[//]: #      "queue": "crawler_webcrawler_00",
-[//]: #      "id": "klg.de-2022-05-22-06-34-18-0",
-[//]: #      "userId": "en",
-[//]: #      "depth": 0,
-[//]: #      "sourcegraph": "rootasset",
-[//]: #      "assets": {
-[//]: #        "rootasset": [
-[//]: #          {
-[//]: #            "canonical_s": "http:\/\/klg.de\/"
-[//]: #          }
-[//]: #        ]
-[//]: #      }
-[//]: #    }
-[//]: #  ],
-[//]: #  "data": [
-[//]: #    {
-[//]: #      "crawlingMode": "url",
-[//]: #      "crawlingURL": "klg.de",
-[//]: #      "sitemapURL": "",
-[//]: #      "crawlingFile": "",
-[//]: #      "crawlingDepth": 3,
-[//]: #      "crawlingDepthExtension": "",
-[//]: #      "range": "domain",
-[//]: #      "mustmatch": ".*",
-[//]: #      "mustnotmatch": ".*\\.(js|css|jpg|jpeg|png|dmg|mpg|mpeg|zip|gz|exe|pkg)",
-[//]: #      "ipMustmatch": ".*",
-[//]: #      "ipMustnotmatch": "",
-[//]: #      "indexmustmatch": ".*",
-[//]: #      "indexmustnotmatch": "",
-[//]: #      "deleteold": "off",
-[//]: #      "deleteIfOlderNumber": 0,
-[//]: #      "deleteIfOlderUnit": "day",
-[//]: #      "recrawl": "nodoubles",
-[//]: #      "reloadIfOlderNumber": 0,
-[//]: #      "reloadIfOlderUnit": "day",
-[//]: #      "crawlingDomMaxCheck": "off",
-[//]: #      "crawlingDomMaxPages": 1000,
-[//]: #      "crawlingQ": "off",
-[//]: #      "cachePolicy": "if fresh",
-[//]: #      "collection": "user",
-[//]: #      "agentName": "",
-[//]: #      "priority": 0,
-[//]: #      "loaderHeadless": "false",
-[//]: #      "userId": "en",
-[//]: #      "storeAssets": "false",
-[//]: #      "archiveWARC": "true",
-[//]: #      "archiveIndex": "true",
-[//]: #      "archiveGraph": "true"
-[//]: #    }
-[//]: #  ],
-[//]: #  "metadata": {
-[//]: #    "count": 1
-[//]: #  },
-[//]: #  "success": true
-[//]: #}
+{{#if actions.[0]}}
+  <p>Crawl started!</p>
+  {{#each actions.items}}
+    Crawl ID: {{this.id}}
+  {{/each}}
+{{else}}
+ <p>Crawl not started!</p>
+{{/if}}
