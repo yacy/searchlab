@@ -37,10 +37,11 @@ import java.util.logging.StreamHandler;
 public class Logger {
 
     private static int maxlines = 10000;
-    private static final ConcurrentLinkedQueue<String> lines = new ConcurrentLinkedQueue<>();
+    private static final ConcurrentLinkedQueue<LogEntry> lines = new ConcurrentLinkedQueue<>();
     private static final AtomicInteger a = new AtomicInteger(0);
     private static final Map<String, org.slf4j.Logger> logger = new ConcurrentHashMap<>();
     private static final org.slf4j.Logger dfltLogger = org.slf4j.LoggerFactory.getLogger("default");
+    private static final String logFormat = "%1$-7s [%2$s] %3$-48s \"%4$s\"%5$s%n";
 
     static {
         final StreamHandler sh = new ConsoleHandler();
@@ -56,7 +57,7 @@ public class Logger {
     /**
      * all logging is redirected to java logging and is handled by this console handler.
      */
-    public static class ConsoleHandler extends StreamHandler {
+    public final static class ConsoleHandler extends StreamHandler {
 
         public ConsoleHandler() {
             super(System.out, new SimpleFormatter());
@@ -69,8 +70,22 @@ public class Logger {
         }
     }
 
+    public final static class LogEntry {
+        public final long time;
+        public final String levelName;
+        public final String className;
+        public final String message;
+        public final Throwable t;
+        public LogEntry(final String levelName, final String className, final String message, final Throwable t) {
+            this.levelName = levelName;
+            this.time = System.currentTimeMillis();
+            this.className = className;
+            this.message = message;
+            this.t = t;
+        }
+    }
+
     public static class LineFormatter extends Formatter {
-    	private static final String format = "%1$-7s [%2$s] %3$-48s \"%4$s\"%5$s%n";
 
         // format string for printing the log record
         private final Date dat = new Date();
@@ -94,26 +109,31 @@ public class Logger {
                 message = message.substring(p + 1);
             }
             message = message.replace('\"', '\''); // required to make the line parseable
-
-            String throwable = "";
-            if (record.getThrown() != null) {
-                final StringWriter sw = new StringWriter();
-                final PrintWriter pw = new PrintWriter(sw);
-                pw.println();
-                record.getThrown().printStackTrace(pw);
-                pw.close();
-                throwable = sw.toString();
-            }
             final String levelname = record.getLevel().getName();
-            synchronized(DateParser.iso8601MillisFormat) {
-            	final String line = String.format(format,
-                    levelname,
-                    DateParser.iso8601MillisFormat.format(this.dat), // this is date_optional_time in elastic
-                    source.toString(),
-                    message,
-                    throwable);
-            	return line;
-            }
+            final String line = formatLine(levelname, this.dat, source.toString(), message, record.getThrown());
+            return line;
+        }
+    }
+
+    private final static String formatLine(final String levelName, final Date dat, final String className, final String message, final Throwable t) {
+        String throwable = "";
+        if (t != null) {
+            final StringWriter sw = new StringWriter();
+            final PrintWriter pw = new PrintWriter(sw);
+            pw.println();
+            t.printStackTrace(pw);
+            pw.close();
+            throwable = sw.toString();
+        }
+
+        synchronized(DateParser.iso8601MillisFormat) {
+            final String line = String.format(logFormat,
+                levelName,
+                DateParser.iso8601MillisFormat.format(dat), // this is date_optional_time in elastic
+                className,
+                message,
+                throwable);
+            return line;
         }
     }
 
@@ -121,16 +141,31 @@ public class Logger {
         maxlines = m;
     }
 
+    public static ArrayList<LogEntry> getEntries(final int max) {
+        final Object[] a = lines.toArray();
+        final ArrayList<LogEntry> l = new ArrayList<>();
+        final int start = Math.max(0, a.length - max);
+        for (int i = start; i < a.length; i++) {
+            final LogEntry logEntry = (LogEntry) a[i];
+            l.add(logEntry);
+        }
+        return l;
+    }
+
     public static ArrayList<String> getLines(final int max) {
         final Object[] a = lines.toArray();
         final ArrayList<String> l = new ArrayList<>();
         final int start = Math.max(0, a.length - max);
-        for (int i = start; i < a.length; i++) l.add((String) a[i]);
+        for (int i = start; i < a.length; i++) {
+            final LogEntry logEntry = (LogEntry) a[i];
+            final String line = formatLine(logEntry.levelName, new Date(logEntry.time), logEntry.className, logEntry.message, logEntry.t);
+            l.add(line);
+        }
         return l;
     }
 
-    private static void append(final String line) {
-        if (line != null) lines.add(line);
+    private static void append(final String levelName, final String className, final String line, final Throwable t) {
+        if (line != null) lines.add(new LogEntry(levelName, className, line, t));
         if (a.incrementAndGet() % 100 == 0) {
             clean(maxlines);
             a.set(0);
@@ -169,12 +204,12 @@ public class Logger {
 
     private static void debug(final String className, final String msg) {
         getLogger(className).debug(className + '$' + msg);
-        append(msg);
+        append("DEBUG", className, msg, null);
     }
 
     private static void debug(final String className, final String msg, final Throwable t) {
         getLogger(className).debug(className + '$' + msg, t);
-        append(msg);
+        append("DEBUG", className, msg, t);
     }
 
     public static void debug(final String msg) {
@@ -204,7 +239,7 @@ public class Logger {
 
     private static void info(final String className, final String msg) {
         getLogger(className).info(className + '$' + msg);
-        append(msg);
+        append("INFO", className, msg, null);
     }
 
     public static void info(final String msg) {
@@ -218,12 +253,12 @@ public class Logger {
 
     private static void warn(final String className, final String msg) {
         getLogger(className).warn(className + '$' + msg);
-        append(msg);
+        append("WARN", className, msg, null);
     }
 
     private static void warn(final String className, final String msg, final Throwable t) {
         getLogger(className).warn(className + '$' + msg, t);
-        append(msg);
+        append("WARN",className, msg, t);
     }
 
     public static void warn(final String msg) {
@@ -253,12 +288,12 @@ public class Logger {
 
     private static void error(final String className, final String msg) {
         getLogger(className).error(className + '$' + msg);
-        append(msg);
+        append("ERROR", className, msg, null);
     }
 
     private static void error(final String className, final String msg, final Throwable t) {
         getLogger(className).error(className + '$' + msg, t);
-        append(msg);
+        append("ERROR", className, msg, t);
     }
 
     public static void error(final String msg) {
