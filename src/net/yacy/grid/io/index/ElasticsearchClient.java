@@ -297,8 +297,7 @@ public class ElasticsearchClient implements FulltextIndex {
      *
      * @return cluster stats from connected cluster
      */
-    @SuppressWarnings("unused")
-    private ClusterStatsNodes getStats() {
+    public ClusterStatsNodes getStats() {
         final ClusterStatsRequest clusterStatsRequest =
             new ClusterStatsRequestBuilder(this.elasticsearchClient.admin().cluster(), ClusterStatsAction.INSTANCE).request();
         final ClusterStatsResponse clusterStatsResponse =
@@ -312,7 +311,7 @@ public class ElasticsearchClient implements FulltextIndex {
      *
      * @return the count of all documents in the index
      */
-    private long count(final String indexName) {
+    public long count(final String indexName) {
         final QueryBuilder q = QueryBuilders.constantScoreQuery(QueryBuilders.matchAllQuery());
         while (true) try {
             return countInternal(q, indexName);
