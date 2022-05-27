@@ -33,6 +33,7 @@ import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.DateParser;
+import eu.searchlab.tools.Logger;
 import net.yacy.grid.io.index.ElasticsearchClient;
 import net.yacy.grid.io.index.GridIndex;
 import net.yacy.grid.io.index.Sort;
@@ -95,34 +96,36 @@ public class YaCySearchService extends AbstractService implements Service {
         final List<WebMapping> facetFieldMapping = new ArrayList<>();
         for (final String s: facetFields.split(",")) try {
         	facetFieldMapping.add(WebMapping.valueOf(s));
-        } catch (final IllegalArgumentException e) {} // catch exception in case the facet field name is unknown
+        } catch (final IllegalArgumentException e) {Logger.error(e);} // catch exception in case the facet field name is unknown
         final Sort sort = new Sort(call.optString("sort", ""));
 
+        // prepare result object
+        final JSONObject json = new JSONObject(true);
+        final JSONArray channels = new JSONArray();
+        final JSONObject channel = new JSONObject(true);
+    	final JSONArray items = new JSONArray();
+        try {
+        	json.put("channels", channels);
+        	channels.put(channel);
+        	channel.put("title", "Search for " + q);
+        	channel.put("description", "Search for " + q);
+        	channel.put("startIndex", "" + startRecord);
+        	channel.put("searchTerms", q);
+        	channel.put("itemsPerPage", "" + itemsPerPage);
+        	channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
+        } catch (final JSONException e) {Logger.error(e);}
+
         // run query against search index
-        final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
-        final ElasticsearchClient.Query query = Searchlab.ec.query(
+        try {
+            final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
+        	final ElasticsearchClient.Query query = Searchlab.ec.query(
                 System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
                 yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 
-        // prepare result object
-        final JSONObject json = new JSONObject(true);
-        try {
-            final JSONArray channels = new JSONArray();
-            json.put("channels", channels);
-            final JSONObject channel = new JSONObject(true);
-            channels.put(channel);
-            final JSONArray items = new JSONArray();
-
             // search metadata
-            channel.put("title", "Search for " + q);
-            channel.put("description", "Search for " + q);
-            channel.put("startIndex", "" + startRecord);
-            channel.put("searchTerms", q);
             channel.put("totalResults", Integer.toString(query.hitCount));
-            channel.put("itemsPerPage", "" + itemsPerPage);
             channel.put("pages", "" + ((query.hitCount / itemsPerPage) + 1));
-            channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
 
             // create result list
             final List<Map<String, Object>> result = query.results;
@@ -218,7 +221,14 @@ public class YaCySearchService extends AbstractService implements Service {
             nave.put("same", false);
             pagenav.put(nave);
             channel.put("pagenav", pagenav);
-        } catch (final JSONException e) {e.printStackTrace();}
+        } catch (final Exception e) {
+        	// any kind of exception can happen if the elastic index is not ready or index does not exist
+        	Logger.error(e);
+        	try {
+        		channel.put("totalResults", 0);
+        		channel.put("pages", "0");
+        	} catch (final JSONException ee) {Logger.error(ee);}
+        }
         return json;
     }
 
