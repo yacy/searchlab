@@ -32,33 +32,29 @@ import eu.searchlab.storage.table.TimeSeriesTable;
  */
 public class UserAudit implements AuditTask {
 
-    private final static String[] requestsViewColNames = new String[] {"id"};
-    private final static String[] requestsMetaColNames = new String[] {"ip"};
-    private final static String[] requestdDataColNames = new String[] {"requests"};
+    private final static String[] requestsViewColNames = new String[] {"view.id"};
+    private final static String[] requestsMetaColNames = new String[] {"meta.ip"};
+    private final static String[] requestdDataColNames = new String[] {"data.requests"};
 
 
     private final static String[] visitorsViewColNames = new String[] {};
     private final static String[] visitorsMetaColNames = new String[] {};
-    private final static String[] visitorsDataColNames = new String[] {"visitors"};
+    private final static String[] visitorsDataColNames = new String[] {"data.visitors"};
 
     private final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> lastSeen;
-    private final TimeSeriesTable requestsTable, visitorsTable;
     private final ConcurrentIO cio;
     private final IOPath requestsIOp, visitorsIOp;
+    private TimeSeriesTable requestsTable, visitorsTable;
 
     public UserAudit(final GenericIO io, final IOPath requestsIOp, final IOPath visitorsIOp) throws IOException {
         this.cio = new ConcurrentIO(io, 10000);
         this.requestsIOp = requestsIOp;
         this.visitorsIOp = visitorsIOp;
         this.lastSeen = new ConcurrentHashMap<>();
-        this.requestsTable =
-                //(io.exists(requestsIOp)) ?
-                //        TimeSeriesTable.readCSV(this.cio, requestsIOp) :
-                        new TimeSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
-        this.visitorsTable =
-                //(io.exists(visitorsIOp)) ?
-                //        TimeSeriesTable.readCSV(this.cio, visitorsIOp) :
-                        new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
+        this.requestsTable = new TimeSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
+        if (io.exists(requestsIOp)) try {this.requestsTable = new TimeSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
+        this.visitorsTable = new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
+        if (io.exists(visitorsIOp)) try {this.visitorsTable = new TimeSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
     }
 
     public void event(final String id, final String ip) {
@@ -80,6 +76,11 @@ public class UserAudit implements AuditTask {
         final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> w = new ConcurrentHashMap<>();
         w.putAll(this.lastSeen);
         this.lastSeen.clear();
+
+        // check if the tables have been updated by another process meanwhile
+
+
+        // read out copy of audit (the original one has been flushed already)
         w.forEach((id, tip) -> {
             final int count = tip.size();
             if (count > 0) {
@@ -87,7 +88,9 @@ public class UserAudit implements AuditTask {
                 this.requestsTable.addValues(now, new String[] {id}, new String[] {ip}, new long[] {count});
             }
         });
-        this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {w.size()});
+        if (w.size() > 0) {
+        	this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {w.size()});
+        }
 
         // store tables
         int sizeAfter = this.requestsTable.size();

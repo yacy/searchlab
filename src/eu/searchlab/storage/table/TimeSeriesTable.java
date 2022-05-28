@@ -25,7 +25,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Locale;
 
@@ -34,6 +36,7 @@ import eu.searchlab.storage.io.IOObject;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
+import tech.tablesaw.api.DateColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
 import tech.tablesaw.api.LongColumn;
@@ -56,15 +59,28 @@ public class TimeSeriesTable {
     public Column<?>[] dataCols;
 
     public final static String TS_TIME   = "ts.time";
-    public final static String TS_DATE   = "ts.date"; // ISO8601 format yyyy-MM-dd'T'HH:mm:ss'Z'
+    public final static String TS_DATE   = "ts.date"; // ISO8601 format yyyy-MM-dd, no time, no timezone. timezone used is GMT
 
     private TimeSeriesTable() {
         this.tshTimeCol   = InstantColumn.create(TS_TIME);
         this.tshDateCol   = StringColumn.create(TS_DATE);
     }
 
-    public TimeSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final Column<?>[] dataCols) {
+    public TimeSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final Column<?>[] dataCols) throws UnsupportedOperationException {
         this();
+
+        // validate columns
+        for (int i = 0; i < viewCols.length; i++)  {
+        	if (!viewCols[i].name().startsWith("view.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'view.'");
+        }
+        for (int i = 0; i < metaCols.length; i++) {
+        	if (!metaCols[i].name().startsWith("meta.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'meta.'");
+        }
+        for (int i = 0; i < dataCols.length; i++) {
+        	if (!dataCols[i].name().startsWith("data.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'data.'");
+        }
+
+        // initialize
         this.viewCols = viewCols;
         this.metaCols = metaCols;
         this.dataCols = dataCols;
@@ -78,14 +94,21 @@ public class TimeSeriesTable {
         this.table = new IndexedTable(t);
     }
 
-    public TimeSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames, final boolean dataIsDouble) {
+    public TimeSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames, final boolean dataIsDouble) throws UnsupportedOperationException {
         this();
         this.viewCols = new StringColumn[viewColNames.length];
-        for (int i = 0; i < viewColNames.length; i++) this.viewCols[i] = StringColumn.create(viewColNames[i]);
+        for (int i = 0; i < viewColNames.length; i++) {
+        	if (!viewColNames[i].startsWith("view.")) throw new UnsupportedOperationException("column " + viewColNames[i] + ": unsupported name. must start with 'view.'");
+        	this.viewCols[i] = StringColumn.create(viewColNames[i]);
+        }
         this.metaCols = new StringColumn[metaColNames.length];
-        for (int i = 0; i < metaColNames.length; i++) this.metaCols[i] = StringColumn.create(metaColNames[i]);
+        for (int i = 0; i < metaColNames.length; i++) {
+        	if (!metaColNames[i].startsWith("meta.")) throw new UnsupportedOperationException("column " + metaColNames[i] + ": unsupported name. must start with 'meta.'");
+        	this.metaCols[i] = StringColumn.create(metaColNames[i]);
+        }
         this.dataCols = dataIsDouble ? new DoubleColumn[dataColNames.length] : new LongColumn[dataColNames.length];
         for (int i = 0; i < dataColNames.length; i++) {
+        	if (!dataColNames[i].startsWith("data.")) throw new UnsupportedOperationException("column " + dataColNames[i] + ": unsupported name. must start with 'data.'");
             this.dataCols[i] = dataIsDouble ? DoubleColumn.create(dataColNames[i]) : LongColumn.create(dataColNames[i]);
         }
         final Table t = Table.create()
@@ -98,12 +121,11 @@ public class TimeSeriesTable {
         this.table = new IndexedTable(t);
     }
 
-    public TimeSeriesTable(final IndexedTable table) {
-        this.table = table;
-        initFromTable();
+    public TimeSeriesTable(final IndexedTable table, final boolean dataIsDouble) throws IOException {
+        initFromTable(table.table, dataIsDouble);
     }
 
-    public TimeSeriesTable(final ConcurrentIO io, final IOPath iop) throws IOException {
+    public TimeSeriesTable(final ConcurrentIO io, final IOPath iop, final boolean dataIsDouble) throws IOException {
         final IOObject[] ioo = io.readForced(iop);
         assert ioo.length == 1;
         final byte[] b = ioo[0].getObject();
@@ -114,30 +136,96 @@ public class TimeSeriesTable {
                     .locale(Locale.ENGLISH)
                     .header(true)
                     .build();
-        this.table = new IndexedTable(Table.read().usingOptions(options));
-        initFromTable();
+        final Table xtable = Table.read().usingOptions(options);
+        initFromTable(xtable, dataIsDouble);
     }
 
-    private void initFromTable() {
-        this.tshTimeCol = this.table.table().instantColumn(TS_TIME);
-        this.tshDateCol = this.table.table().stringColumn(TS_DATE);
+    private void initFromTable(final Table xtable, final boolean dataIsDouble) throws IOException {
+        // create appropriate columns from given table
+        // If those columes come from a parsed input, the types may be not correct
+        final Column<?> ts_time_candidate = xtable.column(TS_TIME);
+        if (ts_time_candidate instanceof InstantColumn) {
+            this.tshTimeCol = (InstantColumn) ts_time_candidate;
+        } else if (ts_time_candidate instanceof StringColumn) {
+            // parse the dates to get the instant values
+            this.tshTimeCol = InstantColumn.create(TS_TIME);
+            for (final String ds: ((StringColumn) ts_time_candidate).asList()) {
+                try {
+                    final Date d = DateParser.iso8601MillisFormat.parse(ds);
+                    final Instant i = Instant.ofEpochMilli(d.getTime());
+                    this.tshTimeCol.append(i);
+                } catch (final ParseException e) {
+                    throw new IOException("cannot parse date: " + ds, e);
+                }
+            }
+        } else {
+            throw new IOException("could not parse time column");
+        }
+
+        final Column<?> ts_date_candidate = xtable.column(TS_DATE);
+        if (ts_date_candidate instanceof StringColumn) {
+            this.tshDateCol = (StringColumn) ts_date_candidate;
+        } else if (ts_date_candidate instanceof DateColumn) {
+            // parse the dates to get the instant values
+            this.tshDateCol = StringColumn.create(TS_DATE);
+            for (final LocalDate ld: ((DateColumn) ts_date_candidate).asList()) {
+                final String s = ld.toString();
+                this.tshDateCol.append(s);
+            }
+        } else {
+            throw new IOException("could not parse time column");
+        }
+
         int viewColCount = 0, metaColCount = 0, dataColCount = 0;
-        for (int col = 0; col < this.table.columnCount(); col++) {
-            final String name = this.table.table().columnArray()[col].name();
+        for (int col = 0; col < xtable.columnCount(); col++) {
+            final String name = xtable.columnArray()[col].name();
             if (name.startsWith("view.")) viewColCount++;
             if (name.startsWith("meta.")) metaColCount++;
             if (name.startsWith("data.")) dataColCount++;
         }
         this.viewCols = new StringColumn[viewColCount];
         this.metaCols = new StringColumn[metaColCount];
-        this.dataCols = new DoubleColumn[dataColCount];
+        this.dataCols = dataIsDouble ? new DoubleColumn[dataColCount] : new LongColumn[dataColCount];
         viewColCount = 0; metaColCount = 0; dataColCount = 0;
-        for (int col = 0; col < this.table.columnCount(); col++) {
-            final String name = this.table.table().columnArray()[col].name();
-            if (name.startsWith("view.")) this.viewCols[viewColCount++] = this.table.table().stringColumn(col);
-            if (name.startsWith("meta.")) this.metaCols[metaColCount++] = this.table.table().stringColumn(col);
-            if (name.startsWith("data.")) this.dataCols[dataColCount++] = this.table.table().column(col);
+         for (int col = 0; col < xtable.columnCount(); col++) {
+            final String name = xtable.columnArray()[col].name();
+            if (name.startsWith("view.")) this.viewCols[viewColCount++] = xtable.stringColumn(col);
+            if (name.startsWith("meta.")) this.metaCols[metaColCount++] = xtable.stringColumn(col);
+            if (name.startsWith("data.")) {
+            	if (dataIsDouble) {
+            		if (xtable.column(col) instanceof DoubleColumn) {
+            			this.dataCols[dataColCount++] = xtable.column(col);
+            		} else {
+            			final DoubleColumn dc = DoubleColumn.create(name);
+            			this.dataCols[dataColCount++] = dc;
+            			for (final Object o: (xtable.column(col)).asList()) {
+                            dc.append(Double.parseDouble(o.toString()));
+                        }
+            		}
+            	} else { // long
+            		if (xtable.column(col) instanceof LongColumn) {
+            			this.dataCols[dataColCount++] = xtable.column(col);
+            		} else {
+            			final LongColumn lc = LongColumn.create(name);
+            			this.dataCols[dataColCount++] = lc;
+            			for (final Object o: (xtable.column(col)).asList()) {
+                            lc.append(Long.parseLong(o.toString()));
+                        }
+            		}
+            	}
+
+            }
         }
+
+        // insert columns into table
+        final Table t = Table.create()
+                .addColumns(this.tshTimeCol, this.tshDateCol)
+                .addColumns(this.viewCols)
+                .addColumns(this.metaCols);
+        for (int i = 0; i < this.dataCols.length; i++) {
+            t.addColumns(this.dataCols[i]);
+        }
+        this.table = new IndexedTable(t);
     }
 
     public void storeCSV(final ConcurrentIO io, final IOPath iop) {
@@ -160,10 +248,6 @@ public class TimeSeriesTable {
         } catch (final IOException e) {
             Logger.warn("failed to write user audit to " + iop.toString(), e);
         }
-    }
-
-    public static TimeSeriesTable readCSV(final ConcurrentIO io, final IOPath iop) throws IOException {
-        return new TimeSeriesTable(io, iop);
     }
 
     public int size() {
@@ -195,7 +279,7 @@ public class TimeSeriesTable {
         assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
 
         this.tshTimeCol.append(Instant.ofEpochMilli(time));
-        this.tshDateCol.append(DateParser.iso8601Format.format(new Date(time)));
+        this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
         for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).append(data[i]);
@@ -207,7 +291,7 @@ public class TimeSeriesTable {
         assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
 
         this.tshTimeCol.append(Instant.ofEpochMilli(time));
-        this.tshDateCol.append(DateParser.iso8601Format.format(new Date(time)));
+        this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
         for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).append(data[i]);
