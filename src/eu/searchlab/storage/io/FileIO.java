@@ -246,4 +246,9 @@ public class FileIO extends AbstractIO implements GenericIO {
         final File f = getObjectFile(iop);
         return f.exists();
     }
+
+    @Override
+    public String toString() {
+    	return this.basePath.toString();
+    }
 }

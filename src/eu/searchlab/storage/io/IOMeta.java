@@ -27,7 +27,7 @@ public class IOMeta {
     private final IOPath iop;
     private long lastModified;
     private long size;
-    private boolean isDir;
+    private final boolean isDir;
 
     public IOMeta(final IOPath iop) {
         this.iop = iop;
@@ -60,5 +60,10 @@ public class IOMeta {
 
     public boolean isDir() {
         return this.isDir;
+    }
+
+    @Override
+    public String toString() {
+    	return this.iop.toString();
     }
 }

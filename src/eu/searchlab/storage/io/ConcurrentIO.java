@@ -253,4 +253,9 @@ public final class ConcurrentIO {
         throw new IOException("no lockfile exist");
     }
 
+    @Override
+    public String toString() {
+    	return this.io.toString();
+    }
+
 }

@@ -433,4 +433,9 @@ public final class IOObject {
         }
         return array;
     }
+
+    @Override
+    public String toString() {
+    	return "object@" + this.path.toString();
+    }
 }

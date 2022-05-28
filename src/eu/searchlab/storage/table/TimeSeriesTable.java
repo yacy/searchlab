@@ -156,9 +156,9 @@ public class TimeSeriesTable {
             // write to io
             io.writeForced(new IOObject(iop, baos.toByteArray()));
             final long stop = System.currentTimeMillis();
-            Logger.info("wrote user audit " + io.toString() + " in " + (stop - start) + " milliseconds");
+            Logger.info("wrote user audit " + iop.toString() + " in " + (stop - start) + " milliseconds");
         } catch (final IOException e) {
-            Logger.warn("failed to write user audit to " + io.toString(), e);
+            Logger.warn("failed to write user audit to " + iop.toString(), e);
         }
     }
 

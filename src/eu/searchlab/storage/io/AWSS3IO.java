@@ -242,6 +242,11 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
         return date.getTime() < System.currentTimeMillis();
     }
 
+    @Override
+    public String toString() {
+    	return this.accessKey + "@" + this.endpointURL;
+    }
+
     public static void main(final String[] args) {
         final S3Mock s3mock = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
         s3mock.start();

@@ -512,4 +512,9 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
         }
     }
 
+    @Override
+    public String toString() {
+    	return this.accessKey + "@" + this.endpointURL;
+    }
+
 }
