@@ -34,13 +34,15 @@ import org.json.JSONObject;
 public final class ConcurrentIO {
 
     private final GenericIO io;
+    private final long waitingtime;
 
     /**
      * ConcurrentIO
      * @param io
      */
-    public ConcurrentIO(final GenericIO io) {
+    public ConcurrentIO(final GenericIO io, final long waitingtime) {
         this.io = io;
+        this.waitingtime = waitingtime;
     }
 
     public final GenericIO getIO() {
@@ -95,9 +97,9 @@ public final class ConcurrentIO {
         }
     }
 
-    private final boolean waitUntilUnlock(final long waitingtime, final IOPath... lockFiles) {
-        if (waitingtime <= 0) return true;
-        final long timeout = System.currentTimeMillis() + waitingtime;
+    private final boolean waitUntilUnlock(final IOPath... lockFiles) {
+        if (this.waitingtime <= 0) return true;
+        final long timeout = System.currentTimeMillis() + this.waitingtime;
         waitloop: while (System.currentTimeMillis() < timeout) {
             for (int i = 0; i < lockFiles.length; i++) {
                 if (this.io.exists(lockFiles[i])) {
@@ -111,9 +113,9 @@ public final class ConcurrentIO {
         return false;
     }
 
-    public final void write(final long waitingtime, final IOObject... ioos) throws IOException {
+    public final void write(final IOObject... ioos) throws IOException {
         final IOPath[] lockFiles = lockFile(ioos);
-        if (waitUntilUnlock(waitingtime, lockFiles)) {
+        if (waitUntilUnlock(lockFiles)) {
             writeLockFile(lockFiles);
             for (int i = 0; i < ioos.length; i++) {
                 this.io.write(ioos[i].getPath(), ioos[i].getObject());
@@ -124,28 +126,28 @@ public final class ConcurrentIO {
         }
     }
 
-    public final void writeForced(final long waitingtime, final IOObject... ioos) throws IOException {
+    public final void writeForced(final IOObject... ioos) throws IOException {
         try {
-            write(waitingtime, ioos);
+            write(ioos);
         } catch (final IOException e) {
             for (int i = 0; i < ioos.length; i++) deleteLock(ioos[i].getPath());
-            write(-1, ioos);
+            write(ioos);
         }
     }
 
-    public void writeGZIPForced(final long waitingtime, final IOPath iopgz, final byte[] object) throws IOException {
+    public void writeGZIPForced(final IOPath iopgz, final byte[] object) throws IOException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final GZIPOutputStream zipStream = new GZIPOutputStream(baos);
         zipStream.write(object);
         zipStream.close();
         baos.close();
-        writeForced(waitingtime, new IOObject(iopgz, baos.toByteArray()));
+        writeForced(new IOObject(iopgz, baos.toByteArray()));
     }
 
-    public final IOObject[] read(final long waitingtime, final IOPath... iops) throws IOException {
+    public final IOObject[] read(final IOPath... iops) throws IOException {
         final IOPath[] lockFiles = lockFile(iops);
         final IOObject[] as = new IOObject[iops.length];
-        if (waitUntilUnlock(waitingtime, lockFiles)) {
+        if (waitUntilUnlock(lockFiles)) {
             writeLockFile(lockFiles);
             for (int i = 0; i < iops.length; i++) {
                 final byte[] a = this.io.readAll(iops[i]);
@@ -158,18 +160,18 @@ public final class ConcurrentIO {
         }
     }
 
-    public final IOObject[] readForced(final long waitingtime, final IOPath... iops) throws IOException {
+    public final IOObject[] readForced(final IOPath... iops) throws IOException {
         try {
-            return read(waitingtime, iops);
+            return read(iops);
         } catch (final IOException e) {
             deleteLock(iops);
-            return read(-1, iops);
+            return read(iops);
         }
     }
 
-    public final void remove(final long waitingtime, final IOPath... iops) throws IOException {
+    public final void remove(final IOPath... iops) throws IOException {
         final IOPath[] lockFiles = lockFile(iops);
-        if (waitUntilUnlock(waitingtime, lockFiles)) {
+        if (waitUntilUnlock(lockFiles)) {
             writeLockFile(lockFiles);
             for (int i = 0; i < iops.length; i++) {
                 this.io.remove(iops[i]);
@@ -180,12 +182,12 @@ public final class ConcurrentIO {
         }
     }
 
-    public final void removeForced(final long waitingtime, final IOPath... iops) throws IOException {
+    public final void removeForced(final IOPath... iops) throws IOException {
         try {
-            remove(waitingtime, iops);
+            remove(iops);
         } catch (final IOException e) {
             deleteLock(iops);
-            remove(-1, iops);
+            remove(iops);
         }
     }
 

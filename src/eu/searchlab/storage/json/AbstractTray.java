@@ -61,11 +61,9 @@ public abstract class AbstractTray implements Tray {
         return j;
     }
 
-    protected final static long TIMEOUT = 10000;
-
     protected Tray commitInternal() throws IOException {
         // now write our data back
-        this.io.writeForced(TIMEOUT, new IOObject(this.iop, this.object));
+        this.io.writeForced(new IOObject(this.iop, this.object));
         this.lastLoadTime = System.currentTimeMillis();
         return this;
     }
@@ -85,7 +83,7 @@ public abstract class AbstractTray implements Tray {
     }
 
     private JSONObject load() throws IOException {
-        final IOObject[] o = this.io.readForced(TIMEOUT, this.iop);
+        final IOObject[] o = this.io.readForced(this.iop);
         final JSONObject json = o[0].getJSONObject();
         return json;
     }

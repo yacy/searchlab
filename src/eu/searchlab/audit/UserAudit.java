@@ -19,38 +19,46 @@
 
 package eu.searchlab.audit;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
-import eu.searchlab.storage.io.IOObject;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TimeSeriesTable;
-import eu.searchlab.tools.Logger;
 
 /**
  * Class which stores information about the presence and actions of users
  */
 public class UserAudit implements AuditTask {
 
-    private final static String[] viewColNames = new String[] {"id"};
-    private final static String[] metaColNames = new String[] {"ip"};
-    private final static String[] dataColNames = new String[] {"requests"};
+    private final static String[] requestsViewColNames = new String[] {"id"};
+    private final static String[] requestsMetaColNames = new String[] {"ip"};
+    private final static String[] requestdDataColNames = new String[] {"requests"};
+
+
+    private final static String[] visitorsViewColNames = new String[] {};
+    private final static String[] visitorsMetaColNames = new String[] {};
+    private final static String[] visitorsDataColNames = new String[] {"visitors"};
 
     private final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> lastSeen;
-    private final TimeSeriesTable tsd;
+    private final TimeSeriesTable requestsTable, visitorsTable;
     private final ConcurrentIO cio;
-    private final IOPath iop;
+    private final IOPath requestsIOp, visitorsIOp;
 
-    public UserAudit(final GenericIO io, final IOPath backupPath) {
-        this.cio = new ConcurrentIO(io);
-        this.iop = backupPath;
+    public UserAudit(final GenericIO io, final IOPath requestsIOp, final IOPath visitorsIOp) throws IOException {
+        this.cio = new ConcurrentIO(io, 10000);
+        this.requestsIOp = requestsIOp;
+        this.visitorsIOp = visitorsIOp;
         this.lastSeen = new ConcurrentHashMap<>();
-        this.tsd = new TimeSeriesTable(viewColNames, metaColNames, dataColNames);
+        this.requestsTable =
+                //(io.exists(requestsIOp)) ?
+                //        TimeSeriesTable.readCSV(this.cio, requestsIOp) :
+                        new TimeSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
+        this.visitorsTable =
+                //(io.exists(visitorsIOp)) ?
+                //        TimeSeriesTable.readCSV(this.cio, visitorsIOp) :
+                        new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
     }
 
     public void event(final String id, final String ip) {
@@ -64,9 +72,11 @@ public class UserAudit implements AuditTask {
 
     @Override
     public void check() {
-        // flush the lastSeen and make a table entry
+
+        // flush the lastSeen and update tables
         final long now = System.currentTimeMillis();
-        final int sizeBefore = this.tsd.size();
+        final int sizeBeforeRequest = this.requestsTable.size();
+        final int sizeBeforeVisitor = this.visitorsTable.size();
         final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> w = new ConcurrentHashMap<>();
         w.putAll(this.lastSeen);
         this.lastSeen.clear();
@@ -74,24 +84,23 @@ public class UserAudit implements AuditTask {
             final int count = tip.size();
             if (count > 0) {
                 final String ip = tip.values().iterator().next();
-                this.tsd.addValues(now, new String[] {id}, new String[] {ip}, new double[] {(double) count});
+                this.requestsTable.addValues(now, new String[] {id}, new String[] {ip}, new long[] {count});
             }
         });
-        final int sizeAfter = this.tsd.size();
-        if (sizeAfter > sizeBefore) {
+        this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {w.size()});
+
+        // store tables
+        int sizeAfter = this.requestsTable.size();
+        if (sizeAfter > sizeBeforeRequest) {
             // store the table
-            final long start = System.currentTimeMillis();
-            try {
-                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                final OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
-                this.tsd.table.table().write().csv(osw);
-                osw.close();
-                this.cio.writeForced(10000, new IOObject(this.iop, baos.toByteArray()));
-                final long stop = System.currentTimeMillis();
-                Logger.info("wrote user audit to " + this.iop.toString() + " in " + (stop - start) + " milliseconds");
-            } catch (final IOException e) {
-                Logger.warn("failed to write user audit to " + this.iop.toString(), e);
-            }
+            this.requestsTable.storeCSV(this.cio, this.requestsIOp);
         }
+
+        sizeAfter = this.visitorsTable.size();
+        if (sizeAfter > sizeBeforeVisitor) {
+            // store the table
+            this.visitorsTable.storeCSV(this.cio, this.visitorsIOp);
+        }
+
     }
 }

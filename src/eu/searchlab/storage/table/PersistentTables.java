@@ -85,8 +85,6 @@ public class PersistentTables {
         return this.indexes.keySet();
     }
 
-    private final static long TIMEOUT = 10000;
-
     /**
      * remove table, hosted and un-hosted
      * @param tablename
@@ -94,7 +92,7 @@ public class PersistentTables {
      */
     public PersistentTables removeTable(final String tablename) {
         final IOPath key = this.iop.append(tablename + ".json");
-        try {this.io.removeForced(TIMEOUT, key);} catch (final IOException e) {}
+        try {this.io.removeForced(key);} catch (final IOException e) {}
         this.indexes.remove(tablename);
         return this;
     }
@@ -134,7 +132,7 @@ public class PersistentTables {
         if (this.io == null) throw new IOException("no io defined");
         if (this.iop == null) throw new IOException("no io path defined");
         final IOPath key = this.iop.append(tablename + ".json");
-        this.io.writeForced(TIMEOUT, new IOObject(key, t.toJSON(true)));
+        this.io.writeForced(new IOObject(key, t.toJSON(true)));
     }
 
     /**
@@ -192,7 +190,7 @@ public class PersistentTables {
             // in case the table is not inside the index, load it now
             final IOPath key = this.iop.append(tablename + ".json");
             if (this.io.getIO().exists(key)) {
-                final IOObject[] o = this.io.readForced(TIMEOUT, key);
+                final IOObject[] o = this.io.readForced(key);
                 final JSONArray a = o[0].getJSONArray();
                 table = new IndexedTable(a);
             }

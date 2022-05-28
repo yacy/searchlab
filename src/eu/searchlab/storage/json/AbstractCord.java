@@ -51,11 +51,9 @@ public abstract class AbstractCord implements Cord {
         this.mutex = this;
     }
 
-    protected final static long TIMEOUT = 10000;
-
     protected Cord commitInternal() throws IOException {
         // now write our data back
-        this.io.writeForced(TIMEOUT, new IOObject(this.iop, this.array));
+        this.io.writeForced(new IOObject(this.iop, this.array));
         this.lastLoadTime = System.currentTimeMillis();
         return this;
     }
@@ -75,7 +73,7 @@ public abstract class AbstractCord implements Cord {
     }
 
     private JSONArray load() throws IOException {
-        final IOObject[] o = this.io.readForced(TIMEOUT, this.iop);
+        final IOObject[] o = this.io.readForced(this.iop);
         final JSONArray json = o[0].getJSONArray();
         return json;
     }

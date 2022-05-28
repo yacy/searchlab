@@ -56,7 +56,7 @@ public class Searchlab {
 
     // IO and MinIO
     public static GenericIO io;
-    public static IOPath dataIOp, statusIOp, aaaaaIOp, userAuditIOp;
+    public static IOPath dataIOp, statusIOp, aaaaaIOp, auditUserRequestsIOp, auditUserVisitorsIOp;
 
     // elastic client
     public static ElasticsearchClient ec;
@@ -215,12 +215,19 @@ public class Searchlab {
         dataIOp = new IOPath(bucket, s3DataPath);
         statusIOp = dataIOp.append("status");
         aaaaaIOp  = dataIOp.append("aaaaa");
-        userAuditIOp = statusIOp.append("user_audit.csv");
+        auditUserRequestsIOp = statusIOp.append("audit_user_requests.csv");
+        auditUserVisitorsIOp = statusIOp.append("audit_user_visitors.csv");
         Logger.info("Connected S3 at " + s3address);
 
         // initialize audit and aaaaa
-        userAudit = new UserAudit(io, userAuditIOp);
-        accounting = new Accounting(io, aaaaaIOp);
+        // if this fails, we cannot start the searchlab!
+        try {
+            userAudit = new UserAudit(io, auditUserRequestsIOp, auditUserVisitorsIOp);
+            accounting = new Accounting(io, aaaaaIOp);
+        } catch (final IOException e) {
+            Logger.error("could not load data from IO", e);
+            System.exit(-1);
+        }
         if (readyCounter.incrementAndGet() >= 3) ready = true;
         final AuditScheduler auditScheduler = new AuditScheduler(60000, userAudit);
         auditScheduler.start();

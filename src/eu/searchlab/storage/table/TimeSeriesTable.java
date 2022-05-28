@@ -20,17 +20,29 @@
 
 package eu.searchlab.storage.table;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
 import java.util.Date;
+import java.util.Locale;
 
+import eu.searchlab.storage.io.ConcurrentIO;
+import eu.searchlab.storage.io.IOObject;
+import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
+import eu.searchlab.tools.Logger;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
+import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
+import tech.tablesaw.columns.Column;
+import tech.tablesaw.io.csv.CsvReadOptions;
+import tech.tablesaw.io.csv.CsvWriteOptions;
+import tech.tablesaw.io.csv.CsvWriter;
 import tech.tablesaw.plotly.traces.ScatterTrace;
 
 public class TimeSeriesTable {
@@ -41,8 +53,7 @@ public class TimeSeriesTable {
     public StringColumn   tshDateCol;
     public StringColumn[] viewCols;
     public StringColumn[] metaCols;
-    public DoubleColumn[] dataCols;
-    private double[] zeroData;
+    public Column<?>[] dataCols;
 
     public final static String TS_TIME   = "ts.time";
     public final static String TS_DATE   = "ts.date"; // ISO8601 format yyyy-MM-dd'T'HH:mm:ss'Z'
@@ -52,14 +63,7 @@ public class TimeSeriesTable {
         this.tshDateCol   = StringColumn.create(TS_DATE);
     }
 
-    private void initZeroes(final int len) {
-        this.zeroData = new double[len];
-        for (int i = 0; i < this.zeroData.length; i++) {
-            this.zeroData[i] = 0.0d;
-        }
-    }
-
-    public TimeSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final DoubleColumn[] dataCols) {
+    public TimeSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final Column<?>[] dataCols) {
         this();
         this.viewCols = viewCols;
         this.metaCols = metaCols;
@@ -72,18 +76,17 @@ public class TimeSeriesTable {
             t.addColumns(this.dataCols[i]);
         }
         this.table = new IndexedTable(t);
-        initZeroes(dataCols.length);
     }
 
-    public TimeSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames) {
+    public TimeSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames, final boolean dataIsDouble) {
         this();
         this.viewCols = new StringColumn[viewColNames.length];
         for (int i = 0; i < viewColNames.length; i++) this.viewCols[i] = StringColumn.create(viewColNames[i]);
         this.metaCols = new StringColumn[metaColNames.length];
         for (int i = 0; i < metaColNames.length; i++) this.metaCols[i] = StringColumn.create(metaColNames[i]);
-        this.dataCols = new DoubleColumn[dataColNames.length];
+        this.dataCols = dataIsDouble ? new DoubleColumn[dataColNames.length] : new LongColumn[dataColNames.length];
         for (int i = 0; i < dataColNames.length; i++) {
-            this.dataCols[i] = DoubleColumn.create(dataColNames[i]);
+            this.dataCols[i] = dataIsDouble ? DoubleColumn.create(dataColNames[i]) : LongColumn.create(dataColNames[i]);
         }
         final Table t = Table.create()
                 .addColumns(this.tshTimeCol, this.tshDateCol)
@@ -93,16 +96,34 @@ public class TimeSeriesTable {
             t.addColumns(this.dataCols[i]);
         }
         this.table = new IndexedTable(t);
-        initZeroes(this.dataCols.length);
     }
 
     public TimeSeriesTable(final IndexedTable table) {
         this.table = table;
+        initFromTable();
+    }
+
+    public TimeSeriesTable(final ConcurrentIO io, final IOPath iop) throws IOException {
+        final IOObject[] ioo = io.readForced(iop);
+        assert ioo.length == 1;
+        final byte[] b = ioo[0].getObject();
+        final ByteArrayInputStream bais = new ByteArrayInputStream(b);
+        final CsvReadOptions options =
+                CsvReadOptions.builder(bais)
+                    .separator(';')
+                    .locale(Locale.ENGLISH)
+                    .header(true)
+                    .build();
+        this.table = new IndexedTable(Table.read().usingOptions(options));
+        initFromTable();
+    }
+
+    private void initFromTable() {
         this.tshTimeCol = this.table.table().instantColumn(TS_TIME);
         this.tshDateCol = this.table.table().stringColumn(TS_DATE);
         int viewColCount = 0, metaColCount = 0, dataColCount = 0;
-        for (int col = 0; col < table.columnCount(); col++) {
-            final String name = table.table().columnArray()[col].name();
+        for (int col = 0; col < this.table.columnCount(); col++) {
+            final String name = this.table.table().columnArray()[col].name();
             if (name.startsWith("view.")) viewColCount++;
             if (name.startsWith("meta.")) metaColCount++;
             if (name.startsWith("data.")) dataColCount++;
@@ -111,13 +132,38 @@ public class TimeSeriesTable {
         this.metaCols = new StringColumn[metaColCount];
         this.dataCols = new DoubleColumn[dataColCount];
         viewColCount = 0; metaColCount = 0; dataColCount = 0;
-        for (int col = 0; col < table.columnCount(); col++) {
-            final String name = table.table().columnArray()[col].name();
-            if (name.startsWith("view.")) this.viewCols[viewColCount++] = table.table().stringColumn(col);
-            if (name.startsWith("meta.")) this.metaCols[metaColCount++] = table.table().stringColumn(col);
-            if (name.startsWith("data.")) this.dataCols[dataColCount++] = table.table().doubleColumn(col);
+        for (int col = 0; col < this.table.columnCount(); col++) {
+            final String name = this.table.table().columnArray()[col].name();
+            if (name.startsWith("view.")) this.viewCols[viewColCount++] = this.table.table().stringColumn(col);
+            if (name.startsWith("meta.")) this.metaCols[metaColCount++] = this.table.table().stringColumn(col);
+            if (name.startsWith("data.")) this.dataCols[dataColCount++] = this.table.table().column(col);
         }
-        initZeroes(this.dataCols.length);
+    }
+
+    public void storeCSV(final ConcurrentIO io, final IOPath iop) {
+        final long start = System.currentTimeMillis();
+        try {
+            // prepare document
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+            final CsvWriteOptions options = CsvWriteOptions.builder(osw)
+                    .separator(';')
+                    .header(true)
+                    .build();
+            new CsvWriter().write(this.table.table(), options);
+            osw.close();
+
+            // write to io
+            io.writeForced(new IOObject(iop, baos.toByteArray()));
+            final long stop = System.currentTimeMillis();
+            Logger.info("wrote user audit " + io.toString() + " in " + (stop - start) + " milliseconds");
+        } catch (final IOException e) {
+            Logger.warn("failed to write user audit to " + io.toString(), e);
+        }
+    }
+
+    public static TimeSeriesTable readCSV(final ConcurrentIO io, final IOPath iop) throws IOException {
+        return new TimeSeriesTable(io, iop);
     }
 
     public int size() {
@@ -136,28 +182,11 @@ public class TimeSeriesTable {
                 this.tshDateCol = ntable.stringColumn(TS_DATE);
                 for (int k = 0; k < this.viewCols.length; k++) this.viewCols[k] = ntable.stringColumn(this.viewCols[k].name());
                 for (int k = 0; k < this.metaCols.length; k++) this.metaCols[k] = ntable.stringColumn(this.metaCols[k].name());
-                for (int k = 0; k < this.dataCols.length; k++) this.dataCols[k] = ntable.doubleColumn(this.dataCols[k].name());
+                for (int k = 0; k < this.dataCols.length; k++) this.dataCols[k] = ntable.column(this.dataCols[k].name());
                 this.table = new IndexedTable(ntable);
                 return;
             }
         }
-    }
-
-    public LocalDateTime getLocalDate(final int year, final int month, final int day, final int hour, final int minute, final int second) {
-        return LocalDateTime.now()
-                .with(ChronoField.YEAR, year)
-                .with(ChronoField.MONTH_OF_YEAR, month)
-                .with(ChronoField.DAY_OF_MONTH, day)
-                .with(ChronoField.HOUR_OF_DAY, hour)
-                .with(ChronoField.MINUTE_OF_HOUR, minute)
-                .with(ChronoField.SECOND_OF_MINUTE, second)
-                .with(ChronoField.MILLI_OF_SECOND, 0)
-                .with(ChronoField.MICRO_OF_SECOND, 0)
-                ;
-    }
-
-    public static LocalDateTime getLocalDate(final long millis, final ZoneOffset offset) {
-        return LocalDateTime.ofEpochSecond(millis / 1000, (int) ((millis % 1000) * 1000_000L), offset);
     }
 
     public void addValues(final long time, final String[] view, final String[] meta, final double[] data) {
@@ -169,7 +198,19 @@ public class TimeSeriesTable {
         this.tshDateCol.append(DateParser.iso8601Format.format(new Date(time)));
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
-        for (int i = 0; i < data.length; i++) this.dataCols[i].append(data[i]);
+        for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).append(data[i]);
+    }
+
+    public void addValues(final long time, final String[] view, final String[] meta, final long[] data) {
+        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
+        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+
+        this.tshTimeCol.append(Instant.ofEpochMilli(time));
+        this.tshDateCol.append(DateParser.iso8601Format.format(new Date(time)));
+        for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
+        for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
+        for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).append(data[i]);
     }
 
     public void append(final TimeSeriesTable t) {
@@ -191,12 +232,32 @@ public class TimeSeriesTable {
 
             // overwrite values and finish. We consider that this hit is unique
             for (int i = 0; i < meta.length; i++) this.metaCols[i].set(r, meta[i]);
-            for (int i = 0; i < data.length; i++) this.dataCols[i].set(r, data[i]);
+            for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).set(r, data[i]);
             return;
         }
     }
 
-    public double[] getValues(final long time, final String[] view) {
+    public void setValuesWhere(final long time, final String[] view, final String[] meta, final long[] data) {
+        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
+        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
+            // try to match with time constraints
+            if (this.tshTimeCol.getLongInternal(r) != time) continue;
+
+            // try to match with view constraints
+            for (int t = 0; t < view.length; t++) {
+                if (!this.viewCols[t].get(r).equals(view[t])) continue rowloop;
+            }
+
+            // overwrite values and finish. We consider that this hit is unique
+            for (int i = 0; i < meta.length; i++) this.metaCols[i].set(r, meta[i]);
+            for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).set(r, data[i]);
+            return;
+        }
+    }
+
+    public double[] getDoubleValues(final long time, final String[] view) {
         assert view == null || view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
 
         // execute select
@@ -206,6 +267,21 @@ public class TimeSeriesTable {
                     if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
                 }
                 return getDouble(i);
+            }
+        }
+        return null;
+    }
+
+    public long[] getLongValues(final long time, final String[] view) {
+        assert view == null || view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
+
+        // execute select
+        search: for (int i = 0; i < this.table.size(); i++) {
+            if (this.tshTimeCol.getLongInternal(i) == time) {
+                if (view != null) for (int j = 0; j < view.length; j++) {
+                    if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
+                }
+                return getLong(i);
             }
         }
         return null;
@@ -228,8 +304,18 @@ public class TimeSeriesTable {
         final double[] d = new double[this.dataCols.length];
         int c = 0;
         for (int i = 0; i < this.dataCols.length; i++) {
-            d[c] = this.dataCols[i].getDouble(row);
+            d[c] = ((DoubleColumn) this.dataCols[i]).getDouble(row);
             if (!Double.isFinite(d[c]) || Double.isNaN(d[c])) d[c] = 0.0d;
+            c++;
+        }
+        return d;
+    }
+
+    public long[] getLong(final int row) {
+        final long[] d = new long[this.dataCols.length];
+        int c = 0;
+        for (int i = 0; i < this.dataCols.length; i++) {
+            d[c] = ((LongColumn) this.dataCols[i]).getLong(row);
             c++;
         }
         return d;
