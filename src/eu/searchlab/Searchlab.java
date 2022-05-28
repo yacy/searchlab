@@ -36,6 +36,8 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
 import eu.searchlab.aaaaa.Accounting;
+import eu.searchlab.audit.AuditScheduler;
+import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.WebServer;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
@@ -54,7 +56,7 @@ public class Searchlab {
 
     // IO and MinIO
     public static GenericIO io;
-    public static IOPath dataIop, settingsIop, aaaaaIop;
+    public static IOPath dataIOp, statusIOp, aaaaaIOp, userAuditIOp;
 
     // elastic client
     public static ElasticsearchClient ec;
@@ -62,6 +64,10 @@ public class Searchlab {
 
     // Messaging client
     public static QueueFactory queues;
+
+    // Audit
+    public static UserAudit userAudit;
+    public static AuditScheduler auditScheduler;
 
     // AAAAA
     public static Accounting accounting;
@@ -167,28 +173,6 @@ public class Searchlab {
         new Thread() {
             @Override
             public void run() {
-                // get connection to minio
-                final String s3address = System.getProperty("grid.s3.address", "admin:12345678@yacygrid.b00:9000");
-                final String s3DataPath = System.getProperty("grid.s3.datapath", "/data");
-                final String bucket_endpoint = getHost(s3address);
-                final int p = bucket_endpoint.indexOf('.');
-                assert p > 0;
-                final String bucket = bucket_endpoint.substring(0, p);
-                final String endpoint = bucket_endpoint.substring(p + 1);
-                io = new MinioS3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
-                dataIop = new IOPath(bucket, s3DataPath);
-                settingsIop = dataIop.append("settings");
-                aaaaaIop  = dataIop.append("aaaaa");
-                Logger.info("Connected S3 at " + s3address);
-
-                // initialize aaaaa
-                accounting = new Accounting(io, aaaaaIop);
-                if (readyCounter.incrementAndGet() >= 3) ready = true;
-            }
-        }.start();
-        new Thread() {
-            @Override
-            public void run() {
                 // get connection to elasticsearch
                 final String[] elasticsearchAddress = System.getProperty("grid.elasticsearch.address", "127.0.0.1:9300").split(",");
                 final String elasticsearchClusterName = System.getProperty("grid.elasticsearch.clusterName", "elasticsearch"); // default is elasticsearch but "" will ignore it
@@ -219,10 +203,32 @@ public class Searchlab {
             }
         }.start();
 
+        // connect to minio without background thread because we need this before we initialize the server for audit
+        final String s3address = System.getProperty("grid.s3.address", "admin:12345678@yacygrid.b00:9000");
+        final String s3DataPath = System.getProperty("grid.s3.datapath", "/data");
+        final String bucket_endpoint = getHost(s3address);
+        final int p = bucket_endpoint.indexOf('.');
+        assert p > 0;
+        final String bucket = bucket_endpoint.substring(0, p);
+        final String endpoint = bucket_endpoint.substring(p + 1);
+        io = new MinioS3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));
+        dataIOp = new IOPath(bucket, s3DataPath);
+        statusIOp = dataIOp.append("status");
+        aaaaaIOp  = dataIOp.append("aaaaa");
+        userAuditIOp = statusIOp.append("user_audit.csv");
+        Logger.info("Connected S3 at " + s3address);
+
+        // initialize audit and aaaaa
+        userAudit = new UserAudit(io, userAuditIOp);
+        accounting = new Accounting(io, aaaaaIOp);
+        if (readyCounter.incrementAndGet() >= 3) ready = true;
+        final AuditScheduler auditScheduler = new AuditScheduler(60000, userAudit);
+        auditScheduler.start();
+
         // Start webserver
         final String port = System.getProperty("port", "8400");
         Logger.info("starting server at port " + port);
-        final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0");
+        final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0", userAudit);
 
         // give positive feedback
         Logger.info("Searchlab started at port " + port);

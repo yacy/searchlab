@@ -172,19 +172,10 @@ public class TimeSeriesTable {
         for (int i = 0; i < data.length; i++) this.dataCols[i].append(data[i]);
     }
 
-    public void append(final WeekSeriesTable t) {
+    public void append(final TimeSeriesTable t) {
         this.table.append(t.table);
     }
 
-    /**
-     * find a row which matches with given values year, week an view.
-     * There all values from meta and data are overwritten
-     * @param year
-     * @param week
-     * @param view
-     * @param meta
-     * @param data
-     */
     public void setValuesWhere(final long time, final String[] view, final String[] meta, final double[] data) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;

@@ -48,6 +48,7 @@ import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.aaaaa.Authentication;
+import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.AppsService;
 import eu.searchlab.http.services.AssetDirectoryService;
 import eu.searchlab.http.services.CrawlStartService;
@@ -100,10 +101,12 @@ public class WebServer {
     private final int port;
     private final String bind;
     public final Undertow server;
+    private final UserAudit audit;
 
-    public WebServer(final int port, final String bind) {
+    public WebServer(final int port, final String bind, final UserAudit audit) {
         this.port = port;
         this.bind = bind;
+        this.audit = audit;
 
         // register services
         ServiceMap.register(new MirrorService());
@@ -133,7 +136,7 @@ public class WebServer {
         this.server.start();
     }
 
-    private static class Fileserver implements HttpHandler {
+    private class Fileserver implements HttpHandler {
 
         private final File[] rootSet;
 
@@ -146,6 +149,8 @@ public class WebServer {
 
             final String client = "-";
             final String method = exchange.getRequestMethod().toString();
+
+            // read client address
             final SocketAddress address = exchange.getConnection().getPeerAddress();
             String ip = address.toString();
             if (address instanceof InetSocketAddress) {
@@ -157,6 +162,11 @@ public class WebServer {
             final HeaderMap requestHeader = exchange.getRequestHeaders();
             if (requestHeader.contains("X-Real-IP")) ip = requestHeader.getFirst("X-Real-IP"); // X-Forwarded-For ??
 
+            // pseudonymization: de-identification of the ip, implements article 4(5) of the GDPR
+            p = ip.lastIndexOf('.');
+            if (p >= 0) ip = ip.substring(0, p) + ".1"; // we use a "1" here to make this a proper ip
+
+            // process header
             final HeaderMap responseHeader = exchange.getResponseHeaders();
             responseHeader.put(new HttpString("Access-Control-Allow-Origin"), "*");
             responseHeader.put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
@@ -187,6 +197,8 @@ public class WebServer {
                 log(ip, client, user, method, path, StatusCodes.PERMANENT_REDIRECT, 0);
                 return;
             }
+
+            WebServer.this.audit.event(user, ip);
 
             if (user.length() != 2) {
                 // add a canonical and noindex tag to the response header
@@ -256,7 +268,7 @@ public class WebServer {
             }
         }
 
-        private final static void log(final String ip, final String client, final String user, final String method, final String path, final int response, final long size) {
+        private final void log(final String ip, final String client, final String user, final String method, final String path, final int response, final long size) {
             Logger.info(ip + " " + client + " " + user + " " + method + " " + path + " " + response + " " + size);
         }
 
@@ -381,7 +393,7 @@ public class WebServer {
             return null;
         }
 
-        private static String file2String(final File f) throws IOException {
+        private String file2String(final File f) throws IOException {
             if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
             if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
             final FileInputStream fis = new FileInputStream(f);
@@ -394,7 +406,7 @@ public class WebServer {
             return html;
         }
 
-        private static ByteBuffer file2bytebuffer(final File f) throws IOException {
+        private ByteBuffer file2bytebuffer(final File f) throws IOException {
             if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
             if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
             final RandomAccessFile raf = new RandomAccessFile(f, "r");
