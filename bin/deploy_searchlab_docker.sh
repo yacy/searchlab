@@ -76,7 +76,7 @@ function wait4port {
     port=$1
     while :; do
 	sleep 1
-	ready=$(curl --retry 10 --retry-connrefused --retry-delay 1 --write-out '%{http_code}' --silent --output /dev/null http://${callhost}:${port}/en/api/ready.json)
+	ready=$(curl --retry 10 --retry-connrefused --retry-delay 1 --write-out '%{http_code}' --silent --output /dev/null http://${callhost}:${port}/en/api/ready.json || true)
 	if [ $ready -eq 200 ]; then break; fi
 	echo "service at port $port is not ready, waiting..."
     done
