@@ -193,7 +193,7 @@ public class TimeSeriesTable {
                 final Column<?> view_candidate = xtable.column(col);
                 if (view_candidate instanceof StringColumn) {
                     this.viewCols[viewColCount++] = (StringColumn) view_candidate;
-                } {
+                } else {
                     // parse the dates to get the instant values
                     this.viewCols[viewColCount] = StringColumn.create(name);
                     for (final Object o: view_candidate.asList()) {
