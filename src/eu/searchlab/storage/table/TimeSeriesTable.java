@@ -20,32 +20,19 @@
 
 package eu.searchlab.storage.table;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Date;
-import java.util.Locale;
 
 import eu.searchlab.storage.io.ConcurrentIO;
-import eu.searchlab.storage.io.IOObject;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
-import eu.searchlab.tools.Logger;
-import tech.tablesaw.api.DateColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
 import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
-import tech.tablesaw.io.csv.CsvReadOptions;
-import tech.tablesaw.io.csv.CsvWriteOptions;
-import tech.tablesaw.io.csv.CsvWriter;
 import tech.tablesaw.plotly.traces.ScatterTrace;
 
 public class TimeSeriesTable {
@@ -121,60 +108,17 @@ public class TimeSeriesTable {
         this.table = new IndexedTable(t);
     }
 
-    public TimeSeriesTable(final IndexedTable table, final boolean dataIsDouble) throws IOException {
-        initFromTable(table.table, dataIsDouble);
-    }
-
-    public TimeSeriesTable(final ConcurrentIO io, final IOPath iop, final boolean dataIsDouble) throws IOException {
-        final IOObject[] ioo = io.readForced(iop);
-        assert ioo.length == 1;
-        final byte[] b = ioo[0].getObject();
-        final ByteArrayInputStream bais = new ByteArrayInputStream(b);
-        final CsvReadOptions options =
-                CsvReadOptions.builder(bais)
-                    .separator(';')
-                    .locale(Locale.ENGLISH)
-                    .header(true)
-                    .build();
-        final Table xtable = Table.read().usingOptions(options);
-        initFromTable(xtable, dataIsDouble);
-    }
-
-    private void initFromTable(final Table xtable, final boolean dataIsDouble) throws IOException {
+    /**
+     * convert an existing table to TimeSeriesTable
+     * @param table
+     * @param dataIsDouble
+     * @throws IOException
+     */
+    public TimeSeriesTable(final Table xtable, final boolean dataIsDouble) throws IOException {
         // create appropriate columns from given table
         // If those columes come from a parsed input, the types may be not correct
-        final Column<?> ts_time_candidate = xtable.column(TS_TIME);
-        if (ts_time_candidate instanceof InstantColumn) {
-            this.tshTimeCol = (InstantColumn) ts_time_candidate;
-        } else if (ts_time_candidate instanceof StringColumn) {
-            // parse the dates to get the instant values
-            this.tshTimeCol = InstantColumn.create(TS_TIME);
-            for (final String ds: ((StringColumn) ts_time_candidate).asList()) {
-                try {
-                    final Date d = DateParser.iso8601MillisFormat.parse(ds);
-                    final Instant i = Instant.ofEpochMilli(d.getTime());
-                    this.tshTimeCol.append(i);
-                } catch (final ParseException e) {
-                    throw new IOException("cannot parse date: " + ds, e);
-                }
-            }
-        } else {
-            throw new IOException("could not parse time column");
-        }
-
-        final Column<?> ts_date_candidate = xtable.column(TS_DATE);
-        if (ts_date_candidate instanceof StringColumn) {
-            this.tshDateCol = (StringColumn) ts_date_candidate;
-        } else if (ts_date_candidate instanceof DateColumn) {
-            // parse the dates to get the instant values
-            this.tshDateCol = StringColumn.create(TS_DATE);
-            for (final LocalDate ld: ((DateColumn) ts_date_candidate).asList()) {
-                final String s = ld.toString();
-                this.tshDateCol.append(s);
-            }
-        } else {
-            throw new IOException("could not parse time column");
-        }
+        this.tshTimeCol = TableParser.asInstant(xtable.column(TS_TIME));
+        this.tshDateCol = TableParser.asString(xtable.column(TS_DATE));
 
         int viewColCount = 0, metaColCount = 0, dataColCount = 0;
         for (int col = 0; col < xtable.columnCount(); col++) {
@@ -189,44 +133,9 @@ public class TimeSeriesTable {
         viewColCount = 0; metaColCount = 0; dataColCount = 0;
          for (int col = 0; col < xtable.columnCount(); col++) {
             final String name = xtable.columnArray()[col].name();
-            if (name.startsWith("view.")) {
-                final Column<?> view_candidate = xtable.column(col);
-                if (view_candidate instanceof StringColumn) {
-                    this.viewCols[viewColCount++] = (StringColumn) view_candidate;
-                } else {
-                    // parse the dates to get the instant values
-                    this.viewCols[viewColCount] = StringColumn.create(name);
-                    for (final Object o: view_candidate.asList()) {
-                        this.viewCols[viewColCount].append(o.toString());
-                    }
-                    viewColCount++;
-                }
-            }
-            if (name.startsWith("meta.")) this.metaCols[metaColCount++] = xtable.stringColumn(col);
-            if (name.startsWith("data.")) {
-                if (dataIsDouble) {
-                    if (xtable.column(col) instanceof DoubleColumn) {
-                        this.dataCols[dataColCount++] = xtable.column(col);
-                    } else {
-                        final DoubleColumn dc = DoubleColumn.create(name);
-                        this.dataCols[dataColCount++] = dc;
-                        for (final Object o: (xtable.column(col)).asList()) {
-                            dc.append(Double.parseDouble(o.toString()));
-                        }
-                    }
-                } else { // long
-                    if (xtable.column(col) instanceof LongColumn) {
-                        this.dataCols[dataColCount++] = xtable.column(col);
-                    } else {
-                        final LongColumn lc = LongColumn.create(name);
-                        this.dataCols[dataColCount++] = lc;
-                        for (final Object o: (xtable.column(col)).asList()) {
-                            lc.append(Long.parseLong(o.toString()));
-                        }
-                    }
-                }
-
-            }
+            if (name.startsWith("view.")) this.viewCols[viewColCount++] = TableParser.asString(xtable.column(col));
+            if (name.startsWith("meta.")) this.metaCols[metaColCount++] = TableParser.asString(xtable.column(col));
+            if (name.startsWith("data.")) this.dataCols[dataColCount++] = dataIsDouble ? TableParser.asDouble(xtable.column(col)) : TableParser.asLong(xtable.column(col));
         }
 
         // insert columns into table
@@ -240,26 +149,24 @@ public class TimeSeriesTable {
         this.table = new IndexedTable(t);
     }
 
-    public void storeCSV(final ConcurrentIO io, final IOPath iop) {
-        final long start = System.currentTimeMillis();
-        try {
-            // prepare document
-            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
-            final CsvWriteOptions options = CsvWriteOptions.builder(osw)
-                    .separator(';')
-                    .header(true)
-                    .build();
-            new CsvWriter().write(this.table.table(), options);
-            osw.close();
+    /**
+     * read a TimeSeriesTable from csv
+     * @param io
+     * @param iop
+     * @param dataIsDouble
+     * @throws IOException
+     */
+    public TimeSeriesTable(final ConcurrentIO io, final IOPath iop, final boolean dataIsDouble) throws IOException {
+        this(TableParser.readCSV(io, iop), dataIsDouble);
+    }
 
-            // write to io
-            io.writeForced(new IOObject(iop, baos.toByteArray()));
-            final long stop = System.currentTimeMillis();
-            Logger.info("wrote user audit " + iop.toString() + " in " + (stop - start) + " milliseconds");
-        } catch (final IOException e) {
-            Logger.warn("failed to write user audit to " + iop.toString(), e);
-        }
+    /**
+     * write a table to csv file
+     * @param io
+     * @param iop
+     */
+    public void storeCSV(final ConcurrentIO io, final IOPath iop) {
+        TableParser.storeCSV(io, iop, this.table.table);
     }
 
     public int size() {
