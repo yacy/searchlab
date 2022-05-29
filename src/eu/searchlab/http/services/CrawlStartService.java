@@ -243,7 +243,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                         .put("type", "crawler")
                         .put("queue", queueName)
                         .put("id", crawlId)
-                        .put("userId", userId)
+                        .put("user_id", userId)
                         .put("depth", 0)
                         .put("sourcegraph", "rootasset");
                 final Action crawlAction = new Action(action);
