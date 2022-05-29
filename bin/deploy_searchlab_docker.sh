@@ -74,30 +74,31 @@ function deploy {
 
 function wait4port {
     port=$1
+    containername=$2
     loop=0
     while [ $loop -lt 10 ]; do
-	sleep 1
+	sleep 2
 	ready=$(curl --retry 10 --retry-connrefused --retry-delay 1 --write-out '%{http_code}' --silent --output /dev/null http://${callhost}:${port}/en/api/ready.json || true)
-	if [ $ready -eq 200 ]; then break; fi
+	if [ $ready -eq 200 ]; then return; fi
+	docker logs --tail 20 $containername
 	echo "service at port $port is not ready, waiting..."
 	let loop=loop+1
     done
+    exit -1
 }
 
 # CI process: build - deploy
 build
 dockerps | grep searchlab
 deploy 0 $port0 $containername0
-wait4port $port0
+wait4port $port0 $containername0
 dockerps | grep searchlab
 deploy 1 $port1 $containername1
-wait4port $port1
+wait4port $port1 $containername1
 dockerps | grep searchlab
 
 # clean up
-docker images --filter "dangling=true" -q --no-trunc | xargs -r docker rmi
+docker images --filter "dangling=true" -q --no-trunc | xargs docker rmi || true
 
 # success
 echo "Searchlab deployed from image $imagename at port $port0 and $port1"
-
-
