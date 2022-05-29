@@ -99,6 +99,7 @@ dockerps | grep searchlab
 
 # clean up
 docker images --filter "dangling=true" -q --no-trunc | xargs docker rmi || true
+docker images --filter=reference='searchlab:ci*' -q --no-trunc | xargs docker rmi || true
 
 # success
 echo "Searchlab deployed from image $imagename at port $port0 and $port1"
