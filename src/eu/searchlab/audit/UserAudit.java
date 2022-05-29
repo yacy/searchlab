@@ -45,6 +45,7 @@ public class UserAudit implements AuditTask {
     private final ConcurrentIO cio;
     private final IOPath requestsIOp, visitorsIOp;
     private TimeSeriesTable requestsTable, visitorsTable;
+    private long requestsTableModified, visitorsTableModified;
 
     public UserAudit(final GenericIO io, final IOPath requestsIOp, final IOPath visitorsIOp) throws IOException {
         this.cio = new ConcurrentIO(io, 10000);
@@ -53,8 +54,10 @@ public class UserAudit implements AuditTask {
         this.lastSeen = new ConcurrentHashMap<>();
         this.requestsTable = new TimeSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
         if (io.exists(requestsIOp)) try {this.requestsTable = new TimeSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
+        this.requestsTableModified = System.currentTimeMillis();
         this.visitorsTable = new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
         if (io.exists(visitorsIOp)) try {this.visitorsTable = new TimeSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
+        this.visitorsTableModified = System.currentTimeMillis();
     }
 
     public void event(final String id, final String ip) {
@@ -78,7 +81,22 @@ public class UserAudit implements AuditTask {
         this.lastSeen.clear();
 
         // check if the tables have been updated by another process meanwhile
-
+        try {
+            final long modified = this.cio.getIO().lastModified(this.requestsIOp);
+            if (modified > this.requestsTableModified) {
+                this.requestsTable = new TimeSeriesTable(this.cio, this.requestsIOp, false);
+                this.requestsTableModified = System.currentTimeMillis();
+            }
+        } catch (final IOException e) {
+        }
+        try {
+            final long modified = this.cio.getIO().lastModified(this.visitorsIOp);
+            if (modified > this.visitorsTableModified) {
+                this.visitorsTable = new TimeSeriesTable(this.cio, this.visitorsIOp, false);
+                this.visitorsTableModified = System.currentTimeMillis();
+            }
+        } catch (final IOException e) {
+        }
 
         // read out copy of audit (the original one has been flushed already)
         w.forEach((id, tip) -> {
@@ -89,7 +107,7 @@ public class UserAudit implements AuditTask {
             }
         });
         if (w.size() > 0) {
-        	this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {w.size()});
+            this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {w.size()});
         }
 
         // store tables
@@ -97,12 +115,14 @@ public class UserAudit implements AuditTask {
         if (sizeAfter > sizeBeforeRequest) {
             // store the table
             this.requestsTable.storeCSV(this.cio, this.requestsIOp);
+            this.requestsTableModified = System.currentTimeMillis();
         }
 
         sizeAfter = this.visitorsTable.size();
         if (sizeAfter > sizeBeforeVisitor) {
             // store the table
             this.visitorsTable.storeCSV(this.cio, this.visitorsIOp);
+            this.visitorsTableModified = System.currentTimeMillis();
         }
 
     }

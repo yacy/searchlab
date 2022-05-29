@@ -481,8 +481,16 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
      */
     @Override
     public long lastModified(final IOPath iop) throws IOException {
-        final Item item = this.getItem(iop);
-        return item.lastModified().toEpochSecond() * 1000;
+        try {
+            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            return sor.lastModified().toInstant().toEpochMilli();
+        } catch (InvalidKeyException | ErrorResponseException
+                | InsufficientDataException | InternalException
+                | InvalidResponseException | NoSuchAlgorithmException
+                | ServerException | XmlParserException
+                | IllegalArgumentException | IOException e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     /**

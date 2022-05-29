@@ -71,13 +71,13 @@ public class TimeSeriesTable {
 
         // validate columns
         for (int i = 0; i < viewCols.length; i++)  {
-        	if (!viewCols[i].name().startsWith("view.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'view.'");
+            if (!viewCols[i].name().startsWith("view.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'view.'");
         }
         for (int i = 0; i < metaCols.length; i++) {
-        	if (!metaCols[i].name().startsWith("meta.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'meta.'");
+            if (!metaCols[i].name().startsWith("meta.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'meta.'");
         }
         for (int i = 0; i < dataCols.length; i++) {
-        	if (!dataCols[i].name().startsWith("data.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'data.'");
+            if (!dataCols[i].name().startsWith("data.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'data.'");
         }
 
         // initialize
@@ -98,17 +98,17 @@ public class TimeSeriesTable {
         this();
         this.viewCols = new StringColumn[viewColNames.length];
         for (int i = 0; i < viewColNames.length; i++) {
-        	if (!viewColNames[i].startsWith("view.")) throw new UnsupportedOperationException("column " + viewColNames[i] + ": unsupported name. must start with 'view.'");
-        	this.viewCols[i] = StringColumn.create(viewColNames[i]);
+            if (!viewColNames[i].startsWith("view.")) throw new UnsupportedOperationException("column " + viewColNames[i] + ": unsupported name. must start with 'view.'");
+            this.viewCols[i] = StringColumn.create(viewColNames[i]);
         }
         this.metaCols = new StringColumn[metaColNames.length];
         for (int i = 0; i < metaColNames.length; i++) {
-        	if (!metaColNames[i].startsWith("meta.")) throw new UnsupportedOperationException("column " + metaColNames[i] + ": unsupported name. must start with 'meta.'");
-        	this.metaCols[i] = StringColumn.create(metaColNames[i]);
+            if (!metaColNames[i].startsWith("meta.")) throw new UnsupportedOperationException("column " + metaColNames[i] + ": unsupported name. must start with 'meta.'");
+            this.metaCols[i] = StringColumn.create(metaColNames[i]);
         }
         this.dataCols = dataIsDouble ? new DoubleColumn[dataColNames.length] : new LongColumn[dataColNames.length];
         for (int i = 0; i < dataColNames.length; i++) {
-        	if (!dataColNames[i].startsWith("data.")) throw new UnsupportedOperationException("column " + dataColNames[i] + ": unsupported name. must start with 'data.'");
+            if (!dataColNames[i].startsWith("data.")) throw new UnsupportedOperationException("column " + dataColNames[i] + ": unsupported name. must start with 'data.'");
             this.dataCols[i] = dataIsDouble ? DoubleColumn.create(dataColNames[i]) : LongColumn.create(dataColNames[i]);
         }
         final Table t = Table.create()
@@ -189,30 +189,42 @@ public class TimeSeriesTable {
         viewColCount = 0; metaColCount = 0; dataColCount = 0;
          for (int col = 0; col < xtable.columnCount(); col++) {
             final String name = xtable.columnArray()[col].name();
-            if (name.startsWith("view.")) this.viewCols[viewColCount++] = xtable.stringColumn(col);
+            if (name.startsWith("view.")) {
+                final Column<?> view_candidate = xtable.column(col);
+                if (view_candidate instanceof StringColumn) {
+                    this.viewCols[viewColCount++] = (StringColumn) view_candidate;
+                } {
+                    // parse the dates to get the instant values
+                    this.viewCols[viewColCount] = StringColumn.create(name);
+                    for (final Object o: view_candidate.asList()) {
+                        this.viewCols[viewColCount].append(o.toString());
+                    }
+                    viewColCount++;
+                }
+            }
             if (name.startsWith("meta.")) this.metaCols[metaColCount++] = xtable.stringColumn(col);
             if (name.startsWith("data.")) {
-            	if (dataIsDouble) {
-            		if (xtable.column(col) instanceof DoubleColumn) {
-            			this.dataCols[dataColCount++] = xtable.column(col);
-            		} else {
-            			final DoubleColumn dc = DoubleColumn.create(name);
-            			this.dataCols[dataColCount++] = dc;
-            			for (final Object o: (xtable.column(col)).asList()) {
+                if (dataIsDouble) {
+                    if (xtable.column(col) instanceof DoubleColumn) {
+                        this.dataCols[dataColCount++] = xtable.column(col);
+                    } else {
+                        final DoubleColumn dc = DoubleColumn.create(name);
+                        this.dataCols[dataColCount++] = dc;
+                        for (final Object o: (xtable.column(col)).asList()) {
                             dc.append(Double.parseDouble(o.toString()));
                         }
-            		}
-            	} else { // long
-            		if (xtable.column(col) instanceof LongColumn) {
-            			this.dataCols[dataColCount++] = xtable.column(col);
-            		} else {
-            			final LongColumn lc = LongColumn.create(name);
-            			this.dataCols[dataColCount++] = lc;
-            			for (final Object o: (xtable.column(col)).asList()) {
+                    }
+                } else { // long
+                    if (xtable.column(col) instanceof LongColumn) {
+                        this.dataCols[dataColCount++] = xtable.column(col);
+                    } else {
+                        final LongColumn lc = LongColumn.create(name);
+                        this.dataCols[dataColCount++] = lc;
+                        for (final Object o: (xtable.column(col)).asList()) {
                             lc.append(Long.parseLong(o.toString()));
                         }
-            		}
-            	}
+                    }
+                }
 
             }
         }
