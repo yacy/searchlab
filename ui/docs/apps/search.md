@@ -13,12 +13,12 @@ disable_toc: true
 {{#if channels.[0]}}
  
   <div class="admonition note">
-    <p>Other search interfaces from the <a href="/apps/data_studio/">data studio:</a></p>
+    <p>Other search interfaces from the <a href="../data_studio/">data studio:</a></p>
     <p>
-      <a href="/app/facetpiechart/"><img src="/app/facetpiechart/screenshot.png" width="128" height="128"></a>
-      <a href="/app/websearch_bootstrap/"><img src="/app/websearch_bootstrap/screenshot.png" width="128" height="128"></a>
-      <a href="/app/websearch_lit/"><img src="/app/websearch_lit/screenshot.png" width="128" height="128"></a>
-      <a href="/app/websearch_yaml4/"><img src="/app/websearch_yaml4/screenshot.png" width="128" height="128"></a>
+      <a href="../../app/facetpiechart/"><img src="../../app/facetpiechart/screenshot.png" width="128" height="128"></a>
+      <a href="../../app/websearch_bootstrap/"><img src="../../app/websearch_bootstrap/screenshot.png" width="128" height="128"></a>
+      <a href="../../app/websearch_lit/"><img src="../../app/websearch_lit/screenshot.png" width="128" height="128"></a>
+      <a href="../../app/websearch_yaml4/"><img src="../../app/websearch_yaml4/screenshot.png" width="128" height="128"></a>
     </p>
   </div>
   
