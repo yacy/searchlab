@@ -45,12 +45,12 @@ public class AssetDirectoryService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/assetdir.json"};
+        return new String[] {"/api/assetget.json"};
     }
 
     @Override
     public Type getType() {
-        return Service.Type.ARRAY;
+        return Service.Type.OBJECT;
     }
 
     @Override
@@ -58,12 +58,15 @@ public class AssetDirectoryService extends AbstractService implements Service {
 
         // evaluate request parameter
         String path = call.optString("path", "/");
+        if (!path.startsWith("/")) path = "/" + path;
+        if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
         final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
         if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
-        while (path.length() > 3 && path.endsWith("/..")) {
-        	path = path.substring(0, path.length() - 3);
-        	final int p = path.lastIndexOf('/');
-        	path = p < 0 ? "" : path.substring(0, p);
+        int p;
+        while (path.length() > 3 && (p = path.indexOf("/..")) >= 0) {
+        	final String h = path.substring(0, p);
+        	final int q = h.lastIndexOf('/');
+        	path = q < 0 ? "" : h.substring(0, q) + path.substring(p + 3);
         }
         final IOPath assets = Searchlab.accounting.getAssetPathForUser(user_id);
         final String assetsPath = assets.getPath();
@@ -75,11 +78,13 @@ public class AssetDirectoryService extends AbstractService implements Service {
 			for (final IOMeta meta: dir) {
 				final JSONObject d = new JSONObject(true);
 				final IOPath o = meta.getIOPath();
-				final long size = meta.getSize();
-				final String sizes = size > gb ? (size / mb) + " MB" : size > mb ? (size / kb) + " KB" : size + " bytes";
 				final String fullpath = o.getPath();
-				final String subpath = fullpath.substring(assetsPath.length());
-				final int p = subpath.indexOf('/', 1);
+				String subpath = fullpath.substring(assetsPath.length());
+				// this is the 'full' path 'behind' assetsPath. We must also subtract the path where we are navigating to
+				assert subpath.startsWith(path);
+				subpath = subpath.substring(path.length());
+				// find first element in that path
+				p = subpath.indexOf('/', 1);
 				String name = null;
 				boolean isDir = false;
 				if (p < 0) {
@@ -90,12 +95,21 @@ public class AssetDirectoryService extends AbstractService implements Service {
 					if (knownDir.contains(name)) continue;
 					knownDir.add(name);
 				}
-				d.append("name", name);
-				d.append("size", isDir ? 0 : size);
-				d.append("sizes", isDir ? "" : sizes);
-				d.append("isdir", isDir);
-				d.append("date", isDir ? "" : DateParser.iso8601Format.format(new Date(meta.getLastModified())));
-				d.append("time", isDir ? 0 : meta.getLastModified());
+				d.put("name", name);
+				d.put("isdir", isDir);
+				if (!isDir) {
+					final long size = meta.getSize();
+					final String sizes = size > gb ? (size / mb) + " MB" : size > mb ? (size / kb) + " KB" : size + " bytes";
+					d.put("size", size);
+					d.put("sizes", sizes);
+					d.put("date", DateParser.iso8601Format.format(new Date(meta.getLastModified())));
+					d.put("time", meta.getLastModified());
+				} else {
+					d.put("size", 0);
+					d.put("sizes", "");
+					d.put("date", "");
+					d.put("time", 0);
+				}
 				json.put(d);
 			}
 		} catch (IOException | JSONException e) {
