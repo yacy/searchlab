@@ -166,10 +166,11 @@ public class CrawlStartService  extends AbstractService implements Service {
             crawlstarturls: for (final MultiProtocolURL url: crawlstartURLs.getURLs()) {
                 final JSONObject singlecrawl = new JSONObject();
                 for (final String key: crawlstart.keySet()) singlecrawl.put(key, crawlstart.get(key)); // create a clone of crawlstart
-                final String crawlId = getCrawlID(url, now, count++);
+                final String crawl_id = getCrawlID(url, now, count++);
                 final String start_url = url.toNormalform(true);
                 final String start_ssld = Domains.getSmartSLD(url.getHost());
-                singlecrawl.put("id", crawlId);
+                singlecrawl.put("id", crawl_id);
+                singlecrawl.put("user_id", user_id);
                 singlecrawl.put("start_url", start_url);
                 singlecrawl.put("start_ssld", start_ssld);
 
@@ -178,7 +179,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                 // Create a crawlstart index entry: this will keep track of all crawls that have been started.
                 // once such an entry is created, it is never changed or deleted again by any YaCy Grid process.
                 final CrawlstartDocument crawlstartDoc = new CrawlstartDocument()
-                        .setCrawlID(crawlId)
+                        .setCrawlID(crawl_id)
                         .setUserID(user_id)
                         .setMustmatch(mustmatch)
                         .setCollections(collections.keySet())
@@ -198,8 +199,8 @@ public class CrawlStartService  extends AbstractService implements Service {
                 // crawler is restarted.
 
                 // delete the start url
-                final String urlid = Digest.encodeMD5Hex(start_url);
-                long deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("_id", urlid));
+                final String url_id = Digest.encodeMD5Hex(start_url);
+                long deleted = Searchlab.ec.deleteByQuery(Searchlab.crawlerIndexName, QueryBuilders.termQuery("_id", url_id));
                 Logger.info(this.getClass(), "deleted " + deleted + " old crawl index entries for _id");
 
                 // Because 'old' crawls may block new ones we identify possible blocking entries using the mustmatch pattern.
@@ -242,7 +243,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                 final JSONObject action = new JSONObject()
                         .put("type", "crawler")
                         .put("queue", queueName)
-                        .put("id", crawlId)
+                        .put("id", crawl_id)
                         .put("user_id", user_id)
                         .put("depth", 0)
                         .put("sourcegraph", "rootasset");

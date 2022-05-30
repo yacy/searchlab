@@ -19,11 +19,7 @@
 
 package eu.searchlab.aaaaa;
 
-import java.util.Date;
-
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
@@ -38,32 +34,32 @@ import eu.searchlab.storage.io.IOPath;
  */
 public class Accounting {
 
-	private GenericIO io;
-	private IOPath aaaaaIop, accountingIop;
-	
+	private final GenericIO io;
+	private final IOPath aaaaaIop, accountingIop;
+
 /*
 the path in crawler to assets is defined by:
-        final String basepath  = "/data/aaaaa/accounting/" + userId + "/";
+        final String basepath  = "/data/aaaaa/accounting/" + user_id + "/";
         final String docname  = "d" + intf(depth) + "-t" + FORMAT_TIMEF.format(new Date(timestamp)) + "-p" + intf(partition);
         final String warcasset  =  basepath + "warc/"  + id + "/" + docname + ".warc.gz";
         final String indexasset =  basepath + "index/" + id + "/" + docname + ".index.jsonlist";
         final String graphasset =  basepath + "graph/" + id + "/" + docname + ".graph.jsonlist";
  */
-	
-	public Accounting(GenericIO io, IOPath aaaaaIop) {
+
+	public Accounting(final GenericIO io, final IOPath aaaaaIop) {
 		this.io = io;
 		this.aaaaaIop = aaaaaIop;
 		this.accountingIop = this.aaaaaIop.append("accounting");
 	}
-	
-	public IOPath getAssetPathForUser(String userID) {
+
+	public IOPath getAssetPathForUser(final String userID) {
 		return this.accountingIop.append(userID);
 	}
 
-	
-	
-	public void storeIndex(JSONArray indexObjArray) {
-		
+
+
+	public void storeIndex(final JSONArray indexObjArray) {
+
 	}
-	
+
 }
