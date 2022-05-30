@@ -29,7 +29,7 @@ import eu.searchlab.storage.table.IndexedTable;
 public interface Service {
 
     public enum Type {
-        OBJECT, ARRAY, STRING, TABLE;
+        OBJECT, ARRAY, STRING, TABLE, BINARY;
     }
 
     public boolean supportsPath(String path);
@@ -45,4 +45,6 @@ public interface Service {
     public String serveString(JSONObject post) throws IOException;
 
     public IndexedTable serveTable(JSONObject post) throws IOException;
+
+    public byte[] serveByteArray(JSONObject post) throws IOException;
 }

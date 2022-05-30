@@ -20,6 +20,7 @@
 package eu.searchlab.http;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,7 +68,7 @@ public class ServiceMap {
      * @return a service response or NULL if no service is defined
      * @throws IOException
      */
-    public static String serviceDispatcher(final Service service, final String path, final JSONObject post) throws IOException {
+    public static byte[] serviceDispatcher(final Service service, final String path, final JSONObject post) throws IOException {
 
         if (service == null) {
             return null; // not a fail, just a signal that no service is defined
@@ -95,18 +96,20 @@ public class ServiceMap {
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
-                return callback.length() > 0 ? callback + "([" + jsons + "]);" : jsons;
+                return callback.length() > 0 ?
+                        (callback + "([" + jsons + "]);").getBytes(StandardCharsets.UTF_8) :
+                        jsons.getBytes(StandardCharsets.UTF_8);
             }
             if (path.endsWith(".table")) {
                 try {
-                    return new TableGenerator(tablename, json).getTable();
+                    return new TableGenerator(tablename, json).getTable().getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
             }
             if (path.endsWith(".tablei")) {
                 try {
-                    return new TableGenerator(tablename, json).getTableI();
+                    return new TableGenerator(tablename, json).getTableI().getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
@@ -118,7 +121,7 @@ public class ServiceMap {
 
             if (path.endsWith(".json")) {
                 try {
-                    return array.toString(2);
+                    return array.toString(2).getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
@@ -158,21 +161,21 @@ public class ServiceMap {
                             sb.setCharAt(sb.length() - 1, '\n');
                         }
                     }
-                    return sb.toString();
+                    return  sb.toString().getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
             }
             if (path.endsWith(".table")) {
                 try {
-                    return new TableGenerator(tablename, array).getTable();
+                    return new TableGenerator(tablename, array).getTable().getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
             }
             if (path.endsWith(".tablei")) {
                 try {
-                    return new TableGenerator(tablename, array).getTableI();
+                    return new TableGenerator(tablename, array).getTableI().getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
@@ -184,21 +187,23 @@ public class ServiceMap {
 
             if (path.endsWith(".table")) {
                 try {
-                    return new TableGenerator(path, table.toJSON(true)).getTable();
+                    return new TableGenerator(path, table.toJSON(true)).getTable().getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
             }
             if (path.endsWith(".tablei")) {
                 try {
-                    return new TableGenerator(path, table.toJSON(true)).getTableI();
+                    return new TableGenerator(path, table.toJSON(true)).getTableI().getBytes(StandardCharsets.UTF_8);
                 } catch (final JSONException e) {
                     throw new IOException(e.getMessage());
                 }
             }
             new IOException("extension not appropriate for JSONArray");
         } else if (service.getType() == Service.Type.STRING) {
-            return service.serveString(post);
+            return service.serveString(post).getBytes(StandardCharsets.UTF_8);
+        } else if (service.getType() == Service.Type.BINARY) {
+            return service.serveByteArray(post);
         }
 
         // this should never happen, we checked all service types

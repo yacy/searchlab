@@ -85,6 +85,8 @@ public class WebServer {
 
     private static final Properties mimeTable = new Properties();
 
+    private final static byte[] SSI_MARKER = "<!--#".getBytes();
+
     public static File UI_PATH, APPS_PATH, HTDOCS_PATH;
 
     static {
@@ -236,18 +238,19 @@ public class WebServer {
 
             try {
                 // generate response (handle servlets + handlebars)
-                final String html = processPost(post);
-                if ("application/json".equals(mime) && html.endsWith("]);")) {
-                    // JSONP patch
-                    exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/javascript");
-                }
+                final byte[] b = processPost(post);
 
                 // send html to client
-                if (html == null) {
+                if (b == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                     log(ip, client, user, method, path, StatusCodes.NOT_FOUND, 0);
                 } else {
+                	final String html = new String(b, StandardCharsets.UTF_8);
+                	if ("application/json".equals(mime) && html.endsWith("]);")) {
+                        // JSONP patch
+                        exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
+                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/javascript");
+                    }
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
                     exchange.getResponseSender().send(html);
@@ -279,22 +282,23 @@ public class WebServer {
          * @return full html or any kind of response that should be transferred with http status code 200
          * @throws IOException in case this request cannot be fullfilled.
          */
-        private String processPost(final JSONObject post) throws IOException {
+        private byte[] processPost(final JSONObject post) throws IOException {
 
             final String path = post.optString("PATH", "/");
             final String user = post.optString("USER", null);
+            final String query = post.optString("QUERY", "");
 
             // load requested file
             final File f = findFile(path);
 
             // generate response (handle servlets + handlebars)
-            String html = null;
-            if (f != null) html = file2String(f); // throws FileNotFoundException which must be handled outside
+            byte[] b = null;
+            if (f != null) b = file2bytes(f); // throws FileNotFoundException which must be handled outside
             final Service service = ServiceMap.getService(path);
 
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
             if (service != null) {
-                if (html != null && service.getType() == Service.Type.OBJECT) {
+                if (b != null && service.getType() == Service.Type.OBJECT) {
                     final JSONObject json = service.serveObject(post);
                     final Handlebars handlebars = new Handlebars();
                     final Context context = Context
@@ -302,13 +306,13 @@ public class WebServer {
                             .resolver(JSONObjectValueResolver.INSTANCE)
                             .build();
                     try {
-                        final Template template = handlebars.compileInline(html);
-                        html = template.apply(context);
+                        final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
+                        b = template.apply(context).getBytes(StandardCharsets.UTF_8);
                     } catch (final HandlebarsException e) {
-                        Logger.error("Handlebars Error in \n" + html, e);
+                        Logger.error("Handlebars Error", e);
                         throw new IOException(e.getMessage());
                     }
-                } else if (html != null && service.getType() == Service.Type.ARRAY) {
+                } else if (b != null && service.getType() == Service.Type.ARRAY) {
                     final JSONArray json = service.serveArray(post);
                     final Handlebars handlebars = new Handlebars();
                     final Context context = Context
@@ -316,28 +320,31 @@ public class WebServer {
                             .resolver(JSONObjectValueResolver.INSTANCE)
                             .build();
                     try {
-                        final Template template = handlebars.compileInline(html);
-                        html = template.apply(context);
+                        final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
+                        b = template.apply(context).getBytes(StandardCharsets.UTF_8);
                     } catch (final HandlebarsException e) {
-                        Logger.error("Handlebars Error in \n" + html, e);
+                        Logger.error("Handlebars Error", e);
                         throw new IOException(e.getMessage());
                     }
                 } else {
                     // the response is defined only by the service
-                    html = ServiceMap.serviceDispatcher(service, path, post);
+                    b = ServiceMap.serviceDispatcher(service, path, post);
                 }
             }
-            if (html == null && f == null) {
+
+            // check finally if the resulting byte array was defined
+            // (either by a file or a service)
+            if (b == null && f == null) {
                 throw new FileNotFoundException("not found:" + path);
             }
 
             // apply server-side includes
-            if (html != null) html = ssi(user, path, html);
+            if (b != null) b = ssi(user, path, b);
 
-            return html;
+            return b;
         }
 
-        private String ssi(final String user, final String path, String html) throws IOException {
+        private byte[] ssi(final String user, final String path, final byte[] b) throws IOException {
             // apply server-side includes
             /*
              * include a file in the same path as current path
@@ -346,6 +353,8 @@ public class WebServer {
              * include a file relatively to server root
              * <!--#include virtual="script.pl" -->
              */
+        	if (indexOf(b, SSI_MARKER, 0) < 0) return b;
+        	String html = new String(b, StandardCharsets.UTF_8);
             int ssip = html.indexOf("<!--#include virtual=\"");
             int end;
             while (ssip >= 0 && (end = html.indexOf("-->", ssip + 24)) > 0 ) { // min length 24; <!--#include virtual="a"
@@ -353,7 +362,8 @@ public class WebServer {
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String virtual = html.substring(ssip + 22, rightquote);
                 final JSONObject post = getQueryParams(user, virtual);
-                final String include = processPost(post);
+                final byte[] ibb = processPost(post);
+                final String include = ibb == null ? null : new String(ibb, StandardCharsets.UTF_8);
                 if (include == null) {
                     html = html.substring(0, ssip) + html.substring(end + 3);
                     ssip = html.indexOf("<!--#include virtual=\"", ssip);
@@ -376,8 +386,9 @@ public class WebServer {
                     ssip = html.indexOf("<!--#echo var=\"", ssip);
                 }
             }
-            return html;
+            return html.getBytes(StandardCharsets.UTF_8);
         }
+
 
         /**
          * find any file that is inside one of the given root paths
@@ -419,6 +430,17 @@ public class WebServer {
             fc.close();
             raf.close();
             return bb;
+        }
+
+        private byte[] file2bytes(final File f) throws IOException {
+            if (! f.exists()) throw new FileNotFoundException("file " + f.toString() + " does not exist");
+            if (! f.isFile()) throw new FileNotFoundException("path " + f.toString() + " is not a file");
+            final FileInputStream fis = new FileInputStream(f);
+            final long fileSize = f.length();
+            final byte[] b = new byte[(int) fileSize];
+            fis.read(b);
+            fis.close();
+            return b;
         }
 
         private JSONObject getQueryParams(final HttpServerExchange exchange) throws IOException {
@@ -495,6 +517,29 @@ public class WebServer {
         private boolean isTemplatingFileType(final String ext) {
             return ext.equals("html") || ext.equals("json") || ext.equals("csv") || ext.equals("table") || ext.equals("tablei");
         }
+    }
+
+    public static int indexOf(final byte[] source, final byte[] query, int fromIndex) {
+
+        if (fromIndex >= source.length) return (query.length == 0 ? source.length : -1);
+        if (fromIndex < 0) fromIndex = 0;
+        if (query.length == 0) return fromIndex;
+
+        final byte first = query[0];
+        final int max = source.length - query.length;
+
+        for (int i = fromIndex; i <= max; i++) {
+            if (source[i] != first) {
+                while (++i <= max && source[i] != first);
+            }
+            if (i <= max) {
+                int j = i + 1;
+                final int end = j + query.length - 1;
+                for (int k = 1; j < end && source[j] == query[k]; j++, k++);
+                if (j == end) return i;
+            }
+        }
+        return -1;
     }
 
     public void stop() {

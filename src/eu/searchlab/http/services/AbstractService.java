@@ -51,29 +51,33 @@ public abstract class AbstractService implements Service {
     @Override
     public boolean supportsPath(String path) {
         path = normalizePath(path);
-        String[] paths = this.getPaths();
-        for (String p: paths) if (normalizePath(p).equals(path)) return true;
+        final String[] paths = this.getPaths();
+        for (final String p: paths) if (normalizePath(p).equals(path)) return true;
         return false;
     }
 
     @Override
-    public JSONObject serveObject(JSONObject post) throws IOException {
+    public JSONObject serveObject(final JSONObject post) throws IOException {
         return new JSONObject();
     }
 
     @Override
-    public JSONArray serveArray(JSONObject post) throws IOException {
+    public JSONArray serveArray(final JSONObject post) throws IOException {
         return new JSONArray();
     }
 
     @Override
-    public String serveString(JSONObject post) throws IOException {
+    public String serveString(final JSONObject post) throws IOException {
         return "";
     }
 
     @Override
-    public IndexedTable serveTable(JSONObject post) throws IOException {
+    public IndexedTable serveTable(final JSONObject post) throws IOException {
         return new IndexedTable(Table.create());
     }
 
+    @Override
+    public byte[] serveByteArray(final JSONObject post) throws IOException {
+    	return null;
+    }
 }
