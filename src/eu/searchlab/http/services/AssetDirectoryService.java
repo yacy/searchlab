@@ -38,19 +38,19 @@ import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 
-// http://localhost:8400/en/api/assetdir.json?q=ne
+// http://localhost:8400/en/api/assetdir.json?path=/
 public class AssetDirectoryService extends AbstractService implements Service {
 
 	private final static long kb = 1024L, mb = 1024L * kb, gb = 1024L * mb;
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/assetget.json"};
+        return new String[] {"/api/assetdir.json"};
     }
 
     @Override
     public Type getType() {
-        return Service.Type.OBJECT;
+        return Service.Type.ARRAY;
     }
 
     @Override
@@ -61,7 +61,6 @@ public class AssetDirectoryService extends AbstractService implements Service {
         if (!path.startsWith("/")) path = "/" + path;
         if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
         final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
-        if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
         int p;
         while (path.length() > 3 && (p = path.indexOf("/..")) >= 0) {
         	final String h = path.substring(0, p);

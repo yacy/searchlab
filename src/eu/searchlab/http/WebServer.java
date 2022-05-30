@@ -51,6 +51,7 @@ import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.AppsService;
 import eu.searchlab.http.services.AssetDirectoryService;
+import eu.searchlab.http.services.AssetDownloadService;
 import eu.searchlab.http.services.CrawlStartService;
 import eu.searchlab.http.services.IDGeneratorService;
 import eu.searchlab.http.services.IDValidationService;
@@ -122,11 +123,12 @@ public class WebServer {
         ServiceMap.register(new IDValidationService());
         ServiceMap.register(new CrawlStartService());
         ServiceMap.register(new ThreaddumpService());
-        ServiceMap.register(new AssetDirectoryService());
         ServiceMap.register(new ReadyService());
         ServiceMap.register(new QueueStatusService());
         ServiceMap.register(new LogService());
         ServiceMap.register(new IndexStatusService());
+        ServiceMap.register(new AssetDirectoryService());
+        ServiceMap.register(new AssetDownloadService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
@@ -245,16 +247,15 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                     log(ip, client, user, method, path, StatusCodes.NOT_FOUND, 0);
                 } else {
-                	final String html = new String(b, StandardCharsets.UTF_8);
-                	if ("application/json".equals(mime) && html.endsWith("]);")) {
+                	if ("application/json".equals(mime) && endsWith(b, "]);".getBytes())) {
                         // JSONP patch
                         exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
                         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/javascript");
                     }
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
-                    exchange.getResponseSender().send(html);
-                    log(ip, client, user, method, path, StatusCodes.OK, html.length());
+                    exchange.getResponseSender().send(ByteBuffer.wrap(b));
+                    log(ip, client, user, method, path, StatusCodes.OK, b.length);
                 }
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
@@ -540,6 +541,28 @@ public class WebServer {
             }
         }
         return -1;
+    }
+
+    public boolean endsWith(final byte[] source, final byte[] suffix) {
+        return startsWith(source, suffix, source.length - suffix.length);
+    }
+
+    public static boolean startsWith(final byte[] source, final byte[] prefix, final int toffset) {
+    	final byte ta[] = source;
+        int to = toffset;
+        final byte pa[] = prefix;
+        int po = 0;
+        int pc = prefix.length;
+        // Note: toffset might be near -1>>>1.
+        if ((toffset < 0) || (toffset > source.length - pc)) {
+            return false;
+        }
+        while (--pc >= 0) {
+            if (ta[to++] != pa[po++]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void stop() {
