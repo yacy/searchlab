@@ -131,7 +131,7 @@ public class CrawlStartService  extends AbstractService implements Service {
         final JSONObject crawlstart = crawlStartDefaultClone();
 
         // read call attributes using the default crawlstart key names
-        final String userId = call.optString("USER", Authentication.ANONYMOUS_ID);
+        final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
         try {
             for (final String key: crawlstart.keySet()) {
                 final Object object = crawlstart.get(key);
@@ -146,7 +146,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                     System.out.println("unrecognized type: " + object.getClass().toString());
                 }
             }
-            crawlstart.put("userId", userId); // we MUST overwrite that property otherwise the use is able to fake another user ID
+            crawlstart.put("user_id", user_id); // we MUST overwrite that property otherwise the use is able to fake another user ID
         } catch (final JSONException e) {}
 
         // fix attributes
@@ -179,7 +179,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                 // once such an entry is created, it is never changed or deleted again by any YaCy Grid process.
                 final CrawlstartDocument crawlstartDoc = new CrawlstartDocument()
                         .setCrawlID(crawlId)
-                        .setUserID(userId)
+                        .setUserID(user_id)
                         .setMustmatch(mustmatch)
                         .setCollections(collections.keySet())
                         .setCrawlstartURL(start_url)
@@ -243,7 +243,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                         .put("type", "crawler")
                         .put("queue", queueName)
                         .put("id", crawlId)
-                        .put("user_id", userId)
+                        .put("user_id", user_id)
                         .put("depth", 0)
                         .put("sourcegraph", "rootasset");
                 final Action crawlAction = new Action(action);

@@ -58,14 +58,14 @@ public class AssetDirectoryService extends AbstractService implements Service {
 
         // evaluate request parameter
         String path = call.optString("path", "/");
-        final String userId = call.optString("USER", Authentication.ANONYMOUS_ID);
+        final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
         if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
         while (path.length() > 3 && path.endsWith("/..")) {
         	path = path.substring(0, path.length() - 3);
         	final int p = path.lastIndexOf('/');
         	path = p < 0 ? "" : path.substring(0, p);
         }
-        final IOPath assets = Searchlab.accounting.getAssetPathForUser(userId);
+        final IOPath assets = Searchlab.accounting.getAssetPathForUser(user_id);
         final String assetsPath = assets.getPath();
         final IOPath dirpath = assets.append(path);
         final JSONArray json = new JSONArray();
