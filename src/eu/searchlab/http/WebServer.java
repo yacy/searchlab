@@ -188,13 +188,14 @@ public class WebServer {
             final JSONObject post = getQueryParams(exchange);
             final String path = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
             final String user = post.optString("USER", null);
+            final String query = post.optString("QUERY", "");
 
             // we force using of a user/language path
             if (user == null) {
-                exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
-                exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path);
+                exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
+                exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path + (query.length() > 0 ? "?" + query : ""));
                 exchange.getResponseSender().send("");
-                log(ip, client, user, method, path, StatusCodes.PERMANENT_REDIRECT, 0);
+                log(ip, client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0);
                 return;
             }
 
@@ -255,7 +256,7 @@ public class WebServer {
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
-                    final String redirect = "https://community.searchlab.eu" + path;
+                    final String redirect = "https://community.searchlab.eu" + path + (query.length() > 0 ? "?" + query : "");
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, redirect);
                     exchange.getResponseSender().send("");
@@ -443,6 +444,7 @@ public class WebServer {
             if (user != null) requestPath = requestPath.substring(user.length() + 1);
             try {json.put("PATH", requestPath);} catch (final JSONException e) {}
             try {json.put("USER", user);} catch (final JSONException e) {}
+            try {json.put("QUERY", exchange.getQueryString());} catch (final JSONException e) {}
             return json;
         }
 

@@ -1,6 +1,6 @@
-## Search
+disable_toc: true
 
-(this is a placeholder for a future search page on the Searchlab front page)
+## Search
 
 <form class="input-group input-group-lg" name="searchform" action=".">
 <input type="text" value="{{channels.[0].searchTerms}}" name="query" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()" onClick="document.getElementById('startRecord').value=0;document.getElementById('query').value='';"/>
@@ -11,6 +11,17 @@
 </form>
 
 {{#if channels.[0]}}
+ 
+  <div class="admonition note">
+    <p>Other search interfaces from the <a href="/apps/data_studio/">data studio:</a></p>
+    <p>
+      <a href="/app/facetpiechart/"><img src="/app/facetpiechart/screenshot.png" width="128" height="128"></a>
+      <a href="/app/websearch_bootstrap/"><img src="/app/websearch_bootstrap/screenshot.png" width="128" height="128"></a>
+      <a href="/app/websearch_lit/"><img src="/app/websearch_lit/screenshot.png" width="128" height="128"></a>
+      <a href="/app/websearch_yaml4/"><img src="/app/websearch_yaml4/screenshot.png" width="128" height="128"></a>
+    </p>
+  </div>
+  
   {{#if channels.[0].items}}
     <p>{{channels.[0].totalResults}} hits, page {{channels.[0].page}} of {{channels.[0].pages}}</p>
     {{#each channels.[0].items}}

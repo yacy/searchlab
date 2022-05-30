@@ -9,12 +9,6 @@ theme:
     custom_dir: 'cinder-superhero'
 
 nav:
-  - Home: index.md
-  - Access:
-    - About the Searchlab: access/about.md
-    - Searchlab Architecture: access/architecture.md
-    - Download and install Searchlab and YaCy Grid: access/download.md
-    - Who made Searchlab - Impressum: access/imprint.md
   - Apps:
     - Data Studio: apps/data_studio.md
     - App Development: apps/app_development.md
@@ -23,14 +17,23 @@ nav:
     - Crawler: production/crawler.md
     - Network Scanner: production/network_scanner.md
     - Index Import/Export: production/import_export.md
-    - Data Warehouse: production/data.md
+  - Data Warehouse:
+    - WARC Assets: data_warehouse/warc_assets.md
+    - Index Assets: data_warehouse/index_assets.md
+    - Graph Assets: data_warehouse/graph_assets.md
+    - Linked Data Assets: data_warehouse/ld_assets.md
   - Monitoring:
     - System: monitoring/system.md
     - Crawler: monitoring/crawler.md
     - Indexing: monitoring/indexing.md
-  - Admin:
-    - Index: admin/search_index.md
-    - Crawler: admin/crawler.md
+#  - Admin:
+#    - Index: admin/search_index.md
+#    - Crawler: admin/crawler.md
+  - Access:
+    - About the Searchlab: access/about.md
+    - Searchlab Architecture: access/architecture.md
+    - Download and install Searchlab and YaCy Grid: access/download.md
+    - Who made Searchlab - Impressum: access/imprint.md
 
 markdown_extensions:
   - admonition

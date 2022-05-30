@@ -16,7 +16,7 @@ of the github.com/yacy organization.
 To follow the implementation process, have a look at the milestones M1-M6 within
 the https://github.com/yacy/searchlab/issues issues.
 
-To read more details about the project, visit https://wip.searchlab.eu/about/
+To read more details about the project, visit https://searchlab.eu/en/access/about/
 
 ## Searchlab and YaCy Grid Architecture
 
