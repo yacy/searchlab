@@ -45,16 +45,16 @@ public class AssetDirectoryService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/assetdir.json"};
+        return new String[] {"/api/assetdir.json", "/data_warehouse/index_assets/"};
     }
 
     @Override
     public Type getType() {
-        return Service.Type.ARRAY;
+        return Service.Type.OBJECT;
     }
 
     @Override
-    public JSONArray serveArray(final JSONObject call) {
+    public JSONObject serveObject(final JSONObject call) {
 
         // evaluate request parameter
         String path = call.optString("path", "/");
@@ -70,10 +70,22 @@ public class AssetDirectoryService extends AbstractService implements Service {
         final IOPath assets = Searchlab.accounting.getAssetPathForUser(user_id);
         final String assetsPath = assets.getPath();
         final IOPath dirpath = assets.append(path);
-        final JSONArray json = new JSONArray();
+        final JSONArray dirarray = new JSONArray();
         final Set<String> knownDir = new HashSet<>();
         try {
 			final List<IOMeta> dir = Searchlab.io.list(dirpath);
+			if (path.length() > 1) {
+				final JSONObject d = new JSONObject(true);
+				d.put("name", "../");
+				d.put("isdir", true);
+				d.put("size", 0);
+				d.put("size_p", "");
+				d.put("date", "");
+				d.put("time", 0);
+				dirarray.put(d);
+			}
+			int max_name_len = 0;
+			int max_size_len = 0;
 			for (final IOMeta meta: dir) {
 				final JSONObject d = new JSONObject(true);
 				final IOPath o = meta.getIOPath();
@@ -95,26 +107,42 @@ public class AssetDirectoryService extends AbstractService implements Service {
 					knownDir.add(name);
 				}
 				d.put("name", name);
+				max_name_len = Math.max(max_name_len, name.length());
 				d.put("isdir", isDir);
 				if (!isDir) {
 					final long size = meta.getSize();
-					final String sizes = size > gb ? (size / mb) + " MB" : size > mb ? (size / kb) + " KB" : size + " bytes";
+					final String sizes = size > gb ? (size / mb) + " MB   " : size > mb ? (size / kb) + " KB   " : size + " bytes";
 					d.put("size", size);
-					d.put("sizes", sizes);
+					d.put("size_p", sizes);
+					max_size_len = Math.max(max_size_len, sizes.length());
 					d.put("date", DateParser.iso8601Format.format(new Date(meta.getLastModified())));
 					d.put("time", meta.getLastModified());
 				} else {
 					d.put("size", 0);
-					d.put("sizes", "");
+					d.put("size_p", "");
 					d.put("date", "");
 					d.put("time", 0);
 				}
-				json.put(d);
+				dirarray.put(d);
+			}
+
+			// now go through the list and complete formatting strings;
+			for (int i = 0; i < dirarray.length(); i++) {
+				final JSONObject j = dirarray.getJSONObject(i);
+				j.put("size_p", String.format("%1$" + (max_size_len - j.getString("size_p").length() + 1) + "s", " ") + j.getString("size_p"));
+				j.put("name_p", j.getString("name") + String.format("%1$" + (max_name_len - j.getString("name").length() + 1) + "s", " "));
 			}
 		} catch (IOException | JSONException e) {
 			Logger.warn("attempt to list " + dirpath.toString(), e);
 		}
-
+        final JSONObject json = new JSONObject(true);
+        try {
+			json.put("path", path);
+			json.put("user_id", user_id);
+			json.put("dir", dirarray);
+		} catch (final JSONException e) {
+			Logger.warn(e);
+		}
         return json;
     }
 

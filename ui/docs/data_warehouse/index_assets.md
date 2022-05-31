@@ -1,8 +1,6 @@
-## <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> This is Work-In-Progress
+## Index Assets
 
-This is a placeholder page that will migrate into the actual application as soon as it is finished.
-What we want to implemted is described in the [milestones M1-M6](https://github.com/yacy/searchlab/issues?q=is%3Aissue+Milestone).
+###{{path}}
 
-<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Follow messages from YaCy maitainer [@orbiterlab](https://twitter.com/orbiterlab) and the project updates from [@yacy_search](https://twitter.com/yacy_search) to get news about the project milestones. Please share and <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> like to help building this page!
-
-<div class="alert alert-warning" role="alert">everything below is work-in-progress</div>
+<pre><code>{{#each dir}}{{#if this.isdir}}<span class="glyphicon glyphicon-folder-close" aria-hidden="true"></span></i>{{else}}<span class="glyphicon glyphicon-file" aria-hidden="true"></span>{{/if}} {{#if this.isdir}}<a href="./?path={{path}}/{{this.name}}">{{this.name_p}}</a>{{else}}<a href="/{{user_id}}/api/assetget.json?path={{path}}/{{this.name}}">{{this.name_p}}</a>{{/if}} {{this.date}} {{this.size_p}}
+{{/each}}</code></pre>
