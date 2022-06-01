@@ -57,17 +57,9 @@ public class AssetDirectoryService extends AbstractService implements Service {
     public JSONObject serveObject(final JSONObject call) {
 
         // evaluate request parameter
-        String path = call.optString("path", "/");
-        if (!path.startsWith("/")) path = "/" + path;
-        if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
+        final String path = IOPath.normalizePath(call.optString("path", "/"));
         final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
-        int p;
-        while (path.length() > 3 && (p = path.indexOf("/..")) >= 0) {
-        	final String h = path.substring(0, p);
-        	final int q = h.lastIndexOf('/');
-        	path = q < 0 ? "" : h.substring(0, q) + path.substring(p + 3);
-        }
-        final IOPath assets = Searchlab.accounting.getAssetPathForUser(user_id);
+        final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
         final String assetsPath = assets.getPath();
         final IOPath dirpath = assets.append(path);
         final JSONArray dirarray = new JSONArray();
@@ -95,13 +87,13 @@ public class AssetDirectoryService extends AbstractService implements Service {
 				assert subpath.startsWith(path);
 				subpath = subpath.substring(path.length());
 				// find first element in that path
-				p = subpath.indexOf('/', 1);
+				final int p = subpath.indexOf('/', 1);
 				String name = null;
 				boolean isDir = false;
 				if (p < 0) {
-					name = subpath.substring(1);
+					name = subpath;
 				} else {
-					name = subpath.substring(1, p);
+					name = subpath.substring(0, p);
 					isDir = true;
 					if (knownDir.contains(name)) continue;
 					knownDir.add(name);

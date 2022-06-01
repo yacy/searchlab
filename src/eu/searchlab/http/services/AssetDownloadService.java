@@ -49,17 +49,9 @@ public class AssetDownloadService extends AbstractService implements Service {
     public byte[] serveByteArray(final JSONObject call) {
 
         // evaluate request parameter
-        String path = call.optString("path", "/");
-        if (!path.startsWith("/")) path = "/" + path;
-        if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
+        final String path = IOPath.normalizePath(call.optString("path", "/"));
         final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
-        int p;
-        while (path.length() > 3 && (p = path.indexOf("/..")) >= 0) {
-        	final String h = path.substring(0, p);
-        	final int q = h.lastIndexOf('/');
-        	path = q < 0 ? "" : h.substring(0, q) + path.substring(p + 3);
-        }
-        final IOPath assets = Searchlab.accounting.getAssetPathForUser(user_id);
+        final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
         final IOPath apppath = assets.append(path);
 
         try {
