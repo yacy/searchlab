@@ -45,7 +45,7 @@ public class AssetDirectoryService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/assetdir.json", "/data_warehouse/index_assets/"};
+        return new String[] {"/api/assetdir.json", "/data_warehouse/assets/"};
     }
 
     @Override
