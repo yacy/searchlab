@@ -47,4 +47,4 @@ COPY --from=appbuilder /app/build/libs/searchlab-0.0.1-SNAPSHOT-all.jar ./app/bu
 
 EXPOSE 8400
 WORKDIR /app
-CMD ["java", "-jar", "/app/build/libs/searchlab-0.0.1-SNAPSHOT-all.jar"]
+CMD ["java", "-Xms320M", "-Xmx2G", "-jar", "/app/build/libs/searchlab-0.0.1-SNAPSHOT-all.jar"]

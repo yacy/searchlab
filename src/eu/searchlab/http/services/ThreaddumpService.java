@@ -22,6 +22,7 @@ package eu.searchlab.http.services;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryUsage;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
@@ -71,6 +72,9 @@ public class ThreaddumpService extends AbstractService implements Service {
         final int keylen = 30;
         bufferappend(buffer, "************* Start Thread Dump " + dt + " *******************");
         bufferappend(buffer, "");
+    	final MemoryUsage memoryUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
+        bufferappend(buffer, keylen, "Xms", memoryUsage.getInit());
+        bufferappend(buffer, keylen, "Xmx", memoryUsage.getMax());
         bufferappend(buffer, keylen, "Assigned   Memory", Memory.assigned());
         bufferappend(buffer, keylen, "Used       Memory", Memory.used());
         bufferappend(buffer, keylen, "Available  Memory", Memory.available());
