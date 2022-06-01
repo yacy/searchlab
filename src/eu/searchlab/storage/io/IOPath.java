@@ -36,11 +36,23 @@ public final class IOPath {
 
     private final String bucket, path;
 
-    public IOPath(final String bucket, String path) {
+    public IOPath(final String bucket, final String path) {
         this.bucket = bucket;
-        if (!path.startsWith("/")) path = "/" + path;
-        if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
-        this.path = path;
+        this.path = normalizePath(path);
+    }
+
+    public final static String normalizePath(String path) {
+    	if (path.length() == 0) return "";
+        if (path.charAt(0) != '/') path = "/" + path;
+        if (path.length() > 1 && path.charAt(path.length() - 1) == '/') path = path.substring(0, path.length() - 1);
+
+        int p;
+        while (path.length() > 3 && (p = path.indexOf("/..")) >= 0) {
+        	final String h = path.substring(0, p);
+        	final int q = h.lastIndexOf('/');
+        	path = q < 0 ? "" : h.substring(0, q) + path.substring(p + 3);
+        }
+        return path;
     }
 
     /**
@@ -91,8 +103,7 @@ public final class IOPath {
     public IOPath append(String spath) {
     	assert this.isFolder();
         if (!isFolder()) throw new RuntimeException("IOPath must be a folder to append a path: " + this.toString());
-        if (!spath.startsWith("/")) spath = "/" + spath;
-        if (spath.length() > 1 && spath.endsWith("/")) spath = spath.substring(0, spath.length() - 1);
+        spath = normalizePath(spath);
         return new IOPath(this.bucket, this.path + spath); // can be appended directly becaue now spath starts with "/"
     }
 

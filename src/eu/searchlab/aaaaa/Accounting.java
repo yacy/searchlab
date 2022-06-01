@@ -52,7 +52,7 @@ the path in crawler to assets is defined by:
 		this.accountingIop = this.aaaaaIop.append("accounting");
 	}
 
-	public IOPath getAssetPathForUser(final String userID) {
+	public IOPath getAssetsPathForUser(final String userID) {
 		return this.accountingIop.append(userID);
 	}
 
