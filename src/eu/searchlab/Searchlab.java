@@ -25,15 +25,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.hazelcast.cluster.Member;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
 
 import eu.searchlab.aaaaa.Accounting;
 import eu.searchlab.audit.AuditScheduler;
@@ -51,7 +43,7 @@ import net.yacy.grid.io.index.GridIndex;
 public class Searchlab {
 
     // hazelcast
-    public static HazelcastInstance hzInstance;
+    //public static HazelcastInstance hzInstance;
     public static Map<String, String> hzMap;
 
     // IO and MinIO
@@ -151,6 +143,7 @@ public class Searchlab {
         if (assertionenabled) Logger.info("Asserts are enabled");
 
         // initialize data services (in the background)
+        /*
         new Thread() {
             @Override
             public void run() {
@@ -170,6 +163,7 @@ public class Searchlab {
                 hzMap = hzInstance.getMap("data");
             }
         }.start();
+        */
         new Thread() {
             @Override
             public void run() {
