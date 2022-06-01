@@ -247,10 +247,20 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                     log(ip, client, user, method, path, StatusCodes.NOT_FOUND, 0);
                 } else {
-                	if ("application/json".equals(mime) && endsWith(b, "]);".getBytes())) {
+                    if ("application/json".equals(mime) && endsWith(b, "]);".getBytes())) {
                         // JSONP patch
                         exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
                         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/javascript");
+                    }
+                    if (query.endsWith(".jsonlist") || query.endsWith(".gz")) {
+                        exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
+                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/octet-stream");
+                        int q = 0;
+                        q = query.lastIndexOf('/');
+                        if (q > 0) {
+                            final String filename = query.substring(q + 1);
+                            exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
+                        }
                     }
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
@@ -354,8 +364,8 @@ public class WebServer {
              * include a file relatively to server root
              * <!--#include virtual="script.pl" -->
              */
-        	if (indexOf(b, SSI_MARKER, 0) < 0) return b;
-        	String html = new String(b, StandardCharsets.UTF_8);
+            if (indexOf(b, SSI_MARKER, 0) < 0) return b;
+            String html = new String(b, StandardCharsets.UTF_8);
             int ssip = html.indexOf("<!--#include virtual=\"");
             int end;
             while (ssip >= 0 && (end = html.indexOf("-->", ssip + 24)) > 0 ) { // min length 24; <!--#include virtual="a"
@@ -548,7 +558,7 @@ public class WebServer {
     }
 
     public static boolean startsWith(final byte[] source, final byte[] prefix, final int toffset) {
-    	final byte ta[] = source;
+        final byte ta[] = source;
         int to = toffset;
         final byte pa[] = prefix;
         int po = 0;

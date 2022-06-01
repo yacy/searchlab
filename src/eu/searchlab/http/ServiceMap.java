@@ -28,7 +28,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.http.services.AbstractService;
+import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.IndexedTable;
 
 
@@ -41,7 +41,7 @@ public class ServiceMap {
     }
 
     public static Service getService(String path) {
-        path = AbstractService.normalizePath(path);
+        path = IOPath.normalizePath(path);
         Service service = null;
         for (int i = 0; i < services.size(); i++) {
             if (services.get(i).supportsPath(path)) {
@@ -98,7 +98,7 @@ public class ServiceMap {
                 }
                 return callback.length() > 0 ?
                         (callback + "([" + jsons + "]);").getBytes(StandardCharsets.UTF_8) :
-                        jsons.getBytes(StandardCharsets.UTF_8);
+                            jsons.getBytes(StandardCharsets.UTF_8);
             }
             if (path.endsWith(".table")) {
                 try {

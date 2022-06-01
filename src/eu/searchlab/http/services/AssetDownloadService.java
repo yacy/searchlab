@@ -33,7 +33,7 @@ import eu.searchlab.tools.Logger;
 // http://localhost:8400/en/api/assetget.json?path=/index/fsfe.org-2022-05-20-19-01-53-0/d003-t0520170345973-p041.index.jsonlist
 public class AssetDownloadService extends AbstractService implements Service {
 
-	private final static long kb = 1024L, mb = 1024L * kb, gb = 1024L * mb;
+    private final static long kb = 1024L, mb = 1024L * kb, gb = 1024L * mb;
 
     @Override
     public String[] getPaths() {
@@ -49,17 +49,18 @@ public class AssetDownloadService extends AbstractService implements Service {
     public byte[] serveByteArray(final JSONObject call) {
 
         // evaluate request parameter
-        final String path = IOPath.normalizePath(call.optString("path", "/"));
+        String path = IOPath.normalizePath(call.optString("path", ""));
+        if (path.length() == 1 && path.equals("/")) path = "";
         final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
         final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
         final IOPath apppath = assets.append(path);
 
         try {
-        	final byte[] b = Searchlab.io.readAll(apppath);
-        	return b;
+            final byte[] b = Searchlab.io.readAll(apppath);
+            return b;
         } catch (final IOException e) {
-        	Logger.warn("attempt to list " + apppath.toString(), e);
-        	return new byte[] {};
+            Logger.warn("attempt to list " + apppath.toString(), e);
+            return new byte[] {};
         }
     }
 

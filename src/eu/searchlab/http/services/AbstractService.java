@@ -26,17 +26,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.IndexedTable;
 import tech.tablesaw.api.Table;
 
 public abstract class AbstractService implements Service {
-
-    public static String normalizePath(String path) {
-        path = path.trim();
-        if (path.length() == 0) return path;
-        if (path.charAt(0) == '/') path = path.substring(1);
-        return path;
-    }
 
     @Override
     public Type getType() {
@@ -50,9 +44,9 @@ public abstract class AbstractService implements Service {
 
     @Override
     public boolean supportsPath(String path) {
-        path = normalizePath(path);
+        path = IOPath.normalizePath(path);
         final String[] paths = this.getPaths();
-        for (final String p: paths) if (normalizePath(p).equals(path)) return true;
+        for (final String p: paths) if (IOPath.normalizePath(p).equals(path)) return true;
         return false;
     }
 
@@ -78,6 +72,6 @@ public abstract class AbstractService implements Service {
 
     @Override
     public byte[] serveByteArray(final JSONObject post) throws IOException {
-    	return null;
+        return null;
     }
 }
