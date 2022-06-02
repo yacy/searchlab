@@ -33,7 +33,7 @@ public class CrawlStart {
             defaultValues.put("crawlingURL", "");
             defaultValues.put("sitemapURL", "");
             defaultValues.put("crawlingFile", "");
-            defaultValues.put("crawlingDepth", 3);
+            defaultValues.put("crawlingDepth", 2);
             defaultValues.put("crawlingDepthExtension", "");
             defaultValues.put("range", "domain");
             defaultValues.put("mustmatch", ".*");
@@ -42,7 +42,7 @@ public class CrawlStart {
             defaultValues.put("ipMustnotmatch", "");
             defaultValues.put("indexmustmatch", ".*");
             defaultValues.put("indexmustnotmatch", "");
-            defaultValues.put("deleteold", "off");
+            defaultValues.put("deleteold", "on");
             defaultValues.put("deleteIfOlderNumber", 0);
             defaultValues.put("deleteIfOlderUnit", "day");
             defaultValues.put("recrawl", "nodoubles");
@@ -58,9 +58,9 @@ public class CrawlStart {
             defaultValues.put("loaderHeadless", "false");
             defaultValues.put("user_id", Authentication.ANONYMOUS_ID);
             defaultValues.put("storeAssets", "false");
-            defaultValues.put("archiveWARC", "true");
-            defaultValues.put("archiveIndex", "true");
-            defaultValues.put("archiveGraph", "true");
+            defaultValues.put("archiveWARC", "false");
+            defaultValues.put("archiveIndex", "false");
+            defaultValues.put("archiveGraph", "false");
         } catch (final JSONException e) {
         }
     }

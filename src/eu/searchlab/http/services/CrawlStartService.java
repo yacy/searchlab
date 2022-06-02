@@ -135,7 +135,12 @@ public class CrawlStartService  extends AbstractService implements Service {
         try {
             for (final String key: crawlstart.keySet()) {
                 final Object object = crawlstart.get(key);
-                if (object instanceof String) crawlstart.put(key, call.optString(key, crawlstart.getString(key)));
+                if (object instanceof String) {
+                	String v = call.optString(key, crawlstart.getString(key));
+                	if (v.equals("on")) v = "true";
+                	if (v.equals("off")) v = "false";
+                	crawlstart.put(key, v);
+                }
                 else if (object instanceof Integer) crawlstart.put(key, call.optInt(key, crawlstart.getInt(key)));
                 else if (object instanceof Long) crawlstart.put(key, call.optLong(key, crawlstart.getLong(key)));
                 else if (object instanceof JSONArray) {
