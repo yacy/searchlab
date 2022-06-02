@@ -22,9 +22,6 @@ package eu.searchlab.http.services;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -33,7 +30,7 @@ import org.json.JSONObject;
 import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.Service;
-import eu.searchlab.storage.io.IOMeta;
+import eu.searchlab.storage.io.IODirList;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
@@ -61,12 +58,12 @@ public class AssetDirectoryService extends AbstractService implements Service {
         if (path.length() == 1 && path.equals("/")) path = "";
         final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
         final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
-        final String assetsPath = assets.getPath();
+        //final String assetsPath = assets.getPath();
         final IOPath dirpath = assets.append(path);
         final JSONArray dirarray = new JSONArray();
-        final Set<String> knownDir = new HashSet<>();
+        //final Set<String> knownDir = new HashSet<>();
         try {
-            final List<IOMeta> dir = Searchlab.io.list(dirpath);
+            //System.out.println(list.toString());
             if (path.length() > 1) {
                 final JSONObject d = new JSONObject(true);
                 d.put("name", "../");
@@ -79,42 +76,24 @@ public class AssetDirectoryService extends AbstractService implements Service {
             }
             int max_name_len = 0;
             int max_size_len = 0;
-            for (final IOMeta meta: dir) {
+            final IODirList dirList = Searchlab.io.dirList(dirpath);
+            for (final IODirList.Entry entry: dirList) {
                 final JSONObject d = new JSONObject(true);
-                final IOPath o = meta.getIOPath();
-                final String fullpath = o.getPath();
-                String subpath = fullpath.substring(assetsPath.length());
-                // this is the 'full' path 'behind' assetsPath. We must also subtract the path where we are navigating to
-                assert subpath.startsWith(path);
-                subpath = subpath.substring(path.length());
-                // find first element in that path
-                final int p = subpath.indexOf('/', 1);
-                String name = null;
-                boolean isDir = false;
-                if (p < 0) {
-                    name = subpath.substring(1);
-                } else {
-                    name = subpath.substring(1, p);
-                    isDir = true;
-                    if (knownDir.contains(name)) continue;
-                    knownDir.add(name);
-                }
-                d.put("name", name);
-                max_name_len = Math.max(max_name_len, name.length());
-                d.put("isdir", isDir);
-                if (!isDir) {
-                    final long size = meta.getSize();
-                    final String sizes = size > gb ? (size / mb) + " MB   " : size > mb ? (size / kb) + " KB   " : size + " bytes";
-                    d.put("size", size);
-                    d.put("size_p", sizes);
-                    max_size_len = Math.max(max_size_len, sizes.length());
-                    d.put("date", DateParser.iso8601Format.format(new Date(meta.getLastModified())));
-                    d.put("time", meta.getLastModified());
-                } else {
+                d.put("name", entry.name);
+                max_name_len = Math.max(max_name_len, entry.name.length());
+                d.put("isdir", entry.isDir);
+                if (entry.isDir) {
                     d.put("size", 0);
                     d.put("size_p", "");
                     d.put("date", "");
                     d.put("time", 0);
+                } else {
+                    final String sizes = entry.size > gb ? (entry.size / mb) + " MB   " : entry.size > mb ? (entry.size / kb) + " KB   " : entry.size + " bytes";
+                    d.put("size", entry.size);
+                    d.put("size_p", sizes);
+                    max_size_len = Math.max(max_size_len, sizes.length());
+                    d.put("date", DateParser.iso8601Format.format(new Date(entry.time)));
+                    d.put("time", entry.time);
                 }
                 dirarray.put(d);
             }

@@ -73,8 +73,8 @@ public class ThreaddumpService extends AbstractService implements Service {
         bufferappend(buffer, "************* Start Thread Dump " + dt + " *******************");
         bufferappend(buffer, "");
     	final MemoryUsage memoryUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
-        bufferappend(buffer, keylen, "Xms", memoryUsage.getInit());
-        bufferappend(buffer, keylen, "Xmx", memoryUsage.getMax());
+        bufferappend(buffer, keylen, "Xms        Memory", memoryUsage.getInit());
+        bufferappend(buffer, keylen, "Xmx        Memory", memoryUsage.getMax());
         bufferappend(buffer, keylen, "Assigned   Memory", Memory.assigned());
         bufferappend(buffer, keylen, "Used       Memory", Memory.used());
         bufferappend(buffer, keylen, "Available  Memory", Memory.available());

@@ -397,7 +397,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
      * @throws IOException
      */
     @Override
-    public List<IOMeta> list(final String bucketName, String prefix) throws IOException {
+    public List<IOPathMeta> list(final String bucketName, String prefix) throws IOException {
         if (prefix.startsWith("/")) prefix = prefix.substring(1);
         try {
             final Iterable<Result<Item>> results = this.mc.listObjects(
@@ -408,7 +408,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                     .startAfter(prefix)         // can have leading "/" or not; only methd to limit output to a folder
                     .build());
 
-            final ArrayList<IOMeta> objectMetas = new ArrayList<>();
+            final ArrayList<IOPathMeta> objectMetas = new ArrayList<>();
             final String cacheKey = bucketName + "/" + prefix;
             LinkedHashMap<String, Item> cache = this.objectListCache.get(cacheKey);
             if (cache == null) {
@@ -420,7 +420,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 final Item item = result.get();
                 if (!item.isDir()) {
                     cache.put(item.objectName(), item);
-                    final IOMeta meta = new IOMeta(new IOPath(bucketName, item.objectName()));
+                    final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, item.objectName()));
                     meta.setSize(item.size()).setLastModified(item.lastModified().toEpochSecond() * 1000L);
                     objectMetas.add(meta);
                 }

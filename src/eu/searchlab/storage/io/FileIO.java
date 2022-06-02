@@ -206,13 +206,13 @@ public class FileIO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public List<IOMeta> list(final String bucketName, final String prefix) throws IOException {
+    public List<IOPathMeta> list(final String bucketName, final String prefix) throws IOException {
         final File f = getObjectFile(bucketName, prefix);
         final String[] u = f.list();
-        final List<IOMeta> list = new ArrayList<>(u.length);
+        final List<IOPathMeta> list = new ArrayList<>(u.length);
         for (final String objectName: u) {
             final File fc = new File(f, objectName);
-            final IOMeta meta = new IOMeta(new IOPath(bucketName, (prefix + "/" + objectName).replaceAll("//", "/")));
+            final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, (prefix + "/" + objectName).replaceAll("//", "/")));
             meta.setSize(fc.length()).setLastModified(fc.lastModified());
             list.add(meta);
         }

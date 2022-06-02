@@ -22,26 +22,26 @@ package eu.searchlab.storage.io;
 /**
  * IOMeta is the collection of metadata about a file of a IOPath
  */
-public class IOMeta {
+public class IOPathMeta {
 
     private final IOPath iop;
     private long lastModified;
     private long size;
     private final boolean isDir;
 
-    public IOMeta(final IOPath iop) {
+    public IOPathMeta(final IOPath iop) {
         this.iop = iop;
         this.lastModified = -1;
         this.size = -1;
         this.isDir = iop.isFolder();
     }
 
-    public IOMeta setLastModified(final long lastModified) {
+    public IOPathMeta setLastModified(final long lastModified) {
         this.lastModified = lastModified;
         return this;
     }
 
-    public IOMeta setSize(final long size) {
+    public IOPathMeta setSize(final long size) {
         this.size = size;
         return this;
     }

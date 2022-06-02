@@ -19,6 +19,8 @@
 
 package eu.searchlab.storage.io;
 
+import java.util.Comparator;
+
 /**
  * IOPath
  * An IOPath denotes an object stored with a GenericIO endpoint.
@@ -32,7 +34,7 @@ package eu.searchlab.storage.io;
  * - a path always starts with a "/".
  * - a path does never end with a "/".
  */
-public final class IOPath {
+public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
 
     private final String bucket, path;
 
@@ -149,5 +151,21 @@ public final class IOPath {
     @Override
     public int hashCode() {
         return this.toString().hashCode();
+    }
+
+	@Override
+	public int compareTo(final IOPath o) {
+		return this.toString().compareTo(o.toString());
+	}
+
+	@Override
+	public int compare(final IOPath o1, final IOPath o2) {
+		return o1.compareTo(o2);
+	}
+
+    @Override
+	public boolean equals(final Object obj) {
+    	if (!(obj instanceof IOPath)) return false;
+    	return this.toString().equals(((IOPath) obj).toString());
     }
 }

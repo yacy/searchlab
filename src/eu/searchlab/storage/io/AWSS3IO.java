@@ -199,12 +199,12 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     }
 
     @Override
-    public List<IOMeta> list(final String bucketName, final String prefix) throws IOException {
+    public List<IOPathMeta> list(final String bucketName, final String prefix) throws IOException {
         final ObjectListing ol = this.s3.listObjects(bucketName, prefix);
         final List<S3ObjectSummary> os = ol.getObjectSummaries();
-        final List<IOMeta> list = new ArrayList<>();
+        final List<IOPathMeta> list = new ArrayList<>();
         for (final S3ObjectSummary summary: os) {
-            final IOMeta meta = new IOMeta(new IOPath(summary.getBucketName(), summary.getKey()));
+            final IOPathMeta meta = new IOPathMeta(new IOPath(summary.getBucketName(), summary.getKey()));
             meta.setLastModified(summary.getLastModified().getTime());
             meta.setSize(summary.getSize());
             list.add(meta);
@@ -215,7 +215,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
     @Override
     public long diskUsage(final String bucketName, final String prefix) throws IOException {
         long du = 0;
-        for (final IOMeta meta: list(bucketName, prefix)) du += meta.getSize();
+        for (final IOPathMeta meta: list(bucketName, prefix)) du += meta.getSize();
         return du;
     }
 

@@ -24,9 +24,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import eu.searchlab.tools.Logger;
 
 public abstract class AbstractIO implements GenericIO {
 
@@ -132,10 +137,61 @@ public abstract class AbstractIO implements GenericIO {
         this.copy(fromIOp, toIOp);
         this.remove(fromIOp);
     }
-    
+
     @Override
-    public List<IOMeta> list(final IOPath path) throws IOException {
-    	List<IOMeta> list = list(path.getBucket(), path.getPath());
+    public List<IOPathMeta> list(final IOPath path) throws IOException {
+    	final List<IOPathMeta> list = list(path.getBucket(), path.getPath());
+    	return list;
+    }
+
+    private final static ConcurrentHashMap<IOPath, IODirList> dirListCache = new ConcurrentHashMap<>();
+
+    @Override
+    public IODirList dirList(final IOPath dirpath) throws IOException {
+
+    	// try to get the list from the cache
+    	IODirList list = dirListCache.get(dirpath);
+    	if (list != null && !list.isStale()) {
+    		Logger.info("Delivering dirList from Cache: " + dirpath.toString());
+    		return list;
+    	}
+
+    	// load the new list
+    	list = new IODirList();
+        final Set<String> knownDir = new HashSet<>();
+        final String dirpaths = dirpath.getPath();
+        try {
+            final List<IOPathMeta> dir = this.list(dirpath);
+            for (final IOPathMeta meta: dir) {
+                final IOPath o = meta.getIOPath();
+                final String fullpath = o.getPath();
+                // this is the 'full' path 'behind' assetsPath. We must also subtract the path where we are navigating to
+                assert fullpath.startsWith(dirpaths);
+                final String subpath = fullpath.substring(dirpaths.length());
+                // find first element in that path
+                final int p = subpath.indexOf('/', 1);
+                String name = null;
+                boolean isDir = false;
+                if (p < 0) {
+                    name = subpath.substring(1);
+                } else {
+                    name = subpath.substring(1, p);
+                    isDir = true;
+                    if (knownDir.contains(name)) continue;
+                    knownDir.add(name);
+                }
+                if (isDir) {
+                    list.add(new IODirList.Entry(name, true, 0, 0));
+                } else {
+                    list.add(new IODirList.Entry(name, false, meta.getSize(), meta.getLastModified()));
+                }
+            }
+        } catch (final IOException e) {
+            Logger.warn("attempt to list " + dirpath.toString(), e);
+        }
+
+		Logger.info("Delivering dirList from IO: " + dirpath.toString());
+        dirListCache.put(dirpath, list);
     	return list;
     }
 
