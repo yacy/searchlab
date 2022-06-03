@@ -21,17 +21,57 @@ package eu.searchlab.http;
 
 import org.json.JSONObject;
 
+import eu.searchlab.aaaaa.Authentication;
+
+
 public class ServiceRequest {
 
-	public final JSONObject post;
-	public final String path; // this looks like "/js/jquery.min.js", a root path looks like "/"
-	public final String user; // the user_id
-	public final String query; // the part after "?"
+	private final JSONObject post;
+	private final String user; // the user_id
+	private final String path; // this looks like "/js/jquery.min.js", a root path looks like "/"
+	private final String query; // the part after "?"
 
-	public ServiceRequest(final JSONObject post, final String path, final String user, final String query) {
-		this.post = post;
-		this.path = path;
-		this.user = user;
-		this.query = query;
+	public ServiceRequest(final JSONObject post, final String user, final String path, final String query) {
+		this.post = post == null ? new JSONObject() : post;
+		this.user = user == null ? Authentication.ANONYMOUS_ID : user;
+		this.path = path == null ? "" : path;
+		this.query = query == null ? "" : query;
 	}
+
+	public String getUser() {
+		return this.user;
+	}
+
+	public String getPath() {
+		return this.path;
+	}
+
+	public String getQuery() {
+		return this.query;
+	}
+
+	public JSONObject getPost() {
+		return this.post;
+	}
+
+	public String get(final String key, final String dflt) {
+		return this.post.optString(key, dflt);
+	}
+
+	public boolean get(final String key, final boolean dflt) {
+		return this.post.optBoolean(key, dflt);
+	}
+
+	public int get(final String key, final int dflt) {
+		return this.post.optInt(key, dflt);
+	}
+
+	public long get(final String key, final long dflt) {
+		return this.post.optLong(key, dflt);
+	}
+
+	public double get(final String key, final double dflt) {
+		return this.post.optDouble(key, dflt);
+	}
+
 }

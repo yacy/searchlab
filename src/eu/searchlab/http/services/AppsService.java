@@ -28,6 +28,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.http.WebServer;
 import eu.searchlab.storage.json.AbstractTray;
@@ -42,7 +43,7 @@ public class AppsService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject call) {
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
         final File app_path = new File(WebServer.APPS_PATH, "app");
         final String[] app_list = app_path.list();
         final TreeMap<String, JSONObject> sortlist = new TreeMap<>();

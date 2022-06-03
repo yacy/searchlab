@@ -28,6 +28,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.JSONList;
@@ -52,12 +53,12 @@ public class IndexService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject call) {
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
         // evaluate request parameter
-        final String indexName = call.optString("index", GridIndex.DEFAULT_INDEXNAME_WEB);
-        final String id = call.optString("id", "");
-        final String q = call.optString("query", "");
+        final String indexName = serviceRequest.get("index", GridIndex.DEFAULT_INDEXNAME_WEB);
+        final String id = serviceRequest.get("id", "");
+        final String q = serviceRequest.get("query", "");
         final JSONObject json = new JSONObject(true);
 
         try {
@@ -84,14 +85,14 @@ public class IndexService extends AbstractService implements Service {
                     json.put("items", list.toArray());
                 }
             } else if (indexName.length() > 0 && q.length() > 0) {
-                final int startRecord = call.optInt("startRecord", call.optInt("start", 0));
-                final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
-                String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
+                final int startRecord = serviceRequest.get("startRecord", serviceRequest.get("start", 0));
+                final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(serviceRequest.get("contentdom", "all"));
+                String collection = serviceRequest.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
                 collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
                 final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
-                final int timezoneOffset = call.optInt("timezoneOffset", -1);
-                final Sort sort = new Sort(call.optString("sort", ""));
-                final int itemsPerPage = call.optInt("itemsPerPage", call.optInt("maximumRecords", call.optInt("rows", call.optInt("num", 10))));
+                final int timezoneOffset = serviceRequest.get("timezoneOffset", -1);
+                final Sort sort = new Sort(serviceRequest.get("sort", ""));
+                final int itemsPerPage = serviceRequest.get("itemsPerPage", serviceRequest.get("maximumRecords", serviceRequest.get("rows", serviceRequest.get("num", 10))));
 
                 final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
                 final ElasticsearchClient.Query query = Searchlab.ec.query(

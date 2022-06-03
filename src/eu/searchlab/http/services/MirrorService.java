@@ -19,9 +19,8 @@
 
 package eu.searchlab.http.services;
 
-import org.json.JSONObject;
-
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
 public class MirrorService extends AbstractService implements Service {
@@ -32,8 +31,8 @@ public class MirrorService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject post) {
-        return new ServiceResponse(post); // mirror the post
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
+        return new ServiceResponse(serviceRequest.getPost()); // mirror the post
     }
 
 }

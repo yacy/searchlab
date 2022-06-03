@@ -26,6 +26,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
 public class ReadyService extends AbstractService implements Service {
@@ -36,7 +37,7 @@ public class ReadyService extends AbstractService implements Service {
  }
 
  @Override
- public ServiceResponse serve(final JSONObject post) throws IOException {
+ public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
      if (!Searchlab.ready) throw new IOException("not ready");
      final JSONObject json = new JSONObject();
      try {

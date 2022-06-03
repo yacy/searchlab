@@ -25,6 +25,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
 public class IDValidationService  extends AbstractService implements Service {
@@ -35,8 +36,8 @@ public class IDValidationService  extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject call) {
-        final String id = call.optString("id", "").trim();
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
+        final String id = serviceRequest.get("id", "").trim();
     	final JSONObject json = new JSONObject(true);
     	try {
 			json.put("valid", Authentication.isValid(id));

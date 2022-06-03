@@ -19,11 +19,11 @@
 
 package eu.searchlab.http.services;
 
-import org.json.JSONObject;
 import org.simpleframework.xml.Path;
 
 import eu.searchlab.HTMLPanel;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
 @Path("/notifications")
@@ -42,9 +42,9 @@ public class GraphGetService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject post) {
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
-        final String path = post.optString("PATH", "");
+        final String path = serviceRequest.getPath();
         final int p = path.lastIndexOf("/graph/");
         if (p < 0) return new ServiceResponse("");
         final int q = path.indexOf(".", p);

@@ -21,8 +21,6 @@ package eu.searchlab.http;
 
 import java.io.IOException;
 
-import org.json.JSONObject;
-
 public interface Service {
 
     public enum Type {
@@ -33,6 +31,6 @@ public interface Service {
 
     public String[] getPaths();
 
-    public ServiceResponse serve(JSONObject post) throws IOException;
+    public ServiceResponse serve(ServiceRequest request) throws IOException;
 
 }

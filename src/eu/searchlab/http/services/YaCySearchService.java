@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.DateParser;
@@ -70,30 +71,30 @@ public class YaCySearchService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject call) {
+    public ServiceResponse serve(final ServiceRequest request) {
 
         // evaluate request parameter
-        final String q = call.optString("query", "").trim();
+        final String q = request.get("query", "").trim();
         if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
-        final boolean explain = call.optBoolean("explain", false);
-        final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
-        String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
+        final boolean explain = request.get("explain", false);
+        final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
+        String collection = request.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
         collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
         final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
-        final int itemsPerPage = call.optInt("itemsPerPage", call.optInt("maximumRecords", call.optInt("rows", call.optInt("num", 10))));
-        final int startRecord = call.optInt("startRecord", call.optInt("start", 0));
+        final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
+        final int startRecord = request.get("startRecord", request.get("start", 0));
         //int meanCount = call.opt("meanCount", 5);
-        final int timezoneOffset = call.optInt("timezoneOffset", -1);
+        final int timezoneOffset = request.get("timezoneOffset", -1);
         //String nav = call.opt("nav", "");
         //String prefermaskfilter = call.opt("prefermaskfilter", "");
         //String constraint = call.opt("constraint", "");
-        final int facetLimit = call.optInt("facetLimit", 10);
-        final String facetFields = call.optString("facetFields", YaCyQuery.FACET_DEFAULT_PARAMETER);
+        final int facetLimit = request.get("facetLimit", 10);
+        final String facetFields = request.get("facetFields", YaCyQuery.FACET_DEFAULT_PARAMETER);
         final List<WebMapping> facetFieldMapping = new ArrayList<>();
         for (final String s: facetFields.split(",")) try {
         	facetFieldMapping.add(WebMapping.valueOf(s));
         } catch (final IllegalArgumentException e) {Logger.error(e);} // catch exception in case the facet field name is unknown
-        final Sort sort = new Sort(call.optString("sort", ""));
+        final Sort sort = new Sort(request.get("sort", ""));
 
         // prepare result object
         final JSONObject json = new JSONObject(true);

@@ -26,6 +26,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.storage.queues.Queue;
 
@@ -83,7 +84,7 @@ public class QueueStatusService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject post) throws IOException {
+    public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
         final JSONObject json = new JSONObject(true);
         try {
             final JSONObject crawlerStatus = getStatus("crawler", queuesCrawler);

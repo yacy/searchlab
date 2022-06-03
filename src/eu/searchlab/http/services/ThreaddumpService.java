@@ -35,9 +35,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import org.json.JSONObject;
-
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Memory;
 
@@ -57,9 +56,9 @@ public class ThreaddumpService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject post) throws IOException {
+    public ServiceResponse serve(final ServiceRequest request) throws IOException {
 
-        final int multi = post.optInt("multi", post.optInt("count", 0));
+        final int multi = request.get("multi", request.get("count", 0));
         final StringBuilder buffer = new StringBuilder(1000);
 
         // Thread dump

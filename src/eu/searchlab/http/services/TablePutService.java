@@ -20,9 +20,9 @@
 package eu.searchlab.http.services;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
 public class TablePutService extends AbstractService implements Service {
@@ -33,7 +33,7 @@ public class TablePutService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject post) {
+    public ServiceResponse serve(final ServiceRequest request) {
         final JSONArray array = new JSONArray();
         return new ServiceResponse(array);
     }

@@ -22,10 +22,10 @@ package eu.searchlab.http.services;
 import java.io.IOException;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import eu.searchlab.TablePanel;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.storage.table.IndexedTable;
 
@@ -49,16 +49,16 @@ public class TableGetService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject post) throws IOException {
-        final String path = post.optString("PATH", "");
+    public ServiceResponse serve(final ServiceRequest request) throws IOException {
+        final String path = request.get("PATH", "");
         final int p = path.lastIndexOf("/get/");
         if (p < 0) return new ServiceResponse(new JSONArray());
         final int q = path.indexOf(".", p);
         final String tablename = path.substring(p + 5, q);
-        final boolean asObjects = post.optBoolean("asObjects", true);
-        final String where = post.optString("where"); // where=col0:val0,col1:val1,...
-        final String select = post.optString("select"); // get(column, value), pivot(column, op)
-        final int count = post.optInt("count", -1);
+        final boolean asObjects = request.get("asObjects", true);
+        final String where = request.get("where", ""); // where=col0:val0,col1:val1,...
+        final String select = request.get("select", ""); // get(column, value), pivot(column, op)
+        final int count = request.get("count", -1);
 
         final IndexedTable table = selectArray(tablename, where, select, count, asObjects);
         final JSONArray array = table.toJSON(asObjects);

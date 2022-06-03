@@ -189,10 +189,11 @@ public class WebServer {
             }
 
             // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
-            final JSONObject post = getQueryParams(exchange);
-            final String path = post.optString("PATH", "/"); // this looks like "/js/jquery.min.js", a root path looks like "/"
-            final String user = post.optString("USER", null);
-            final String query = post.optString("QUERY", "");
+            final ServiceRequest serviceRequest = getQueryParams(exchange);
+
+            final String user = serviceRequest.getUser();
+            final String path = serviceRequest.getPath();
+            final String query = serviceRequest.getQuery();
 
             // we force using of a user/language path
             if (user == null) {
@@ -240,7 +241,7 @@ public class WebServer {
 
             try {
                 // generate response (handle servlets + handlebars)
-                final byte[] b = processPost(post);
+                final byte[] b = processPost(serviceRequest);
 
                 // send html to client
                 if (b == null) {
@@ -293,11 +294,9 @@ public class WebServer {
          * @return full html or any kind of response that should be transferred with http status code 200
          * @throws IOException in case this request cannot be fullfilled.
          */
-        private byte[] processPost(final JSONObject post) throws IOException {
+        private byte[] processPost(final ServiceRequest serviceRequest) throws IOException {
 
-            final String path = post.optString("PATH", "/");
-            final String user = post.optString("USER", null);
-            final String query = post.optString("QUERY", "");
+        	final String path = serviceRequest.getPath();
 
             // load requested file
             final File f = findFile(path);
@@ -309,7 +308,7 @@ public class WebServer {
 
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
             if (service != null) {
-            	final ServiceResponse serviceResponse = service.serve(post);
+            	final ServiceResponse serviceResponse = service.serve(serviceRequest);
                 if (b != null && serviceResponse.getType() == Service.Type.OBJECT) {
                     final JSONObject json = serviceResponse.getObject();
                     final Handlebars handlebars = new Handlebars();
@@ -340,7 +339,7 @@ public class WebServer {
                     }
                 } else {
                     // the response is defined only by the service
-                    b = ServiceMap.serviceDispatcher(service, path, post);
+                    b = ServiceMap.serviceDispatcher(service, path, serviceRequest);
                 }
             }
 
@@ -351,12 +350,12 @@ public class WebServer {
             }
 
             // apply server-side includes
-            if (b != null) b = ssi(user, path, b);
+            if (b != null) b = ssi(serviceRequest, b);
 
             return b;
         }
 
-        private byte[] ssi(final String user, final String path, final byte[] b) throws IOException {
+        private byte[] ssi(final ServiceRequest serviceRequest, final byte[] b) throws IOException {
             // apply server-side includes
             /*
              * include a file in the same path as current path
@@ -373,8 +372,8 @@ public class WebServer {
                 final int rightquote = html.indexOf("\"", ssip + 23);
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String virtual = html.substring(ssip + 22, rightquote);
-                final JSONObject post = getQueryParams(user, virtual);
-                final byte[] ibb = processPost(post);
+                final ServiceRequest serviceRequest0 = getQueryParams(serviceRequest.getUser(), virtual);
+                final byte[] ibb = processPost(serviceRequest0);
                 final String include = ibb == null ? null : new String(ibb, StandardCharsets.UTF_8);
                 if (include == null) {
                     html = html.substring(0, ssip) + html.substring(end + 3);
@@ -390,7 +389,7 @@ public class WebServer {
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String var = html.substring(ssip + 15, rightquote);
                 if ("CANONICAL_TAG".equals(var)) {
-                    final String include = "<link rel=\"canonical\" href=\"" + "https://searchlab.eu/en" + path + "\">";
+                    final String include = "<link rel=\"canonical\" href=\"" + "https://searchlab.eu/en" + serviceRequest.getPath() + "\">";
                     html = html.substring(0, ssip) + include + html.substring(end + 3);
                     ssip = html.indexOf("<!--#echo var=\"", ssip + include.length());
                 } else {
@@ -455,7 +454,7 @@ public class WebServer {
             return b;
         }
 
-        private JSONObject getQueryParams(final HttpServerExchange exchange) throws IOException {
+        private ServiceRequest getQueryParams(final HttpServerExchange exchange) throws IOException {
             // read query parameters
             String post_message = "";
             if (exchange.getRequestMethod().equals(Methods.POST) || exchange.getRequestMethod().equals(Methods.PUT)) {
@@ -467,29 +466,30 @@ public class WebServer {
                 json = new JSONObject(new JSONTokener(post_message));
             } catch (final JSONException e) {};
 
-            final Map<String, Deque<String>> query = exchange.getQueryParameters();
-            for (final Map.Entry<String, Deque<String>> entry: query.entrySet()) {
+            final Map<String, Deque<String>> queryParams = exchange.getQueryParameters();
+            for (final Map.Entry<String, Deque<String>> entry: queryParams.entrySet()) {
                 try {json.put(entry.getKey(), entry.getValue().getFirst());} catch (final JSONException e) {}
             }
-            String requestPath = exchange.getRequestPath();
-            final int q = requestPath.indexOf('?');
-            if (q >= 0) requestPath = requestPath.substring(0, q);
-            final String user = getUserPrefix(requestPath);
-            if (user != null) requestPath = requestPath.substring(user.length() + 1);
-            try {json.put("PATH", requestPath);} catch (final JSONException e) {}
-            try {json.put("USER", user);} catch (final JSONException e) {}
-            try {json.put("QUERY", exchange.getQueryString());} catch (final JSONException e) {}
-            return json;
+            String path = exchange.getRequestPath();
+            final int q = path.indexOf('?');
+            if (q >= 0) path = path.substring(0, q);
+            final String user = getUserPrefix(path);
+            if (user != null) path = path.substring(user.length() + 1);
+            final String query = exchange.getQueryString();
+            try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
+            try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
+            try {json.put("QUERY", query);} catch (final JSONException e) {} // TODO: delete
+            return new ServiceRequest(json, user, path, query);
         }
 
-        private JSONObject getQueryParams(final String knownuser, String requestPath)  {
+        private ServiceRequest getQueryParams(final String knownuser, String path)  {
             // parse query parameters
             final JSONObject json = new JSONObject(true);
-            final int q = requestPath.indexOf('?');
+            final int q = path.indexOf('?');
             if (q >= 0) {
-                final String qs = requestPath.substring(q + 1);
-                requestPath = requestPath.substring(0, q);
-                try {json.put("PATH", requestPath);} catch (final JSONException e) {}
+                final String qs = path.substring(q + 1);
+                path = path.substring(0, q);
+                try {json.put("PATH", path);} catch (final JSONException e) {}
                 final String[] pm = qs.split("&");
                 for (final String pms: pm) {
                     final int r = pms.indexOf('=');
@@ -497,15 +497,16 @@ public class WebServer {
                     try {json.put(pms.substring(0, r), pms.substring(r + 1));} catch (final JSONException e) {}
                 }
             }
-            String user = getUserPrefix(requestPath);
+            String user = getUserPrefix(path);
             if (user == null) {
                 user = knownuser;
             } else {
-                requestPath = requestPath.substring(user.length() + 1);
+                path = path.substring(user.length() + 1);
             }
-            try {json.put("PATH", requestPath);} catch (final JSONException e) {}
-            try {json.put("USER", user);} catch (final JSONException e) {}
-            return json;
+            try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
+            try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
+            try {json.put("QUERY", "");} catch (final JSONException e) {} // TODO: delete
+            return new ServiceRequest(json, user, path, "");
         }
 
         /**

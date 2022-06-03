@@ -37,11 +37,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
-import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.corpus.Action;
 import eu.searchlab.corpus.ActionSequence;
 import eu.searchlab.corpus.CrawlStart;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Digest;
 import eu.searchlab.tools.Domains;
@@ -123,27 +123,23 @@ public class CrawlStartService  extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject call) {
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
         final JSONObject crawlstart = crawlStartDefaultClone();
 
         // read call attributes using the default crawlstart key names
-        final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
+        final String user_id = serviceRequest.getUser();
         try {
             for (final String key: crawlstart.keySet()) {
                 final Object object = crawlstart.get(key);
                 if (object instanceof String) {
-                	String v = call.optString(key, crawlstart.getString(key));
+                	String v = serviceRequest.get(key, crawlstart.getString(key));
                 	if (v.equals("on")) v = "true";
                 	if (v.equals("off")) v = "false";
                 	crawlstart.put(key, v);
                 }
-                else if (object instanceof Integer) crawlstart.put(key, call.optInt(key, crawlstart.getInt(key)));
-                else if (object instanceof Long) crawlstart.put(key, call.optLong(key, crawlstart.getLong(key)));
-                else if (object instanceof JSONArray) {
-                    final JSONArray a = crawlstart.getJSONArray(key);
-                    final Object cv = call.get(key);
-                    if (cv != null) crawlstart.put(key, cv);
-                } else {
+                else if (object instanceof Integer) crawlstart.put(key, serviceRequest.get(key, crawlstart.getInt(key)));
+                else if (object instanceof Long) crawlstart.put(key, serviceRequest.get(key, crawlstart.getLong(key)));
+                else {
                     System.out.println("unrecognized type: " + object.getClass().toString());
                 }
             }

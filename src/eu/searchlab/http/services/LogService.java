@@ -22,9 +22,8 @@ package eu.searchlab.http.services;
 import java.io.IOException;
 import java.util.List;
 
-import org.json.JSONObject;
-
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Logger;
 
@@ -37,8 +36,8 @@ public class LogService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject post) throws IOException {
-        final int tail = post.optInt("tail", post.optInt("count", post.optInt("lines", 0)));
+    public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
+        final int tail = serviceRequest.get("tail", serviceRequest.get("count", serviceRequest.get("lines", 0)));
         final StringBuilder buffer = new StringBuilder(1000);
         final List<String> lines = Logger.getLines(tail);
         for (final String line: lines) buffer.append(line); // line has line break attached

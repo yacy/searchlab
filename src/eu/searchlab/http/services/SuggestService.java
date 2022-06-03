@@ -22,9 +22,9 @@ package eu.searchlab.http.services;
 import java.util.Collection;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import net.yacy.grid.io.index.Typeahead;
 
@@ -56,13 +56,13 @@ public class SuggestService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject call) {
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
         // evaluate request parameter
-        final String originalquerystring = call.optString("query", call.optString("q", ""));
+        final String originalquerystring = serviceRequest.get("query", serviceRequest.get("q", ""));
         final String querystring =  originalquerystring.trim();
-        final int timeout = call.optInt("timeout", 300);
-        final int count = Math.min(30, call.optInt("count", 20));
+        final int timeout = serviceRequest.get("timeout", 300);
+        final int count = Math.min(30, serviceRequest.get("count", 20));
 
         // find answer
         final Typeahead typeahead = new Typeahead(querystring);

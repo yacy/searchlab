@@ -28,8 +28,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
-import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.storage.io.IODirList;
 import eu.searchlab.storage.io.IOPath;
@@ -47,12 +47,12 @@ public class AssetDirectoryService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final JSONObject call) {
+    public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
         // evaluate request parameter
-        String path = IOPath.normalizePath(call.optString("path", ""));
+        String path = IOPath.normalizePath(serviceRequest.get("path", ""));
         if (path.length() == 1 && path.equals("/")) path = "";
-        final String user_id = call.optString("USER", Authentication.ANONYMOUS_ID);
+        final String user_id = serviceRequest.getUser();
         final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
         //final String assetsPath = assets.getPath();
         final IOPath dirpath = assets.append(path);

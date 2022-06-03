@@ -64,11 +64,11 @@ public class ServiceMap {
      * - ".csv": a different style of table generator which outputs plain text csv
      * - all other extensions: from plain text, which must be service-pre-rendered html
      * @param path request path in URI
-     * @param post post requests, i.e. query attributes
+     * @param request post requests, i.e. query attributes
      * @return a service response or NULL if no service is defined
      * @throws IOException
      */
-    public static byte[] serviceDispatcher(final Service service, final String path, final JSONObject post) throws IOException {
+    public static byte[] serviceDispatcher(final Service service, final String path, final ServiceRequest request) throws IOException {
 
         if (service == null) {
             return null; // not a fail, just a signal that no service is defined
@@ -83,14 +83,14 @@ public class ServiceMap {
             p = tablename.indexOf('.');
             if (p > 0) tablename = tablename.substring(0, p); else tablename = null;
         }
-        final ServiceResponse serviceResponse = service.serve(post);
+        final ServiceResponse serviceResponse = service.serve(request);
         if (serviceResponse.getType() == Service.Type.OBJECT) {
             final JSONObject json = serviceResponse.getObject();
             if (json == null) return null;
 
             if (path.endsWith(".json")) {
-                final String callback = post.optString("callback", ""); //  used like "callback=?", which encapsulates then json into <callback> "([" <json> "]);"
-                final boolean minified = post.optBoolean("minified", false);
+                final String callback = request.get("callback", ""); //  used like "callback=?", which encapsulates then json into <callback> "([" <json> "]);"
+                final boolean minified = request.get("minified", false);
                 String jsons = "";
                 try {
                     jsons = minified ? json.toString() : json.toString(2);
