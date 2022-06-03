@@ -17,7 +17,7 @@ body {
 # Web Harvesting for Data Mining
 
 <p>
-<form class="input-group input-group-lg" name="searchform" action="apps/search/" method="get">
+<form class="input-group input-group-lg" name="searchform" action="search/" method="get">
 <input type="text" value="" name="query" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()"/>
 <input type="hidden" name="startRecord" id="startRecord" value="0"/>
 <span class="input-group-btn">
