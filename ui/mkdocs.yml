@@ -9,10 +9,10 @@ theme:
     custom_dir: 'cinder-superhero'
 
 nav:
+  - Search: search.md
   - Apps:
     - Data Studio: apps/data_studio.md
     - App Development: apps/app_development.md
-    - Search: apps/search.md
   - Production:
     - Crawler: production/crawler.md
     - Network Scanner: production/network_scanner.md
