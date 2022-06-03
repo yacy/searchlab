@@ -24,6 +24,7 @@ import org.simpleframework.xml.Path;
 
 import eu.searchlab.HTMLPanel;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 
 @Path("/notifications")
 public class GraphGetService extends AbstractService implements Service {
@@ -41,19 +42,14 @@ public class GraphGetService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.STRING;
-    }
-
-    @Override
-    public String serveString(JSONObject post) {
+    public ServiceResponse serve(final JSONObject post) {
 
         final String path = post.optString("PATH", "");
         final int p = path.lastIndexOf("/graph/");
-        if (p < 0) return "";
+        if (p < 0) return new ServiceResponse("");
         final int q = path.indexOf(".", p);
         final String graphname = path.substring(p + 7, q);
         final String graph = HTMLPanel.htmls.get(graphname);
-        return graph;
+        return new ServiceResponse(graph);
     }
 }

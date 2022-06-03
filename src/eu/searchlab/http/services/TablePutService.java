@@ -23,6 +23,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 
 public class TablePutService extends AbstractService implements Service {
 
@@ -32,13 +33,8 @@ public class TablePutService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.ARRAY;
-    }
-
-    @Override
-    public JSONArray serveArray(JSONObject post) {
-        JSONArray array = new JSONArray();
-        return array;
+    public ServiceResponse serve(final JSONObject post) {
+        final JSONArray array = new JSONArray();
+        return new ServiceResponse(array);
     }
 }

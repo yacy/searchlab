@@ -25,6 +25,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import net.yacy.grid.io.index.Typeahead;
 
 // http://localhost:8400/en/api/suggest.json?q=ne
@@ -55,12 +56,7 @@ public class SuggestService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.ARRAY;
-    }
-
-    @Override
-    public JSONArray serveArray(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
 
         // evaluate request parameter
         final String originalquerystring = call.optString("query", call.optString("q", ""));
@@ -81,7 +77,7 @@ public class SuggestService extends AbstractService implements Service {
             a.put(s);
         }
         json.put(a);
-        return json;
+        return new ServiceResponse(json);
     }
 
 }

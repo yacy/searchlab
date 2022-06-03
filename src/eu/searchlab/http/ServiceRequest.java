@@ -1,6 +1,6 @@
 /**
- *  Service
- *  Copyright 06.10.2021 by Michael Peter Christen, @orbiterlab
+ *  ServiceRequest
+ *  Copyright 03.06.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -19,20 +19,19 @@
 
 package eu.searchlab.http;
 
-import java.io.IOException;
-
 import org.json.JSONObject;
 
-public interface Service {
+public class ServiceRequest {
 
-    public enum Type {
-        OBJECT, ARRAY, STRING, TABLE, BINARY;
-    }
+	public final JSONObject post;
+	public final String path; // this looks like "/js/jquery.min.js", a root path looks like "/"
+	public final String user; // the user_id
+	public final String query; // the part after "?"
 
-    public boolean supportsPath(String path);
-
-    public String[] getPaths();
-
-    public ServiceResponse serve(JSONObject post) throws IOException;
-
+	public ServiceRequest(final JSONObject post, final String path, final String user, final String query) {
+		this.post = post;
+		this.path = path;
+		this.user = user;
+		this.query = query;
+	}
 }

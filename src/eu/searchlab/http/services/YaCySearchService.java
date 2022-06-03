@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
@@ -69,16 +70,11 @@ public class YaCySearchService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
-    }
-
-    @Override
-    public JSONObject serveObject(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
 
         // evaluate request parameter
         final String q = call.optString("query", "").trim();
-        if (q.length() == 0) return new JSONObject();
+        if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
         final boolean explain = call.optBoolean("explain", false);
         final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(call.optString("contentdom", "all"));
         String collection = call.optString("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
@@ -229,7 +225,7 @@ public class YaCySearchService extends AbstractService implements Service {
         		channel.put("pages", "0");
         	} catch (final JSONException ee) {Logger.error(ee);}
         }
-        return json;
+        return new ServiceResponse(json);
     }
 
 }

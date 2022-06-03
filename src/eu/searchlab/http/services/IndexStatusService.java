@@ -25,6 +25,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Logger;
 
 /**
@@ -40,12 +41,7 @@ public class IndexStatusService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
-    }
-
-    @Override
-    public JSONObject serveObject(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
 
         // evaluate request parameter
         //final String indexName = call.optString("index", GridIndex.DEFAULT_INDEXNAME_WEB);
@@ -56,7 +52,7 @@ public class IndexStatusService extends AbstractService implements Service {
                 json.put(indexName, Searchlab.ec.count(indexName));
             }
         } catch (final JSONException e) {Logger.warn(e);}
-        return json;
+        return new ServiceResponse(json);
     }
 
 }

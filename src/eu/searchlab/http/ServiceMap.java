@@ -83,8 +83,9 @@ public class ServiceMap {
             p = tablename.indexOf('.');
             if (p > 0) tablename = tablename.substring(0, p); else tablename = null;
         }
-        if (service.getType() == Service.Type.OBJECT) {
-            final JSONObject json = service.serveObject(post);
+        final ServiceResponse serviceResponse = service.serve(post);
+        if (serviceResponse.getType() == Service.Type.OBJECT) {
+            final JSONObject json = serviceResponse.getObject();
             if (json == null) return null;
 
             if (path.endsWith(".json")) {
@@ -115,8 +116,8 @@ public class ServiceMap {
                 }
             }
             new IOException("extension not appropriate for JSONObject");
-        } else if (service.getType() == Service.Type.ARRAY) {
-            final JSONArray array = service.serveArray(post);
+        } else if (serviceResponse.getType() == Service.Type.ARRAY) {
+            final JSONArray array = serviceResponse.getArray();
             if (array == null) return null;
 
             if (path.endsWith(".json")) {
@@ -181,8 +182,8 @@ public class ServiceMap {
                 }
             }
             new IOException("extension not appropriate for JSONArray");
-        } else if (service.getType() == Service.Type.TABLE) {
-            final IndexedTable table = service.serveTable(post);
+        } else if (serviceResponse.getType() == Service.Type.TABLE) {
+            final IndexedTable table = serviceResponse.getTable();
             if (table == null) return null;
 
             if (path.endsWith(".table")) {
@@ -200,13 +201,13 @@ public class ServiceMap {
                 }
             }
             new IOException("extension not appropriate for JSONArray");
-        } else if (service.getType() == Service.Type.STRING) {
-            return service.serveString(post).getBytes(StandardCharsets.UTF_8);
-        } else if (service.getType() == Service.Type.BINARY) {
-            return service.serveByteArray(post);
+        } else if (serviceResponse.getType() == Service.Type.STRING) {
+            return serviceResponse.getString().getBytes(StandardCharsets.UTF_8);
+        } else if (serviceResponse.getType() == Service.Type.BINARY) {
+            return serviceResponse.getByteArray();
         }
 
         // this should never happen, we checked all service types
-        throw new IOException("unknown service type " + service.getType().toString());
+        throw new IOException("unknown service type " + serviceResponse.getType().toString());
     }
 }

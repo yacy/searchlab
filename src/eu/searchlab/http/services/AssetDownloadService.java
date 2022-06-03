@@ -27,6 +27,7 @@ import org.json.JSONObject;
 import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.Logger;
 
@@ -41,12 +42,7 @@ public class AssetDownloadService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.BINARY;
-    }
-
-    @Override
-    public byte[] serveByteArray(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
 
         // evaluate request parameter
         String path = IOPath.normalizePath(call.optString("path", ""));
@@ -55,13 +51,14 @@ public class AssetDownloadService extends AbstractService implements Service {
         final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
         final IOPath apppath = assets.append(path);
 
+        byte[] b;
         try {
-            final byte[] b = Searchlab.io.readAll(apppath);
-            return b;
+            b = Searchlab.io.readAll(apppath);
         } catch (final IOException e) {
             Logger.warn("attempt to list " + apppath.toString(), e);
-            return new byte[] {};
+            b = new byte[] {};
         }
+        return new ServiceResponse(b);
     }
 
 }

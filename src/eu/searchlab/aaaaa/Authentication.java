@@ -33,6 +33,7 @@ public class Authentication {
 	private final static Random random = new Random(System.currentTimeMillis());
 
 	public final static String ANONYMOUS_ID = "112358132";
+	public final static String[] GOLDEN_ID = new String[]{"123456789", "123456798",  "123456987",  "123459876",  "123498765",  "123987654",  "129876543", "198765432", "987654321"}; // includes at this time only special ids
 
 	private final JSONObject json;
 

@@ -17,25 +17,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 package eu.searchlab.http.services;
-
-import java.io.IOException;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
 import eu.searchlab.storage.io.IOPath;
-import eu.searchlab.storage.table.IndexedTable;
-import tech.tablesaw.api.Table;
 
 public abstract class AbstractService implements Service {
-
-    @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
-    }
 
     @Override
     public String[] getPaths() {
@@ -50,28 +37,4 @@ public abstract class AbstractService implements Service {
         return false;
     }
 
-    @Override
-    public JSONObject serveObject(final JSONObject post) throws IOException {
-        return new JSONObject();
-    }
-
-    @Override
-    public JSONArray serveArray(final JSONObject post) throws IOException {
-        return new JSONArray();
-    }
-
-    @Override
-    public String serveString(final JSONObject post) throws IOException {
-        return "";
-    }
-
-    @Override
-    public IndexedTable serveTable(final JSONObject post) throws IOException {
-        return new IndexedTable(Table.create());
-    }
-
-    @Override
-    public byte[] serveByteArray(final JSONObject post) throws IOException {
-        return null;
-    }
 }

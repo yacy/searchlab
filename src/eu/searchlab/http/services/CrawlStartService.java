@@ -42,6 +42,7 @@ import eu.searchlab.corpus.Action;
 import eu.searchlab.corpus.ActionSequence;
 import eu.searchlab.corpus.CrawlStart;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Digest;
 import eu.searchlab.tools.Domains;
 import eu.searchlab.tools.JSONList;
@@ -68,11 +69,6 @@ public class CrawlStartService  extends AbstractService implements Service {
     @Override
     public String[] getPaths() {
         return new String[] {"/api/crawlstart.json", "/production/crawler/"};
-    }
-
-    @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
     }
 
     public static JSONObject crawlStartDefaultClone() {
@@ -127,7 +123,7 @@ public class CrawlStartService  extends AbstractService implements Service {
     }
 
     @Override
-    public JSONObject serveObject(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
         final JSONObject crawlstart = crawlStartDefaultClone();
 
         // read call attributes using the default crawlstart key names
@@ -269,6 +265,6 @@ public class CrawlStartService  extends AbstractService implements Service {
         }
 
         // finally add the crawl start on the queue
-        return allCrawlstarts;
+        return new ServiceResponse(allCrawlstarts);
     }
 }

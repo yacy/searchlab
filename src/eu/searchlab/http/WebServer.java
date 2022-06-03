@@ -309,8 +309,9 @@ public class WebServer {
 
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
             if (service != null) {
-                if (b != null && service.getType() == Service.Type.OBJECT) {
-                    final JSONObject json = service.serveObject(post);
+            	final ServiceResponse serviceResponse = service.serve(post);
+                if (b != null && serviceResponse.getType() == Service.Type.OBJECT) {
+                    final JSONObject json = serviceResponse.getObject();
                     final Handlebars handlebars = new Handlebars();
                     final Context context = Context
                             .newBuilder(json)
@@ -323,8 +324,8 @@ public class WebServer {
                         Logger.error("Handlebars Error", e);
                         throw new IOException(e.getMessage());
                     }
-                } else if (b != null && service.getType() == Service.Type.ARRAY) {
-                    final JSONArray json = service.serveArray(post);
+                } else if (b != null && serviceResponse.getType() == Service.Type.ARRAY) {
+                    final JSONArray json = serviceResponse.getArray();
                     final Handlebars handlebars = new Handlebars();
                     final Context context = Context
                             .newBuilder(json)

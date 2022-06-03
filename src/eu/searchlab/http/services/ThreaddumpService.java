@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Memory;
 
 public class ThreaddumpService extends AbstractService implements Service {
@@ -56,12 +57,7 @@ public class ThreaddumpService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.STRING;
-    }
-
-    @Override
-    public String serveString(final JSONObject post) throws IOException {
+    public ServiceResponse serve(final JSONObject post) throws IOException {
 
         final int multi = post.optInt("multi", post.optInt("count", 0));
         final StringBuilder buffer = new StringBuilder(1000);
@@ -144,7 +140,7 @@ public class ThreaddumpService extends AbstractService implements Service {
             bufferappend(buffer, ti.getThreadName());
         }
 
-        return buffer.toString();
+        return new ServiceResponse(buffer.toString());
     }
 
 

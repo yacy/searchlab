@@ -25,6 +25,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 
 public class IDGeneratorService  extends AbstractService implements Service {
 
@@ -34,16 +35,11 @@ public class IDGeneratorService  extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
-    }
-
-    @Override
-    public JSONObject serveObject(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
     	final JSONObject json = new JSONObject(true);
     	try {
 			json.put("id", Authentication.generateRandomID());
 		} catch (final JSONException e) {}
-    	return json;
+    	return new ServiceResponse(json);
     }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Logger;
 
 // http://localhost:8400/en/api/log.txt?lines=100
@@ -36,17 +37,12 @@ public class LogService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.STRING;
-    }
-
-    @Override
-    public String serveString(final JSONObject post) throws IOException {
+    public ServiceResponse serve(final JSONObject post) throws IOException {
         final int tail = post.optInt("tail", post.optInt("count", post.optInt("lines", 0)));
         final StringBuilder buffer = new StringBuilder(1000);
         final List<String> lines = Logger.getLines(tail);
         for (final String line: lines) buffer.append(line); // line has line break attached
-        return buffer.toString();
+        return new ServiceResponse(buffer.toString());
     }
 
 }

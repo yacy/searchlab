@@ -30,6 +30,7 @@ import org.json.JSONObject;
 import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.storage.io.IODirList;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
@@ -46,12 +47,7 @@ public class AssetDirectoryService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
-    }
-
-    @Override
-    public JSONObject serveObject(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
 
         // evaluate request parameter
         String path = IOPath.normalizePath(call.optString("path", ""));
@@ -115,7 +111,7 @@ public class AssetDirectoryService extends AbstractService implements Service {
         } catch (final JSONException e) {
             Logger.warn(e);
         }
-        return json;
+        return new ServiceResponse(json);
     }
 
 }

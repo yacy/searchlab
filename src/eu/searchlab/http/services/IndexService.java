@@ -28,6 +28,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.Service;
+import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.JSONList;
 import net.yacy.grid.io.index.ElasticsearchClient;
@@ -51,12 +52,7 @@ public class IndexService extends AbstractService implements Service {
     }
 
     @Override
-    public Type getType() {
-        return Service.Type.OBJECT;
-    }
-
-    @Override
-    public JSONObject serveObject(final JSONObject call) {
+    public ServiceResponse serve(final JSONObject call) {
 
         // evaluate request parameter
         final String indexName = call.optString("index", GridIndex.DEFAULT_INDEXNAME_WEB);
@@ -122,7 +118,7 @@ public class IndexService extends AbstractService implements Service {
                 json.put("items", items.toArray());
             }
         } catch (final JSONException e) {e.printStackTrace();}
-        return json;
+        return new ServiceResponse(json);
     }
 
 }
