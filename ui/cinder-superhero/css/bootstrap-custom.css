@@ -577,27 +577,23 @@ pre code {
 }
 @media(min-width:768px) {
     .container {
-    width: 750px;
+    width: 768px;
 }
-}@media(min-width:992px) {
+@media(min-width:820px) {
     .container {
-    width: 970px;
+    width: 820px;
 }
-}@media(min-width:1260px) {
+}@media(min-width:1000px) {
     .container {
-    width: 1260px;
+    width: 1000px;
 }
-}@media(min-width:1440px) {
+}@media(min-width:1200px) {
     .container {
-    width: 1400px;
+    width: 1200px;
 }
 }@media(min-width:1600px) {
     .container {
-    width: 1560px;
-}
-}@media(min-width:1920px) {
-    .container {
-    width: 1880px;
+    width: 1600px;
 }
 }.row {
     margin-right: -15px;
