@@ -21,8 +21,6 @@ package eu.searchlab.http;
 
 import org.json.JSONObject;
 
-import eu.searchlab.aaaaa.Authentication;
-
 
 public class ServiceRequest {
 
@@ -33,7 +31,7 @@ public class ServiceRequest {
 
 	public ServiceRequest(final JSONObject post, final String user, final String path, final String query) {
 		this.post = post == null ? new JSONObject() : post;
-		this.user = user == null ? Authentication.ANONYMOUS_ID : user;
+		this.user = user;
 		this.path = path == null ? "" : path;
 		this.query = query == null ? "" : query;
 	}

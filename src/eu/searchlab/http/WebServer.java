@@ -196,7 +196,7 @@ public class WebServer {
             final String query = serviceRequest.getQuery();
 
             // we force using of a user/language path
-            if (user == null) {
+            if (user == null || user.length() == 0) {
                 exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
                 exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path + (query.length() > 0 ? "?" + query : ""));
                 exchange.getResponseSender().send("");
