@@ -3,10 +3,10 @@ disable_toc: true
 ## Search
 
 <form class="input-group input-group-lg" name="searchform" action=".">
-<input type="text" value="{{channels.[0].searchTerms}}" name="query" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()" onClick="document.getElementById('startRecord').value=0;document.getElementById('query').value='';"/>
-<input type="hidden" name="startRecord" id="startRecord" value="0"/>
+<input type="text" value="{{channels.[0].searchTerms}}" name="q" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()" onClick="document.getElementById('start').value=0;document.getElementById('query').value='';"/>
+<input type="hidden" name="start" id="start" value="0"/>
 <span class="input-group-btn">
-<button id="search" type="submit" class="btn btn-default">search</button>
+<button id="search" type="submit" class="btn btn-default" onClick="if (document.getElementById('start').value == '0') {document.getElementById('start').remove();}">search</button>
 </span>
 </form>
 
@@ -39,7 +39,7 @@ disable_toc: true
     {{/each}}
     <div class="btn-group" role="group" aria-label="pagination">
     {{#each channels.[0].pagenav}}
-      <button type="button" class="btn btn-{{#if this.same}}success{{else}}default{{/if}} btn-xs" onClick="document.getElementById('startRecord').value={{this.startRecord}}; document.searchform.submit();">{{{this.page}}}</button>
+      <button type="button" class="btn btn-{{#if this.same}}success{{else}}default{{/if}} btn-xs" onClick="document.getElementById('start').value={{this.startRecord}}; document.searchform.submit();">{{{this.page}}}</button>
     {{/each}}
     </div>
   {{else}}

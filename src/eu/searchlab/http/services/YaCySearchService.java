@@ -74,7 +74,7 @@ public class YaCySearchService extends AbstractService implements Service {
     public ServiceResponse serve(final ServiceRequest request) {
 
         // evaluate request parameter
-        final String q = request.get("query", "").trim();
+        final String q = request.get("query", request.get("q", "")).trim();
         if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
         final boolean explain = request.get("explain", false);
         final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
@@ -92,7 +92,7 @@ public class YaCySearchService extends AbstractService implements Service {
         final String facetFields = request.get("facetFields", YaCyQuery.FACET_DEFAULT_PARAMETER);
         final List<WebMapping> facetFieldMapping = new ArrayList<>();
         for (final String s: facetFields.split(",")) try {
-        	facetFieldMapping.add(WebMapping.valueOf(s));
+            facetFieldMapping.add(WebMapping.valueOf(s));
         } catch (final IllegalArgumentException e) {Logger.error(e);} // catch exception in case the facet field name is unknown
         final Sort sort = new Sort(request.get("sort", ""));
 
@@ -100,22 +100,22 @@ public class YaCySearchService extends AbstractService implements Service {
         final JSONObject json = new JSONObject(true);
         final JSONArray channels = new JSONArray();
         final JSONObject channel = new JSONObject(true);
-    	final JSONArray items = new JSONArray();
+        final JSONArray items = new JSONArray();
         try {
-        	json.put("channels", channels);
-        	channels.put(channel);
-        	channel.put("title", "Search for " + q);
-        	channel.put("description", "Search for " + q);
-        	channel.put("startIndex", "" + startRecord);
-        	channel.put("searchTerms", q);
-        	channel.put("itemsPerPage", "" + itemsPerPage);
-        	channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
+            json.put("channels", channels);
+            channels.put(channel);
+            channel.put("title", "Search for " + q);
+            channel.put("description", "Search for " + q);
+            channel.put("startIndex", "" + startRecord);
+            channel.put("searchTerms", q);
+            channel.put("itemsPerPage", "" + itemsPerPage);
+            channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
         } catch (final JSONException e) {Logger.error(e);}
 
         // run query against search index
         try {
             final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
-        	final ElasticsearchClient.Query query = Searchlab.ec.query(
+            final ElasticsearchClient.Query query = Searchlab.ec.query(
                 System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
                 yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
@@ -167,33 +167,33 @@ public class YaCySearchService extends AbstractService implements Service {
             for (final Map.Entry<String, List<Map.Entry<String, Long>>> fe: aggregations.entrySet()) {
                 final String facetname = fe.getKey();
                 try {
-                	final WebMapping mapping = WebMapping.valueOf(facetname);
-	                final JSONObject facetobject = new JSONObject(true);
-	                facetobject.put("facetname", mapping.getMapping().getFacetname());
-	                facetobject.put("displayname", mapping.getMapping().getDisplayname());
-	                facetobject.put("type", mapping.getMapping().getFacettype());
-	                facetobject.put("min", "0");
-	                facetobject.put("max", "0");
-	                facetobject.put("mean", "0");
-	                facetobject.put("count", fe.getValue().size());
-	                final JSONArray elements = new JSONArray();
-	                facetobject.put("elements", elements);
-	                long allcount = 0;
-	                for (final Map.Entry<String, Long> element: fe.getValue()) {
-	                    final JSONObject elementEntry = new JSONObject(true);
-	                    elementEntry.put("name", element.getKey());
-	                    elementEntry.put("count", element.getValue().toString());
-	                    elementEntry.put("modifier", mapping.getMapping().getFacetmodifier() + ":" + element.getKey());
-	                    allcount += element.getValue();
-	                    elements.put(elementEntry);
-	                }
-	                // now go through all elements again and set a percentage
-	                for (int i = 0; i < elements.length(); i++) {
-	                    final JSONObject elementEntry = elements.getJSONObject(i);
-	                    elementEntry.put("percent", Double.toString(Math.round(10000.0d * Double.parseDouble(elementEntry.getString("count")) / (allcount)) / 100.0d));
-	                }
-	                // store facet
-	                navigation.put(facetobject);
+                    final WebMapping mapping = WebMapping.valueOf(facetname);
+                   final JSONObject facetobject = new JSONObject(true);
+                   facetobject.put("facetname", mapping.getMapping().getFacetname());
+                   facetobject.put("displayname", mapping.getMapping().getDisplayname());
+                   facetobject.put("type", mapping.getMapping().getFacettype());
+                   facetobject.put("min", "0");
+                   facetobject.put("max", "0");
+                   facetobject.put("mean", "0");
+                   facetobject.put("count", fe.getValue().size());
+                   final JSONArray elements = new JSONArray();
+                   facetobject.put("elements", elements);
+                   long allcount = 0;
+                   for (final Map.Entry<String, Long> element: fe.getValue()) {
+                       final JSONObject elementEntry = new JSONObject(true);
+                       elementEntry.put("name", element.getKey());
+                       elementEntry.put("count", element.getValue().toString());
+                       elementEntry.put("modifier", mapping.getMapping().getFacetmodifier() + ":" + element.getKey());
+                       allcount += element.getValue();
+                       elements.put(elementEntry);
+                   }
+                   // now go through all elements again and set a percentage
+                   for (int i = 0; i < elements.length(); i++) {
+                       final JSONObject elementEntry = elements.getJSONObject(i);
+                       elementEntry.put("percent", Double.toString(Math.round(10000.0d * Double.parseDouble(elementEntry.getString("count")) / (allcount)) / 100.0d));
+                   }
+                   // store facet
+                   navigation.put(facetobject);
                 } catch (final IllegalArgumentException e) {} // catch exception in case the facet field name is unknown
             }
 
@@ -219,12 +219,12 @@ public class YaCySearchService extends AbstractService implements Service {
             pagenav.put(nave);
             channel.put("pagenav", pagenav);
         } catch (final Exception e) {
-        	// any kind of exception can happen if the elastic index is not ready or index does not exist
-        	Logger.error(e);
-        	try {
-        		channel.put("totalResults", 0);
-        		channel.put("pages", "0");
-        	} catch (final JSONException ee) {Logger.error(ee);}
+            // any kind of exception can happen if the elastic index is not ready or index does not exist
+            Logger.error(e);
+            try {
+                channel.put("totalResults", 0);
+                channel.put("pages", "0");
+            } catch (final JSONException ee) {Logger.error(ee);}
         }
         return new ServiceResponse(json);
     }

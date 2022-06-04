@@ -18,14 +18,9 @@ body {
 
 <p>
 <form class="input-group input-group-lg" name="searchform" action="search/" method="get">
-<input type="text" value="" name="query" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()"/>
-<input type="hidden" name="startRecord" id="startRecord" value="0"/>
+<input type="text" value="" name="q" id="query" class="form-control" size="80" maxlength="100" autofocus="autofocus" onFocus="this.select()"/>
 <span class="input-group-btn">
 <button id="search" type="submit" class="btn btn-default">search</button>
 </span>
 </form>
 </p>
-
-#### This is a work-in-progress pre-publication for the upcoming YaCy search service that is hosted here. We will provide on-demand search indexes and data science apps to evaluate crawled data. You will be able to upload a YaCy index. You will be able to start web crawls here and download the result as index file which can be inserted into your own YaCy instance.
-
-
