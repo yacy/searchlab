@@ -42,6 +42,8 @@ public class IDValidationService  extends AbstractService implements Service {
     	try {
 			json.put("valid", Authentication.isValid(id));
 		} catch (final JSONException e) {}
-    	return new ServiceResponse(json);
+    	final ServiceResponse serviceResponse = new ServiceResponse(json);
+    	serviceResponse.setCookieValue("hash" + ("hash" + System.currentTimeMillis()).hashCode());
+    	return serviceResponse;
     }
 }

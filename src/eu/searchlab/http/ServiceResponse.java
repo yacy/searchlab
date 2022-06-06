@@ -35,8 +35,8 @@ import io.undertow.server.handlers.CookieImpl;
 
 public class ServiceResponse {
 
-    private final Object object;
-    private final Type type;
+    private Object object;
+    private Type type;
     private boolean setCORS;
     private Cookie cookie;
 
@@ -44,30 +44,65 @@ public class ServiceResponse {
         this.object = json;
         this.type = Type.OBJECT;
         this.setCORS = false;
+        this.cookie = null;
     }
 
     public ServiceResponse(final JSONArray json) {
         this.object = json;
         this.type = Type.ARRAY;
         this.setCORS = false;
+        this.cookie = null;
     }
 
     public ServiceResponse(final String string) {
         this.object = string;
         this.type = Type.STRING;
         this.setCORS = false;
+        this.cookie = null;
     }
 
     public ServiceResponse(final byte[] bytes) {
         this.object = bytes;
-        this.type = Type.ARRAY;
+        this.type = Type.BINARY;
         this.setCORS = false;
+        this.cookie = null;
     }
 
     public ServiceResponse(final IndexedTable table) {
         this.object = table;
         this.type = Type.TABLE;
         this.setCORS = false;
+        this.cookie = null;
+    }
+
+    public ServiceResponse setValue(final JSONObject json) {
+    	this.object = json;
+    	this.type = Type.OBJECT;
+    	return this;
+    }
+
+    public ServiceResponse setValue(final JSONArray json) {
+    	this.object = json;
+    	this.type = Type.ARRAY;
+    	return this;
+    }
+
+    public ServiceResponse setValue(final String value) {
+    	this.object = value;
+    	this.type = Type.STRING;
+    	return this;
+    }
+
+    public ServiceResponse setValue(final byte[] value) {
+    	this.object = value;
+    	this.type = Type.BINARY;
+    	return this;
+    }
+
+    public ServiceResponse setValue(final IndexedTable table) {
+    	this.object = table;
+    	this.type = Type.TABLE;
+    	return this;
     }
 
     public ServiceResponse setCORS() {
@@ -82,8 +117,13 @@ public class ServiceResponse {
 
     public ServiceResponse setCookieValue(final String value) {
         this.cookie = new CookieImpl(WebServer.COOKIE_NAME);
+        this.cookie.setMaxAge(-1).setSameSite(true).setVersion(0);
         this.cookie.setValue(value);
         return this;
+    }
+
+    public Cookie getCookie() {
+        return this.cookie;
     }
 
     public Type getType() {

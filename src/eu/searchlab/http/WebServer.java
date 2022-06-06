@@ -243,7 +243,12 @@ public class WebServer {
 
             try {
                 // generate response (handle servlets + handlebars)
-                final byte[] b = processPost(serviceRequest);
+                final ServiceResponse serviceResponse = processPost(serviceRequest);
+                final byte[] b = serviceResponse.toByteArray(false);
+                final Cookie cookie = serviceResponse.getCookie();
+                if (cookie != null) {
+                	exchange.setResponseCookie(cookie);
+                }
 
                 // send html to client
                 if (b == null) {
@@ -296,7 +301,7 @@ public class WebServer {
          * @return full html or any kind of response that should be transferred with http status code 200
          * @throws IOException in case this request cannot be fullfilled.
          */
-        private byte[] processPost(final ServiceRequest serviceRequest) throws IOException {
+        private ServiceResponse processPost(final ServiceRequest serviceRequest) throws IOException {
 
         	final String path = serviceRequest.getPath();
 
@@ -309,8 +314,11 @@ public class WebServer {
             final Service service = ServiceMap.getService(path);
 
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
-            if (service != null) {
-            	final ServiceResponse serviceResponse = service.serve(serviceRequest);
+            ServiceResponse serviceResponse = null;
+            if (service == null) {
+            	serviceResponse = new ServiceResponse(b);
+            } else {
+            	serviceResponse = service.serve(serviceRequest);
                 if (b != null && serviceResponse.getType() == Service.Type.OBJECT) {
                     final JSONObject json = serviceResponse.getObject();
                     final Handlebars handlebars = new Handlebars();
@@ -320,7 +328,7 @@ public class WebServer {
                             .build();
                     try {
                         final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
-                        b = template.apply(context).getBytes(StandardCharsets.UTF_8);
+                        serviceResponse.setValue(template.apply(context));
                     } catch (final HandlebarsException e) {
                         Logger.error("Handlebars Error", e);
                         throw new IOException(e.getMessage());
@@ -334,27 +342,28 @@ public class WebServer {
                             .build();
                     try {
                         final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
-                        b = template.apply(context).getBytes(StandardCharsets.UTF_8);
+                        serviceResponse.setValue(template.apply(context));
                     } catch (final HandlebarsException e) {
                         Logger.error("Handlebars Error", e);
                         throw new IOException(e.getMessage());
                     }
                 } else {
-                    // the response is defined only by the service
-                    b = ServiceMap.serviceDispatcher(service, path, serviceRequest);
+                    // the response is defined only by the service, we ignore b[]
+                	serviceResponse = ServiceMap.serviceDispatcher(service, path, serviceRequest);
                 }
             }
 
             // check finally if the resulting byte array was defined
             // (either by a file or a service)
+            b = serviceResponse.toByteArray(false);
             if (b == null && f == null) {
                 throw new FileNotFoundException("not found:" + path);
             }
 
             // apply server-side includes
             if (b != null) b = ssi(serviceRequest, b);
-
-            return b;
+            serviceResponse.setValue(b);
+            return serviceResponse;
         }
 
         private byte[] ssi(final ServiceRequest serviceRequest, final byte[] b) throws IOException {
@@ -375,7 +384,8 @@ public class WebServer {
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String virtual = html.substring(ssip + 22, rightquote);
                 final ServiceRequest serviceRequest0 = getQueryParams(serviceRequest.getUser(), virtual);
-                final byte[] ibb = processPost(serviceRequest0);
+                final ServiceResponse ibbr = processPost(serviceRequest0);
+                final byte[] ibb = ibbr.toByteArray(false);
                 final String include = ibb == null ? null : new String(ibb, StandardCharsets.UTF_8);
                 if (include == null) {
                     html = html.substring(0, ssip) + html.substring(end + 3);
