@@ -49,7 +49,13 @@ public final class ConcurrentIO {
         return this.io;
     }
 
-    private final static IOPath[] lockFile(final IOPath... iops) {
+    private final static IOPath lockFile(final IOPath iop) {
+    	if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
+        final IOPath lockFile = new IOPath(iop.getBucket(), iop.getPath() + ".lock");
+        return lockFile;
+    }
+
+    private final static IOPath[] lockFiles(final IOPath... iops) {
         final IOPath[] lockFiles = new IOPath[iops.length];
         for (int i = 0; i < iops.length; i++) {
             final IOPath iop = iops[i];
@@ -59,10 +65,15 @@ public final class ConcurrentIO {
         return lockFiles;
     }
 
-    private final static IOPath[] lockFile(final IOObject... ioos) {
+    private final static IOPath lockFile(final IOObject ioo) {
+        final IOPath iop = ioo.getPath();
+        return lockFile(iop);
+    }
+
+    private final static IOPath[] lockFiles(final IOObject... ioos) {
         final IOPath[] iops = new IOPath[ioos.length];
         for (int i = 0; i < ioos.length; i++) iops[i] = ioos[i].getPath();
-        return lockFile(iops);
+        return lockFiles(iops);
     }
 
     private final IOObject readLockFile(final IOPath lockFile) throws IOException {
@@ -71,7 +82,7 @@ public final class ConcurrentIO {
         return new IOObject(lockFile, a);
     }
 
-    private final void writeLockFile(final IOPath... lockFiles) throws IOException {
+    private final void writeLockFiles(final IOPath... lockFiles) throws IOException {
         for (int i = 0; i < lockFiles.length; i++) {
             final IOPath lockFile = lockFiles[i];
             assert !this.io.exists(lockFile);
@@ -89,7 +100,7 @@ public final class ConcurrentIO {
         }
     }
 
-    private final void releaseeLockFile(final IOPath... lockFiles) throws IOException {
+    private final void releaseLockFiles(final IOPath... lockFiles) throws IOException {
         for (int i = 0; i < lockFiles.length; i++) {
             final IOPath lockFile = lockFiles[i];
             assert this.io.exists(lockFile);
@@ -97,7 +108,21 @@ public final class ConcurrentIO {
         }
     }
 
-    private final boolean waitUntilUnlock(final IOPath... lockFiles) {
+    private final boolean waitUntilUnlock(final IOPath lockFile) {
+        if (this.waitingtime <= 0) return true;
+        final long timeout = System.currentTimeMillis() + this.waitingtime;
+        waitloop: while (System.currentTimeMillis() < timeout) {
+            if (this.io.exists(lockFile)) {
+                try {Thread.sleep(1000);} catch (final InterruptedException e) {}
+                continue waitloop;
+            }
+            // lock file does not exist, this is a success!
+            return true;
+        }
+        return false;
+    }
+
+    private final boolean waitUntilUnlocks(final IOPath... lockFiles) {
         if (this.waitingtime <= 0) return true;
         final long timeout = System.currentTimeMillis() + this.waitingtime;
         waitloop: while (System.currentTimeMillis() < timeout) {
@@ -113,14 +138,18 @@ public final class ConcurrentIO {
         return false;
     }
 
+    public final boolean exists(final IOPath iop) {
+    	return this.io.exists(iop);
+    }
+
     public final void write(final IOObject... ioos) throws IOException {
-        final IOPath[] lockFiles = lockFile(ioos);
-        if (waitUntilUnlock(lockFiles)) {
-            writeLockFile(lockFiles);
+        final IOPath[] lockFiles = lockFiles(ioos);
+        if (waitUntilUnlocks(lockFiles)) {
+            writeLockFiles(lockFiles);
             for (int i = 0; i < ioos.length; i++) {
                 this.io.write(ioos[i].getPath(), ioos[i].getObject());
             }
-            releaseeLockFile(lockFiles);
+            releaseLockFiles(lockFiles);
         } else {
             throw new IOException("timeout waiting for lock disappearance");
         }
@@ -145,15 +174,15 @@ public final class ConcurrentIO {
     }
 
     public final IOObject[] read(final IOPath... iops) throws IOException {
-        final IOPath[] lockFiles = lockFile(iops);
+        final IOPath[] lockFiles = lockFiles(iops);
         final IOObject[] as = new IOObject[iops.length];
-        if (waitUntilUnlock(lockFiles)) {
-            writeLockFile(lockFiles);
+        if (waitUntilUnlocks(lockFiles)) {
+            writeLockFiles(lockFiles);
             for (int i = 0; i < iops.length; i++) {
                 final byte[] a = this.io.readAll(iops[i]);
                 as[i] = new IOObject(iops[i], a);
             }
-            releaseeLockFile(lockFiles);
+            releaseLockFiles(lockFiles);
             return as;
         } else {
             throw new IOException("timeout waiting for lock disappearance");
@@ -169,14 +198,42 @@ public final class ConcurrentIO {
         }
     }
 
+    public final void append(final IOPath iop, final byte[] b) throws IOException {
+        final IOPath lockFile = lockFile(iop);
+        if (waitUntilUnlock(lockFile)) {
+            writeLockFiles(lockFile);
+            if (this.io.exists(iop)) {
+            	final byte[] a = this.io.readAll(iop);
+            	final byte[] ab = new byte[a.length + b.length];
+            	System.arraycopy(a, 0, ab, 0, a.length);
+            	System.arraycopy(b, 0, ab, a.length, b.length);
+            	this.io.write(iop, ab);
+            } else {
+            	this.io.write(iop, b);
+            }
+            releaseLockFiles(lockFile);
+        } else {
+            throw new IOException("timeout waiting for lock disappearance");
+        }
+    }
+
+    public final void appendForced(final IOPath iop, final byte[] b) throws IOException {
+        try {
+            append(iop, b);
+        } catch (final IOException e) {
+            deleteLock(iop);
+            append(iop, b);
+        }
+    }
+
     public final void remove(final IOPath... iops) throws IOException {
-        final IOPath[] lockFiles = lockFile(iops);
-        if (waitUntilUnlock(lockFiles)) {
-            writeLockFile(lockFiles);
+        final IOPath[] lockFiles = lockFiles(iops);
+        if (waitUntilUnlocks(lockFiles)) {
+            writeLockFiles(lockFiles);
             for (int i = 0; i < iops.length; i++) {
                 this.io.remove(iops[i]);
             }
-            releaseeLockFile(lockFiles);
+            releaseLockFiles(lockFiles);
         } else {
             throw new IOException("timeout waiting for lock disappearance");
         }
@@ -192,7 +249,7 @@ public final class ConcurrentIO {
     }
 
     public final boolean isLocked(final IOPath... iop) {
-        final IOPath[] lockFiles = lockFile(iop);
+        final IOPath[] lockFiles = lockFiles(iop);
         for (int i = 0; i < lockFiles.length; i++) {
             if (this.io.exists(lockFiles[i])) return true;
         }
@@ -200,7 +257,7 @@ public final class ConcurrentIO {
     }
 
     public final void deleteLock(final IOPath... iop) {
-        final IOPath[] lockFiles = lockFile(iop);
+        final IOPath[] lockFiles = lockFiles(iop);
         try {
             for (int i = 0; i < lockFiles.length; i++) {
                 this.io.remove(lockFiles[i]);
@@ -209,7 +266,7 @@ public final class ConcurrentIO {
     }
 
     public final String lockedByHost(final IOPath iop) throws IOException {
-        final IOPath[] lockFiles = lockFile(iop);
+        final IOPath[] lockFiles = lockFiles(iop);
         for (int i = 0; i < lockFiles.length; i++) {
             if (this.io.exists(lockFiles[i])) {
                 final IOObject ioo = readLockFile(lockFiles[i]);
@@ -224,7 +281,7 @@ public final class ConcurrentIO {
     }
 
     public final String lockedByIP(final IOPath iop) throws IOException {
-        final IOPath[] lockFiles = lockFile(iop);
+        final IOPath[] lockFiles = lockFiles(iop);
         for (int i = 0; i < lockFiles.length; i++) {
             if (this.io.exists(lockFiles[i])) {
                 final IOObject ioo = readLockFile(lockFiles[i]);
@@ -239,7 +296,7 @@ public final class ConcurrentIO {
     }
 
     public final long lockedByTime(final IOPath iop) throws IOException {
-        final IOPath[] lockFiles = lockFile(iop);
+        final IOPath[] lockFiles = lockFiles(iop);
         for (int i = 0; i < lockFiles.length; i++) {
             if (this.io.exists(lockFiles[i])) {
                 final IOObject ioo = readLockFile(lockFiles[i]);

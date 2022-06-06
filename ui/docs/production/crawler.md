@@ -23,9 +23,15 @@ Start a Web crawl:
     <p class="help-block">The start-URL is a link on crawl depth 0</p>
 </div>
 
+<div class="radiobox">
+<input type="radio" id="range" name="range" value="domain" checked><label for="domain">Domain</label>
+<input type="radio" id="range" name="range" value="subpath"><label for="subpath">Sub-Path</label>
+<input type="radio" id="range" name="range" value="wide"><label for="wide">Wide</label>
+</div>
+
 <div class="checkbox">
   <label>
-    <input type="checkbox" name="priority" disabled="true">Priority
+    <input type="checkbox" name="priority" disabled>Priority
   </label>
 </div>
 

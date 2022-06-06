@@ -192,10 +192,21 @@ public class TimeSeriesTable {
         }
     }
 
-    public void addValues(final long time, final String[] view, final String[] meta, final double[] data) {
+    public boolean checkShape(final String[] view, final String[] meta, final long[] data) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
         assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        return view.length == this.viewCols.length && meta.length == this.metaCols.length&& data.length == this.dataCols.length;
+    }
+    public boolean checkShape(final String[] view, final String[] meta, final double[] data) {
+        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
+        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        return view.length == this.viewCols.length && meta.length == this.metaCols.length&& data.length == this.dataCols.length;
+    }
+
+    public void addValues(final long time, final String[] view, final String[] meta, final double[] data) {
+    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
         this.tshTimeCol.append(Instant.ofEpochMilli(time));
         this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
@@ -205,9 +216,7 @@ public class TimeSeriesTable {
     }
 
     public void addValues(final long time, final String[] view, final String[] meta, final long[] data) {
-        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
-        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
-        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
         this.tshTimeCol.append(Instant.ofEpochMilli(time));
         this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
@@ -221,9 +230,7 @@ public class TimeSeriesTable {
     }
 
     public void setValuesWhere(final long time, final String[] view, final String[] meta, final double[] data) {
-        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
-        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
-        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
             if (this.tshTimeCol.getLongInternal(r) != time) continue;
@@ -241,9 +248,7 @@ public class TimeSeriesTable {
     }
 
     public void setValuesWhere(final long time, final String[] view, final String[] meta, final long[] data) {
-        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
-        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
-        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
             if (this.tshTimeCol.getLongInternal(r) != time) continue;

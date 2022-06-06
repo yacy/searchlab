@@ -25,7 +25,9 @@ import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -114,6 +116,36 @@ public class CrawlStartService  extends AbstractService implements Service {
         }
     }
 
+    public static String siteFilter(final Collection<? extends MultiProtocolURL> urls) {
+        final StringBuilder filter = new StringBuilder();
+        filter.append("(smb|ftp|https?)://(www.)?(");
+        for (final MultiProtocolURL url: urls) {
+            String host = url.getHost();
+            if (host == null) continue;
+            if (host.startsWith("www.")) host = host.substring(4);
+            filter.append(Pattern.quote(host.toLowerCase(Locale.ROOT))).append(".*|");
+        }
+        filter.setCharAt(filter.length() - 1, ')');
+        return filter.toString();
+    }
+
+    public static String subpathFilter(final Collection<? extends MultiProtocolURL> urls) {
+        final LinkedHashSet<String> filters = new LinkedHashSet<String>(); // first collect in a set to eliminate doubles
+        for (final MultiProtocolURL url: urls) filters.add(mustMatchSubpath(url));
+        final StringBuilder filter = new StringBuilder();
+        for (final String urlfilter: filters) filter.append('|').append(urlfilter);
+        return filter.length() > 0 ? filter.substring(1) : ".*";
+    }
+
+    public static String mustMatchSubpath(final MultiProtocolURL url) {
+        String host = url.getHost();
+        if (host == null) return url.getProtocol() + ".*";
+        if (host.startsWith("www.")) host = host.substring(4);
+        String protocol = url.getProtocol();
+        if ("http".equals(protocol) || "https".equals(protocol)) protocol = "https?+";
+        return new StringBuilder(host.length() + 20).append(protocol).append("://(www.)?").append(Pattern.quote(host.toLowerCase(Locale.ROOT))).append(url.getPath()).append(".*").toString();
+    }
+
     public final static DateFormat secondDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
     public static String getCrawlID(final MultiProtocolURL url, final Date date, final int count) {
         String id = url.getHost();
@@ -149,14 +181,36 @@ public class CrawlStartService  extends AbstractService implements Service {
         // fix attributes
         final ActionSequence allCrawlstarts = new ActionSequence();
         try {
+            final CrawlstartURLSplitter crawlstartURLs = new CrawlstartURLSplitter(crawlstart.getString("crawlingURL"));
             final int crawlingDepth = crawlstart.optInt("crawlingDepth", 3);
             crawlstart.put("crawlingDepth", Math.min(crawlingDepth, 8)); // crawlingDepth shall not exceed 8 - this is used for enhanced balancing to be able to reach crawl leaves
-            final String mustmatch = crawlstart.optString("mustmatch", CrawlStart.defaultValues.getString("mustmatch")).trim();
+            String mustmatch = crawlstart.optString("mustmatch", CrawlStart.defaultValues.getString("mustmatch")).trim();
+            final String range = crawlstart.optString("range", "wide");
+            final boolean fullDomain = "domain".equals(range); // special property in simple crawl start
+            final boolean subPath    = "subpath".equals(range); // special property in simple crawl start
+            final boolean wide       = "wide".equals(range); // special property in simple crawl start
+
+            // compute mustmatch filter according to rootURLs
+            if (fullDomain || subPath) {
+                String siteFilter = ".*";
+                if (fullDomain) {
+                    siteFilter = siteFilter(crawlstartURLs.getURLs());
+                } else if (subPath) {
+                    siteFilter = subpathFilter(crawlstartURLs.getURLs());
+                }
+                if (".*".equals(mustmatch)) {
+                	mustmatch = siteFilter;
+                } else if (!".*".equals(siteFilter)) {
+                    // combine both
+                	mustmatch = "(" + mustmatch + ")|(" + siteFilter + ")";
+                }
+            }
+            if (wide) mustmatch = ".*";
             crawlstart.put("mustmatch", mustmatch);
+
             final Map<String, Pattern> collections = WebMapping.collectionParser(crawlstart.optString("collection").trim());
 
             // set the crawl id
-            final CrawlstartURLSplitter crawlstartURLs = new CrawlstartURLSplitter(crawlstart.getString("crawlingURL"));
             final Date now = new Date();
             // start the crawls; each of the url in a separate crawl to enforce parallel loading from different hosts
             int count = 0;
@@ -251,6 +305,8 @@ public class CrawlStartService  extends AbstractService implements Service {
                 allCrawlstarts.addAction(crawlAction);
                 final byte[] b = json.toString().getBytes(StandardCharsets.UTF_8);
                 Searchlab.queues.getQueue(queueName).send(b);
+                Searchlab.accounting.storeCrawlStart(user_id, json);
+                Searchlab.accounting.storeCorpus(user_id, range, crawlstartURLs.getURLs(), collections.keySet(), crawlingDepth, 0);
             }
 
             // construct a crawl start message
