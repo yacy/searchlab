@@ -74,6 +74,7 @@ import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.util.HeaderMap;
@@ -85,6 +86,7 @@ import io.undertow.util.StatusCodes;
 public class WebServer {
 
     private static final Properties mimeTable = new Properties();
+    public final static String COOKIE_NAME = "searchlab-user";
 
     private final static byte[] SSI_MARKER = "<!--#".getBytes();
 
@@ -479,7 +481,8 @@ public class WebServer {
             try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
             try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
             try {json.put("QUERY", query);} catch (final JSONException e) {} // TODO: delete
-            return new ServiceRequest(json, user, path, query);
+            final Cookie cookie = exchange.getRequestCookie(COOKIE_NAME);
+            return new ServiceRequest(json, user, path, query, cookie);
         }
 
         private ServiceRequest getQueryParams(final String knownuser, String path)  {
@@ -506,7 +509,7 @@ public class WebServer {
             try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
             try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
             try {json.put("QUERY", "");} catch (final JSONException e) {} // TODO: delete
-            return new ServiceRequest(json, user, path, "");
+            return new ServiceRequest(json, user, path, "", null);
         }
 
         /**

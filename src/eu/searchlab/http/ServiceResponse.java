@@ -30,12 +30,15 @@ import org.json.JSONObject;
 import eu.searchlab.http.Service.Type;
 import eu.searchlab.storage.table.IndexedTable;
 import eu.searchlab.tools.Logger;
+import io.undertow.server.handlers.Cookie;
+import io.undertow.server.handlers.CookieImpl;
 
 public class ServiceResponse {
 
     private final Object object;
     private final Type type;
     private boolean setCORS;
+    private Cookie cookie;
 
     public ServiceResponse(final JSONObject json) {
         this.object = json;
@@ -72,6 +75,17 @@ public class ServiceResponse {
         return this;
     }
 
+    public ServiceResponse setCookie(final Cookie cookie) {
+        this.cookie = cookie;
+        return this;
+    }
+
+    public ServiceResponse setCookieValue(final String value) {
+        this.cookie = new CookieImpl(WebServer.COOKIE_NAME);
+        this.cookie.setValue(value);
+        return this;
+    }
+
     public Type getType() {
         return this.type;
     }
@@ -100,6 +114,18 @@ public class ServiceResponse {
         return this.object instanceof IndexedTable;
     }
 
+    public String getMimeType() {
+        if (isObject() || isArray()) return "application/javascript";
+        if (isString()) {
+            try {
+                return getString().startsWith("<?xml") ? "application/xml" : "text/plain";
+            } catch (final IOException e) {
+                return "application/octet-stream";
+            }
+        }
+        return "application/octet-stream";
+    }
+
     public JSONObject getObject() throws IOException {
         if (!isObject()) throw new IOException("object type is not JSONObject: " + this.object.getClass().getName());
         return (JSONObject) this.object;
@@ -123,18 +149,6 @@ public class ServiceResponse {
     public IndexedTable getTable() throws IOException {
         if (!isTable()) throw new IOException("object type is not Table: " + this.object.getClass().getName());
         return (IndexedTable) this.object;
-    }
-
-    public String getMimeType() {
-        if (isObject() || isArray()) return "application/javascript";
-        if (isString()) {
-            try {
-                return getString().startsWith("<?xml") ? "application/xml" : "text/plain";
-            } catch (final IOException e) {
-                return "application/octet-stream";
-            }
-        }
-        return "application/octet-stream";
     }
 
     public String toString(final boolean minified) throws IOException {
