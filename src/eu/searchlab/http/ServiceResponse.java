@@ -22,6 +22,9 @@ package eu.searchlab.http;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -38,71 +41,71 @@ public class ServiceResponse {
     private Object object;
     private Type type;
     private boolean setCORS;
-    private Cookie cookie;
+    private final Set<Cookie> cookies;
+
+    private ServiceResponse() {
+        this.setCORS = false;
+        this.cookies = new HashSet<>();
+    }
 
     public ServiceResponse(final JSONObject json) {
+        this();
         this.object = json;
         this.type = Type.OBJECT;
-        this.setCORS = false;
-        this.cookie = null;
     }
 
     public ServiceResponse(final JSONArray json) {
+        this();
         this.object = json;
         this.type = Type.ARRAY;
-        this.setCORS = false;
-        this.cookie = null;
     }
 
     public ServiceResponse(final String string) {
+        this();
         this.object = string;
         this.type = Type.STRING;
-        this.setCORS = false;
-        this.cookie = null;
     }
 
     public ServiceResponse(final byte[] bytes) {
+        this();
         this.object = bytes;
         this.type = Type.BINARY;
-        this.setCORS = false;
-        this.cookie = null;
     }
 
     public ServiceResponse(final IndexedTable table) {
+        this();
         this.object = table;
         this.type = Type.TABLE;
-        this.setCORS = false;
-        this.cookie = null;
     }
 
     public ServiceResponse setValue(final JSONObject json) {
-    	this.object = json;
-    	this.type = Type.OBJECT;
-    	return this;
+        this.object = json;
+        this.type = Type.OBJECT;
+        return this;
     }
 
     public ServiceResponse setValue(final JSONArray json) {
-    	this.object = json;
-    	this.type = Type.ARRAY;
-    	return this;
+        this.object = json;
+        this.type = Type.ARRAY;
+        return this;
     }
 
     public ServiceResponse setValue(final String value) {
-    	this.object = value;
-    	this.type = Type.STRING;
-    	return this;
+        this.object = value;
+        this.type = Type.STRING;
+        return this;
     }
 
     public ServiceResponse setValue(final byte[] value) {
-    	this.object = value;
-    	this.type = Type.BINARY;
-    	return this;
+        this.object = value;
+        this.type = Type.BINARY;
+        return this;
     }
 
     public ServiceResponse setValue(final IndexedTable table) {
-    	this.object = table;
-    	this.type = Type.TABLE;
-    	return this;
+        this.object = table;
+        this.type = Type.TABLE;
+        return this;
     }
 
     public ServiceResponse setCORS() {
@@ -110,20 +113,48 @@ public class ServiceResponse {
         return this;
     }
 
-    public ServiceResponse setCookie(final Cookie cookie) {
-        this.cookie = cookie;
+    /**
+     * Attach a session cookie.
+     * These cookies are temporary and expire once you close your browser (or once your session ends).
+     * GDPR Requirement: Servers must receive users’ consent before you use any cookies except strictly necessary cookies.
+     * See https://gdpr.eu/cookies/
+     * Session cookies are identified by the browser by the absence of an expiration date assigned to them.
+     * See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#session_cookie
+     * @param name
+     * @param value
+     * @return
+     */
+    public ServiceResponse addSessionCookie(final String name, final String value) {
+        final CookieImpl cookie = new CookieImpl(name).setValue(value);
+        cookie.setPath("/"); // required to make the cookie valid for all requests to the same host
+        cookie.setSameSiteMode("Lax"); // the cookie is set when navigating from outside the domain to the domain, but not cross-site requests
+        cookie.setHttpOnly(true); // prevents access by Javascript, some protection against cross-site request forgery attacks
+        // DO NOT SET Expires, DO NOT SET Max-Age
+        this.cookies.add(cookie);
         return this;
     }
 
-    public ServiceResponse setCookieValue(final String value) {
-        this.cookie = new CookieImpl(WebServer.COOKIE_NAME);
-        this.cookie.setMaxAge(-1).setSameSite(true).setVersion(0);
-        this.cookie.setValue(value);
+    public ServiceResponse deleteCookie(final String name) {
+        final CookieImpl cookie = new CookieImpl(name).setValue("");
+        cookie.setPath("/"); // required to make the cookie valid for all requests to the same host
+        cookie.setSameSiteMode("Lax"); // the cookie is set when navigating from outside the domain to the domain, but not cross-site requests
+        cookie.setHttpOnly(true); // prevents access by Javascript, some protection against cross-site request forgery attacks
+        cookie.setMaxAge(-1);
+        cookie.setExpires(new Date(0));
+        this.cookies.add(cookie);
         return this;
     }
 
-    public Cookie getCookie() {
-        return this.cookie;
+    public ServiceResponse addUserIDCookie(final String value) {
+        return addSessionCookie(WebServer.COOKIE_USER_ID_NAME, value);
+    }
+
+    public ServiceResponse deleteUserIDCookie() {
+        return deleteCookie(WebServer.COOKIE_USER_ID_NAME);
+    }
+
+    public Set<Cookie> getCookies() {
+        return this.cookies;
     }
 
     public Type getType() {

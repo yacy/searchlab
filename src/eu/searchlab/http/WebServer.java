@@ -35,6 +35,7 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
@@ -52,6 +53,7 @@ import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.AppsService;
 import eu.searchlab.http.services.AssetDirectoryService;
 import eu.searchlab.http.services.AssetDownloadService;
+import eu.searchlab.http.services.CookieTestService;
 import eu.searchlab.http.services.CrawlStartService;
 import eu.searchlab.http.services.IDGeneratorService;
 import eu.searchlab.http.services.IDValidationService;
@@ -86,7 +88,7 @@ import io.undertow.util.StatusCodes;
 public class WebServer {
 
     private static final Properties mimeTable = new Properties();
-    public final static String COOKIE_NAME = "searchlab-user";
+    public final static String COOKIE_USER_ID_NAME = "searchlab-user";
 
     private final static byte[] SSI_MARKER = "<!--#".getBytes();
 
@@ -131,6 +133,7 @@ public class WebServer {
         ServiceMap.register(new IndexStatusService());
         ServiceMap.register(new AssetDirectoryService());
         ServiceMap.register(new AssetDownloadService());
+        ServiceMap.register(new CookieTestService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
@@ -245,10 +248,8 @@ public class WebServer {
                 // generate response (handle servlets + handlebars)
                 final ServiceResponse serviceResponse = processPost(serviceRequest);
                 final byte[] b = serviceResponse.toByteArray(false);
-                final Cookie cookie = serviceResponse.getCookie();
-                if (cookie != null) {
-                	exchange.setResponseCookie(cookie);
-                }
+                final Set<Cookie> cookies = serviceResponse.getCookies();
+                for (final Cookie cookie: cookies) exchange.setResponseCookie(cookie);
 
                 // send html to client
                 if (b == null) {
@@ -303,7 +304,7 @@ public class WebServer {
          */
         private ServiceResponse processPost(final ServiceRequest serviceRequest) throws IOException {
 
-        	final String path = serviceRequest.getPath();
+            final String path = serviceRequest.getPath();
 
             // load requested file
             final File f = findFile(path);
@@ -316,9 +317,9 @@ public class WebServer {
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
             ServiceResponse serviceResponse = null;
             if (service == null) {
-            	serviceResponse = new ServiceResponse(b);
+                serviceResponse = new ServiceResponse(b);
             } else {
-            	serviceResponse = service.serve(serviceRequest);
+                serviceResponse = service.serve(serviceRequest);
                 if (b != null && serviceResponse.getType() == Service.Type.OBJECT) {
                     final JSONObject json = serviceResponse.getObject();
                     final Handlebars handlebars = new Handlebars();
@@ -349,7 +350,7 @@ public class WebServer {
                     }
                 } else {
                     // the response is defined only by the service, we ignore b[]
-                	serviceResponse = ServiceMap.serviceDispatcher(service, path, serviceRequest);
+                    serviceResponse = ServiceMap.serviceDispatcher(service, path, serviceRequest);
                 }
             }
 
@@ -491,7 +492,7 @@ public class WebServer {
             try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
             try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
             try {json.put("QUERY", query);} catch (final JSONException e) {} // TODO: delete
-            final Cookie cookie = exchange.getRequestCookie(COOKIE_NAME);
+            final Cookie cookie = exchange.getRequestCookie(COOKIE_USER_ID_NAME);
             return new ServiceRequest(json, user, path, query, cookie);
         }
 
