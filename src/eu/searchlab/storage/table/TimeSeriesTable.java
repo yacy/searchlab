@@ -131,7 +131,7 @@ public class TimeSeriesTable {
         this.metaCols = new StringColumn[metaColCount];
         this.dataCols = dataIsDouble ? new DoubleColumn[dataColCount] : new LongColumn[dataColCount];
         viewColCount = 0; metaColCount = 0; dataColCount = 0;
-         for (int col = 0; col < xtable.columnCount(); col++) {
+        for (int col = 0; col < xtable.columnCount(); col++) {
             final String name = xtable.columnArray()[col].name();
             if (name.startsWith("view.")) this.viewCols[viewColCount++] = TableParser.asString(xtable.column(col));
             if (name.startsWith("meta.")) this.metaCols[metaColCount++] = TableParser.asString(xtable.column(col));
@@ -206,7 +206,7 @@ public class TimeSeriesTable {
     }
 
     public void addValues(final long time, final String[] view, final String[] meta, final double[] data) {
-    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
+        if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
         this.tshTimeCol.append(Instant.ofEpochMilli(time));
         this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
@@ -216,7 +216,7 @@ public class TimeSeriesTable {
     }
 
     public void addValues(final long time, final String[] view, final String[] meta, final long[] data) {
-    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
+        if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
         this.tshTimeCol.append(Instant.ofEpochMilli(time));
         this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
@@ -230,7 +230,7 @@ public class TimeSeriesTable {
     }
 
     public void setValuesWhere(final long time, final String[] view, final String[] meta, final double[] data) {
-    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
+        if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
             if (this.tshTimeCol.getLongInternal(r) != time) continue;
@@ -248,7 +248,7 @@ public class TimeSeriesTable {
     }
 
     public void setValuesWhere(final long time, final String[] view, final String[] meta, final long[] data) {
-    	if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
+        if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
             if (this.tshTimeCol.getLongInternal(r) != time) continue;
@@ -263,6 +263,22 @@ public class TimeSeriesTable {
             for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).set(r, data[i]);
             return;
         }
+    }
+
+
+
+    public String[] getMetaWhere(final String[] view) {
+        rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
+            // try to match with view constraints
+            for (int t = 0; t < view.length; t++) {
+                if (!this.viewCols[t].get(r).equals(view[t])) continue rowloop;
+            }
+
+            final String[] meta = new String[this.metaCols.length];
+            for (int i = 0; i < meta.length; i++) meta[i] = this.metaCols[i].get(r);
+            return meta;
+        }
+        return null;
     }
 
     public double[] getDoubleValues(final long time, final String[] view) {

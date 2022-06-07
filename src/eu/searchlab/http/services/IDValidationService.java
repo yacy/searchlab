@@ -40,11 +40,17 @@ public class IDValidationService  extends AbstractService implements Service {
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
         final String id = serviceRequest.get("id", "").trim();
         final JSONObject json = new JSONObject(true);
+        final boolean isValid = Authentication.isValid(id);
         try {
-            json.put("valid", Authentication.isValid(id));
+            json.put("valid", isValid);
         } catch (final JSONException e) {}
         final ServiceResponse serviceResponse = new ServiceResponse(json);
-        serviceResponse.addSessionCookie(WebServer.COOKIE_USER_ID_NAME, "hash" + ("hash" + System.currentTimeMillis()).hashCode());
+        if (isValid) {
+            final String user_cookie = Long.toHexString(Math.abs(("hash" + System.currentTimeMillis()).hashCode())).toUpperCase();
+            serviceResponse.addSessionCookie(WebServer.COOKIE_USER_ID_NAME, user_cookie);
+        } else {
+            serviceResponse.deleteCookie(WebServer.COOKIE_USER_ID_NAME);
+        }
         return serviceResponse;
     }
 }
