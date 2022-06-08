@@ -28,6 +28,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import eu.searchlab.aaaaa.Accounting;
+import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.audit.AuditScheduler;
 import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.WebServer;
@@ -63,6 +64,7 @@ public class Searchlab {
 
     // AAAAA
     public static Accounting accounting;
+    public static Authorization authorization;
     public static String github_client_id, github_client_secret;
 
     // Ready
@@ -226,6 +228,7 @@ public class Searchlab {
         try {
             userAudit = new UserAudit(io, auditUserRequestsIOp, auditUserVisitorsIOp);
             accounting = new Accounting(io, aaaaaIOp);
+            authorization = new Authorization(io, aaaaaIOp);
         } catch (final IOException e) {
             Logger.error("could not load data from IO", e);
             System.exit(-1);

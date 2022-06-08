@@ -19,27 +19,69 @@
 
 package eu.searchlab.aaaaa;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.io.IOException;
+
+import eu.searchlab.storage.io.ConcurrentIO;
+import eu.searchlab.storage.io.GenericIO;
+import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.table.TableParser;
+import eu.searchlab.storage.table.TimeSeriesTable;
 
 public class Authorization {
 
-	private final JSONObject json;
+    private final static String[] authorizationViewColNames = new String[] {"view.user_id"};
+    private final static String[] authorizationMetaColNames = new String[] {"meta.cookie_id"};
+    private final static String[] authorizationDataColNames = new String[] {};
 
-	public Authorization() {
-		this.json = new JSONObject();
-	}
+    private final ConcurrentIO cio;
+    private final IOPath aaaaaIop, authorizationIop, loginIop;
+    private TimeSeriesTable loginTable;
+    private long loginTableLoadTime = 0;
 
-	public JSONObject getJSON() {
-		return this.json;
-	}
+    public Authorization(final GenericIO io, final IOPath aaaaaIop) throws IOException {
+        this.cio = new ConcurrentIO(io, 10000);
+        this.aaaaaIop = aaaaaIop;
+        this.authorizationIop = this.aaaaaIop.append("authorization");
+        this.loginIop = this.authorizationIop.append("login.csv");
+        loadLoginTable();
+    }
 
-	@Override
-	public String toString() {
-		try {
-			return this.json.toString(2);
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+    private void loadLoginTable() throws IOException {
+        if (this.cio.exists(this.loginIop)) {
+            final long lastModified = this.cio.getIO().lastModified(this.loginIop);
+            if (lastModified < this.loginTableLoadTime) return;
+            this.loginTable = new TimeSeriesTable(this.cio, this.loginIop, false);
+            if (this.loginTable.viewCols.length != authorizationViewColNames.length ||
+                    this.loginTable.metaCols.length != authorizationMetaColNames.length ||
+                    this.loginTable.dataCols.length != authorizationDataColNames.length) {
+                this.loginTable = new TimeSeriesTable(authorizationViewColNames, authorizationMetaColNames, authorizationDataColNames, false);
+            }
+        } else {
+            this.loginTable = new TimeSeriesTable(authorizationViewColNames, authorizationMetaColNames, authorizationDataColNames, false);
+        }
+        this.loginTableLoadTime = System.currentTimeMillis();
+    }
+
+    public void announceAuthorization(final String user_id, String cookie_id) throws IOException {
+        loadLoginTable();
+        this.loginTable.addValues(System.currentTimeMillis(),
+                new String[] {user_id},
+                new String[] {cookie_id},
+                new long[] {});
+        TableParser.storeCSV(this.cio, this.loginIop, this.loginTable.table.table());
+    }
+
+    public String getCookieId(final String user_id) throws IOException {
+        loadLoginTable();
+        final String[] meta = this.loginTable.getMetaWhere(new String[]{user_id});
+        if (meta == null) return null;
+        return meta[0];
+    }
+
+    public boolean verifyAuthorization(final String user_id, String cookie_id) throws IOException {
+        final String stored_cookie_id = getCookieId(user_id);
+        if (stored_cookie_id == null) return false;
+        return stored_cookie_id.equals(cookie_id);
+    }
+
 }

@@ -34,7 +34,7 @@ ownership right now as temporary and expendable entity. Please be prepared that 
     
     function getid() {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/en/api/aaa/id_generator.json');
+        xhr.open('GET', '/en/api/aaaaa/id_generator.json');
         xhr.responseType = 'json';
         xhr.send();
         xhr.onload = function() {
@@ -46,7 +46,7 @@ ownership right now as temporary and expendable entity. Please be prepared that 
     function verifyid() {
         var id = document.querySelector('#idinput').value;
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/en/api/aaa/id_validation.json?id=' + id);
+        xhr.open('GET', '/en/api/aaaaa/id_validation.json?id=' + id);
         xhr.responseType = 'json';
         xhr.send();
         xhr.onload = function() {
