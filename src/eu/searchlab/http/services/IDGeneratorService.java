@@ -32,7 +32,7 @@ public class IDGeneratorService  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/aaa/id_generator.json"};
+        return new String[] {"/api/aaaaa/id_generator.json"};
     }
 
     @Override

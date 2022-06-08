@@ -33,7 +33,7 @@ public class IDValidationService  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/aaa/id_validation.json"};
+        return new String[] {"/api/aaaaa/id_validation.json"};
     }
 
     @Override
