@@ -63,6 +63,7 @@ public class Searchlab {
 
     // AAAAA
     public static Accounting accounting;
+    public static String github_client_id, github_client_secret;
 
     // Ready
     private static AtomicInteger readyCounter = new AtomicInteger(0);
@@ -164,6 +165,13 @@ public class Searchlab {
             }
         }.start();
         */
+
+        // oauth config generated at https://github.com/settings/developers
+        // these setting should not be anywhere in a confif and only passed by start parameters
+        // requires also a callback url here like https://searchlab.eu/aaaaa/github/callback
+        github_client_id = System.getProperty("github.client.id", "");
+        github_client_secret = System.getProperty("github.client.secret", "");
+
         new Thread() {
             @Override
             public void run() {
