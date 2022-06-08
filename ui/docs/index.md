@@ -1,4 +1,6 @@
 disable_toc: true
+title: Web Harvesting for Data Mining
+summary: Web Crawling and Search Apps as a Service
 
 <style>
 body {
