@@ -58,7 +58,9 @@ public class OAuthGithubGetAuth  extends AbstractService implements Service {
         //String redirect_uri = "";
         final String state = "0" + Math.abs(("X" + System.currentTimeMillis()).hashCode()); // An unguessable random string. It is used to protect against cross-site request forgery attacks.
 
-        String url = "https://github.com/login/oauth/authorize?client_id=" + client_id + "&state=" + state;
+        String url = "https://github.com/login/oauth/authorize?client_id=" + client_id
+                + "&state=" + state
+                + "&scope=user:email"; // see https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
         if (login.length() > 0) url += "&login=" + login;
 
         final JSONObject json = new JSONObject(true);
