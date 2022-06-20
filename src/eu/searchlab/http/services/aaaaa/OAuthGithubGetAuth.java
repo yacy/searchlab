@@ -30,18 +30,40 @@ import eu.searchlab.http.ServiceResponse;
  * OAuthGithubGetAuth
  * This class is called when a user wants to authorize with github.
  *
+ * To configure this class, we need startup parameters in environment variables:
+ * -Dgithub.client.id=...
+ * -Dgithub.client.secret=...
+ *
+ * The configuration parameters can be set in
+ * https://github.com/settings/applications/<application-id>
+ *
+ * example: call
+ * http://localhost:8400/en/aaaaa/github/get_auth
  */
 public class OAuthGithubGetAuth  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/aaaaa/github/get_auth"};
+        return new String[] {"/aaaaa/github/get_auth"};
     }
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
+        final String login = serviceRequest.get("login", "");
+        final String client_id = System.getProperty("github.client.id", "");
+
+        // follow the process described in
+        // https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps
+
+        //String redirect_uri = "";
+        final String state = "0" + Math.abs(("X" + System.currentTimeMillis()).hashCode()); // An unguessable random string. It is used to protect against cross-site request forgery attacks.
+
+        String url = "https://github.com/login/oauth/authorize?client_id=" + client_id + "&state=" + state;
+        if (login.length() > 0) url += "&login=" + login;
+
         final JSONObject json = new JSONObject(true);
         final ServiceResponse serviceResponse = new ServiceResponse(json);
+        serviceResponse.setFoundRedirect(url);
         return serviceResponse;
     }
 }

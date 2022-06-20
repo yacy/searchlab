@@ -52,6 +52,10 @@ import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.aaaaa.IDGeneratorService;
 import eu.searchlab.http.services.aaaaa.IDValidationService;
+import eu.searchlab.http.services.aaaaa.OAuthGithubCallback;
+import eu.searchlab.http.services.aaaaa.OAuthGithubDismiss;
+import eu.searchlab.http.services.aaaaa.OAuthGithubGetAuth;
+import eu.searchlab.http.services.aaaaa.OAuthGithubLogin;
 import eu.searchlab.http.services.assets.AssetDirectoryService;
 import eu.searchlab.http.services.assets.AssetDownloadService;
 import eu.searchlab.http.services.assets.TableGetService;
@@ -136,6 +140,10 @@ public class WebServer {
         ServiceMap.register(new AssetDownloadService());
         ServiceMap.register(new CookieTestService());
         ServiceMap.register(new RedirectTestService());
+        ServiceMap.register(new OAuthGithubGetAuth());
+        ServiceMap.register(new OAuthGithubCallback());
+        ServiceMap.register(new OAuthGithubLogin());
+        ServiceMap.register(new OAuthGithubDismiss());
 
         // Start webserver
         final PathHandler ph = Handlers.path();

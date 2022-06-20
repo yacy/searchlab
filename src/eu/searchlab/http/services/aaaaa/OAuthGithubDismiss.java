@@ -26,11 +26,18 @@ import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
+/**
+ * OAuthGithubDismiss
+ * This class is called when a user is not authorized and not authenticated.
+ *
+ * Example call:
+ * http://localhost:8400/en/aaaaa/github/dismiss
+ */
 public class OAuthGithubDismiss  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/aaaaa/github/dismiss"};
+        return new String[] {"/aaaaa/github/dismiss"};
     }
 
     @Override

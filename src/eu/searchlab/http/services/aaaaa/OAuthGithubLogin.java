@@ -31,12 +31,15 @@ import eu.searchlab.http.ServiceResponse;
  * This class is called when a user is authorized and authenticated.
  * The class is called when OAuthGithubCallback was executed and the github API was called
  * successfully afterwards.
+ *
+ * Example call:
+ * http://localhost:8400/en/aaaaa/github/login
  */
 public class OAuthGithubLogin  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/aaaaa/github/login"};
+        return new String[] {"/aaaaa/github/login"};
     }
 
     @Override
