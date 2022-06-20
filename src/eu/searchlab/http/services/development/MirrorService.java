@@ -1,6 +1,6 @@
 /**
- *  CookieTestService
- *  Copyright 07.06.2022 by Michael Peter Christen, @orbiterlab
+ *  MirrorService
+ *  Copyright 06.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -17,33 +17,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package eu.searchlab.http.services.development;
 
-package eu.searchlab.http.services;
-
-import org.json.JSONObject;
-
+import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
-public class CookieTestService  extends AbstractService implements Service {
+public class MirrorService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/cookie.json"};
+        return new String[] {"/api/mirror.json", "/api/mirror.csv", "/api/mirror.table"};
     }
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-        final String value = serviceRequest.get("value", "");
-        final JSONObject json = new JSONObject(true);
-        final ServiceResponse serviceResponse = new ServiceResponse(json);
-        if (value.length() > 0) {
-            if (value.equals("delete"))
-                serviceResponse.deleteCookie("test");
-            else
-                serviceResponse.addSessionCookie("test", value);
-        }
-        return serviceResponse;
+        return new ServiceResponse(serviceRequest.getPost()); // mirror the post
     }
+
 }

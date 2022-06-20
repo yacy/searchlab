@@ -18,7 +18,7 @@
  */
 
 
-package eu.searchlab.http.services;
+package eu.searchlab.http.services.index;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,6 +30,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;

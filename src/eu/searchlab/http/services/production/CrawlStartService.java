@@ -17,7 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.http.services;
+package eu.searchlab.http.services.production;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -42,6 +42,7 @@ import eu.searchlab.Searchlab;
 import eu.searchlab.corpus.Action;
 import eu.searchlab.corpus.ActionSequence;
 import eu.searchlab.corpus.CrawlStart;
+import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;

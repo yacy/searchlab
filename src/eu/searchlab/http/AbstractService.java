@@ -17,9 +17,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.http.services;
+package eu.searchlab.http;
 
-import eu.searchlab.http.Service;
 import eu.searchlab.storage.io.IOPath;
 
 public abstract class AbstractService implements Service {

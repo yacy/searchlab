@@ -1,6 +1,6 @@
 /**
- *  LogService
- *  Copyright 27.05.2022 by Michael Peter Christen, @orbiterlab
+ *  TablePutService
+ *  Copyright 12.10.2021 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -17,31 +17,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.http.services;
+package eu.searchlab.http.services.assets;
 
-import java.io.IOException;
-import java.util.List;
+import org.json.JSONArray;
 
+import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
-import eu.searchlab.tools.Logger;
 
-// http://localhost:8400/en/api/log.txt?lines=100
-public class LogService extends AbstractService implements Service {
+public class TablePutService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/log.txt"};
+        return new String[] {"/api/get/test.json", "/api/get/test.csv", "/api/get/test.table"};
     }
 
     @Override
-    public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
-        final int tail = serviceRequest.get("tail", serviceRequest.get("count", serviceRequest.get("lines", 0)));
-        final StringBuilder buffer = new StringBuilder(1000);
-        final List<String> lines = Logger.getLines(tail);
-        for (final String line: lines) buffer.append(line); // line has line break attached
-        return new ServiceResponse(buffer.toString());
+    public ServiceResponse serve(final ServiceRequest request) {
+        final JSONArray array = new JSONArray();
+        return new ServiceResponse(array);
     }
-
 }

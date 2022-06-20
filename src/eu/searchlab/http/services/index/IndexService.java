@@ -18,7 +18,7 @@
  */
 
 
-package eu.searchlab.http.services;
+package eu.searchlab.http.services.index;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +27,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;

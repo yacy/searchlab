@@ -1,6 +1,6 @@
 /**
- *  IDGeneratorService
- *  Copyright 18.04.2022 by Michael Peter Christen, @orbiterlab
+ *  LogService
+ *  Copyright 27.05.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -17,30 +17,32 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package eu.searchlab.http.services.info;
 
-package eu.searchlab.http.services;
+import java.io.IOException;
+import java.util.List;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import eu.searchlab.aaaaa.Authentication;
+import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
+import eu.searchlab.tools.Logger;
 
-public class IDGeneratorService  extends AbstractService implements Service {
+// http://localhost:8400/en/api/log.txt?lines=100
+public class LogService extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/aaaaa/id_generator.json"};
+        return new String[] {"/api/log.txt"};
     }
 
     @Override
-    public ServiceResponse serve(final ServiceRequest serviceRequest) {
-    	final JSONObject json = new JSONObject(true);
-    	try {
-			json.put("id", Authentication.generateRandomID());
-		} catch (final JSONException e) {}
-    	return new ServiceResponse(json);
+    public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
+        final int tail = serviceRequest.get("tail", serviceRequest.get("count", serviceRequest.get("lines", 0)));
+        final StringBuilder buffer = new StringBuilder(1000);
+        final List<String> lines = Logger.getLines(tail);
+        for (final String line: lines) buffer.append(line); // line has line break attached
+        return new ServiceResponse(buffer.toString());
     }
+
 }

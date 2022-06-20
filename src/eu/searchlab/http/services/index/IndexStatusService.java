@@ -1,6 +1,6 @@
 /**
- *  IDGeneratorService
- *  Copyright 18.04.2022 by Michael Peter Christen, @orbiterlab
+ *  IndexStatusService
+ *  Copyright 27.05.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -18,39 +18,43 @@
  */
 
 
-package eu.searchlab.http.services;
+package eu.searchlab.http.services.index;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.aaaaa.Authentication;
+import eu.searchlab.Searchlab;
+import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
-import eu.searchlab.http.WebServer;
+import eu.searchlab.tools.Logger;
 
-public class IDValidationService  extends AbstractService implements Service {
+/**
+ * http://127.0.0.1:8400/en/api/indexstatus.json?query=where
+ */
+public class IndexStatusService extends AbstractService implements Service {
+
+    private static String[] indexNames = new String[] {"web", "query", "crawlstart", "crawler"};
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/api/aaaaa/id_validation.json"};
+        return new String[] {"/api/indexstatus.json"};
     }
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-        final String id = serviceRequest.get("id", "").trim();
+
+        // evaluate request parameter
+        //final String indexName = call.optString("index", GridIndex.DEFAULT_INDEXNAME_WEB);
         final JSONObject json = new JSONObject(true);
-        final boolean isValid = Authentication.isValid(id);
+
         try {
-            json.put("valid", isValid);
-        } catch (final JSONException e) {}
-        final ServiceResponse serviceResponse = new ServiceResponse(json);
-        if (isValid) {
-            final String user_cookie = Long.toHexString(Math.abs(("hash" + System.currentTimeMillis()).hashCode())).toUpperCase();
-            serviceResponse.addSessionCookie(WebServer.COOKIE_USER_ID_NAME, user_cookie);
-        } else {
-            serviceResponse.deleteCookie(WebServer.COOKIE_USER_ID_NAME);
-        }
-        return serviceResponse;
+            for (final String indexName: indexNames) {
+                json.put(indexName, Searchlab.ec.count(indexName));
+            }
+        } catch (final JSONException e) {Logger.warn(e);}
+        return new ServiceResponse(json);
     }
+
 }
