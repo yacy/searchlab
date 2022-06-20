@@ -110,9 +110,9 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
                   .setHeader(HttpHeaders.AUTHORIZATION, "token " + s)
                   .build();
                 final HttpResponse userResponse = client.execute(request);
-                final HttpEntity userEntity = response.getEntity();
+                final HttpEntity userEntity = userResponse.getEntity();
 
-                final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
+                final String t = new BufferedReader(new InputStreamReader(userEntity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject user = new JSONObject(new JSONTokener(t));
                 final String userEmail = user.optString("email", "");
 
