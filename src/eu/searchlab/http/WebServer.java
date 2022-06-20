@@ -59,6 +59,7 @@ import eu.searchlab.http.services.assets.TablePutService;
 import eu.searchlab.http.services.control.AppsService;
 import eu.searchlab.http.services.development.CookieTestService;
 import eu.searchlab.http.services.development.MirrorService;
+import eu.searchlab.http.services.development.RedirectTestService;
 import eu.searchlab.http.services.index.IndexService;
 import eu.searchlab.http.services.index.IndexStatusService;
 import eu.searchlab.http.services.index.SuggestService;
@@ -134,6 +135,7 @@ public class WebServer {
         ServiceMap.register(new AssetDirectoryService());
         ServiceMap.register(new AssetDownloadService());
         ServiceMap.register(new CookieTestService());
+        ServiceMap.register(new RedirectTestService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
@@ -239,7 +241,7 @@ public class WebServer {
                 } catch (final IOException e) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found");
                     exchange.getResponseSender().send("");
-                    log(ip, client, user, method, path, StatusCodes.NOT_FOUND, 0);
+                    log(ip, client, user, method, path, exchange.getStatusCode(), 0);
                 }
                 return;
             }
@@ -250,11 +252,12 @@ public class WebServer {
                 final byte[] b = serviceResponse.toByteArray(false);
                 final Set<Cookie> cookies = serviceResponse.getCookies();
                 for (final Cookie cookie: cookies) exchange.setResponseCookie(cookie);
+                exchange.setStatusCode(serviceResponse.getStatusCode());
+                serviceResponse.getXtraHeaders().forEach((k, v) -> exchange.getResponseHeaders().put(new HttpString(k), v));
 
                 // send html to client
                 if (b == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
-                    log(ip, client, user, method, path, StatusCodes.NOT_FOUND, 0);
                 } else {
                     if ("application/json".equals(mime) && endsWith(b, "]);".getBytes())) {
                         // JSONP patch
@@ -274,8 +277,8 @@ public class WebServer {
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
                     exchange.getResponseSender().send(ByteBuffer.wrap(b));
-                    log(ip, client, user, method, path, StatusCodes.OK, b.length);
                 }
+                log(ip, client, user, method, path, exchange.getStatusCode(), b == null ? 0 : b.length);
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
@@ -283,12 +286,11 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.PERMANENT_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, redirect);
                     exchange.getResponseSender().send("");
-                    log(ip, client, user, method, path, StatusCodes.PERMANENT_REDIRECT, 0);
                 } else {
                     exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE).setReasonPhrase(e.getMessage());
                     exchange.getResponseSender().send("");
-                    log(ip, client, user, method, path, StatusCodes.SERVICE_UNAVAILABLE, 0);
                 }
+                log(ip, client, user, method, path, exchange.getStatusCode(), 0);
             }
         }
 

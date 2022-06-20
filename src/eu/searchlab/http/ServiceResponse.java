@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONArray;
@@ -35,6 +37,8 @@ import eu.searchlab.storage.table.IndexedTable;
 import eu.searchlab.tools.Logger;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.CookieImpl;
+import io.undertow.util.Headers;
+import io.undertow.util.StatusCodes;
 
 public class ServiceResponse {
 
@@ -42,10 +46,14 @@ public class ServiceResponse {
     private Type type;
     private boolean setCORS;
     private final Set<Cookie> cookies;
+    private int statusCode;
+    private final Map<String, String> xtraHeaders;
 
     private ServiceResponse() {
         this.setCORS = false;
         this.cookies = new HashSet<>();
+        this.statusCode = StatusCodes.OK;
+        this.xtraHeaders = new LinkedHashMap<>();
     }
 
     public ServiceResponse(final JSONObject json) {
@@ -76,6 +84,14 @@ public class ServiceResponse {
         this();
         this.object = table;
         this.type = Type.TABLE;
+    }
+
+    public int getStatusCode() {
+    	return this.statusCode;
+    }
+
+    public Map<String, String> getXtraHeaders() {
+    	return this.xtraHeaders;
     }
 
     public ServiceResponse setValue(final JSONObject json) {
@@ -155,6 +171,12 @@ public class ServiceResponse {
 
     public Set<Cookie> getCookies() {
         return this.cookies;
+    }
+
+    public void setFoundRedirect(final String url) {
+    	// used for oauth, see https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.3
+    	this.statusCode = StatusCodes.FOUND;
+    	this.xtraHeaders.put(Headers.LOCATION_STRING, url);
     }
 
     public Type getType() {
