@@ -21,21 +21,25 @@ package eu.searchlab.http.services.aaaaa;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
@@ -88,8 +92,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
             if (entity != null) {
                 // the response has the following form:
                 // access_token=gho_16C7e42F292c6912E7710c838347Ae178B4a&scope=repo%2Cgist&token_type=bearer
-                final InputStream inputStream = entity.getContent();
-                String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
+                String s = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 int p = s.indexOf("access_token=");
                 if (p >= 0) s = s.substring(p + 13);
                 p = s.indexOf("&");
@@ -97,10 +100,28 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
                 // the access_token is now s
 
                 Logger.info("Access Token is " + s);
+
+                // read the user information
+                // curl -H "Authorization: token TOKEN" https://api.github.com/user
+                final HttpClient client = HttpClients.custom().build();
+                final HttpUriRequest request = RequestBuilder.get()
+                  .setUri("https://api.github.com/user")
+                  .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                  .setHeader(HttpHeaders.AUTHORIZATION, "token " + s)
+                  .build();
+                final HttpResponse userResponse = client.execute(request);
+                final HttpEntity userEntity = response.getEntity();
+
+                final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
+                final JSONObject user = new JSONObject(new JSONTokener(t));
+                final String userEmail = user.optString("email", "");
+
+                Logger.info("User Email is " + userEmail);
+
             }
 
 
-        } catch (final IOException e) {
+        } catch (final IOException | JSONException e) {
             Logger.warn(e);
         }
 
