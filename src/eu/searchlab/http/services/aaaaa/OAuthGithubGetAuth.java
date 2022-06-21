@@ -55,9 +55,13 @@ public class OAuthGithubGetAuth  extends AbstractService implements Service {
         // follow the process described in
         // https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps
 
-        //String redirect_uri = "";
-        final String state = "0" + Math.abs(("X" + System.currentTimeMillis()).hashCode()); // An unguessable random string. It is used to protect against cross-site request forgery attacks.
+        String state = "0" + Math.abs(("X" + System.currentTimeMillis()).hashCode()); // An unguessable random string. It is used to protect against cross-site request forgery attacks.
+        // In case that we set callback.forward = true, we are in a development environment.
+        final boolean callbackForward = serviceRequest.get("callback.forward", false); // must be false in production
+        // Then we assign a special flag to the state attribute
+        if (callbackForward) state = "callback.forward";
 
+        // forward to github for authentication
         String url = "https://github.com/login/oauth/authorize?client_id=" + client_id
                 + "&state=" + state
                 + "&scope=user:email"; // see https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps

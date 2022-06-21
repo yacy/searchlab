@@ -66,6 +66,23 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
+        final String code = serviceRequest.get("code", "");
+        final String state = serviceRequest.get("state", "");
+        final JSONObject json = new JSONObject(true);
+
+        // In case that we set callback.forward = true, we are in a development environment.
+        // Then we produce an additional forwarding to localhost. Github will always call the
+        // production instance, but that instance supports development by forwarding.
+        // To switch on that case, we hand over the state "development.forward"
+        final boolean callbackForward = serviceRequest.get("callback.forward", false);
+        // to prevent that in development environments the call is executed forever, we must check the forward flag here as well
+        if (!callbackForward && "development.forward".equals(state)) {
+        	final ServiceResponse serviceResponse = new ServiceResponse(json);
+            serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/github/callback?code=" + code + "&state=" + state);
+            return serviceResponse;
+        }
+
+
         // follow the process described in
         // https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps
         // we now have a code that we can use to access the github API
@@ -73,8 +90,6 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
 
         final String client_id = System.getProperty("github.client.id", "");
         final String client_secret = System.getProperty("github.client.secret", "");
-        final String code = serviceRequest.get("code", "");
-        //final String state = serviceRequest.get("state", "");
 
         try {
             final HttpClient httpclient = HttpClients.createDefault();
@@ -126,7 +141,6 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         }
 
         // after evaluation of this code, we redirect again to a page where we tell the user that the log-in actually happened.
-        final JSONObject json = new JSONObject(true);
         final ServiceResponse serviceResponse = new ServiceResponse(json);
         serviceResponse.setFoundRedirect("https://searchlab.eu/" + serviceRequest.getUser() + "/aaaaa/login");
         return serviceResponse;
