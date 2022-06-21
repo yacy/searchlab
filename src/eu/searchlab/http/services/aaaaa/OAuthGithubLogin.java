@@ -44,6 +44,13 @@ public class OAuthGithubLogin  extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
+    	// Read a session cookie which has a temporary ID that identifies the user
+    	// The user has a permanent ID which should be part of the url.
+    	// In case that the temporary ID can be used to retrieve a authentication record with the permanent ID
+    	// that is identical to the path-ID, then the user is not only authenticated but also authorized.
+
+
+
         final JSONObject json = new JSONObject(true);
         final ServiceResponse serviceResponse = new ServiceResponse(json);
         serviceResponse.setFoundRedirect("https://searchlab.eu");

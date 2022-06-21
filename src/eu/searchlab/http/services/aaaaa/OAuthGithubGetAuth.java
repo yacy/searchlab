@@ -42,6 +42,8 @@ import eu.searchlab.http.ServiceResponse;
  */
 public class OAuthGithubGetAuth  extends AbstractService implements Service {
 
+	public final static String DEVELOPMENT_FORWARD_STATE = "development.forward";
+
     @Override
     public String[] getPaths() {
         return new String[] {"/aaaaa/github/get_auth"};
@@ -59,7 +61,7 @@ public class OAuthGithubGetAuth  extends AbstractService implements Service {
         // In case that we set callback.forward = true, we are in a development environment.
         final boolean callbackForward = "true".equals(System.getProperty("callback.forward", "false")); // must be false in production
         // Then we assign a special flag to the state attribute
-        if (callbackForward) state = "callback.forward";
+        if (callbackForward) state = DEVELOPMENT_FORWARD_STATE;
 
         // forward to github for authentication
         String url = "https://github.com/login/oauth/authorize?client_id=" + client_id
