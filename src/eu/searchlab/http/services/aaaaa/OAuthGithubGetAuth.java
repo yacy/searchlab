@@ -57,7 +57,7 @@ public class OAuthGithubGetAuth  extends AbstractService implements Service {
 
         String state = "0" + Math.abs(("X" + System.currentTimeMillis()).hashCode()); // An unguessable random string. It is used to protect against cross-site request forgery attacks.
         // In case that we set callback.forward = true, we are in a development environment.
-        final boolean callbackForward = serviceRequest.get("callback.forward", false); // must be false in production
+        final boolean callbackForward = "true".equals(System.getProperty("callback.forward", "false")); // must be false in production
         // Then we assign a special flag to the state attribute
         if (callbackForward) state = "callback.forward";
 

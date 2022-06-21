@@ -74,9 +74,10 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         // Then we produce an additional forwarding to localhost. Github will always call the
         // production instance, but that instance supports development by forwarding.
         // To switch on that case, we hand over the state "development.forward"
-        final boolean callbackForward = serviceRequest.get("callback.forward", false);
+        final boolean callbackForward = "true".equals(System.getProperty("callback.forward", "false"));
         // to prevent that in development environments the call is executed forever, we must check the forward flag here as well
         if (!callbackForward && "development.forward".equals(state)) {
+        	Logger.info("catched callback for development, forwarding to localhost");
         	final ServiceResponse serviceResponse = new ServiceResponse(json);
             serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/github/callback?code=" + code + "&state=" + state);
             return serviceResponse;
@@ -142,7 +143,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
 
         // after evaluation of this code, we redirect again to a page where we tell the user that the log-in actually happened.
         final ServiceResponse serviceResponse = new ServiceResponse(json);
-        serviceResponse.setFoundRedirect("https://searchlab.eu/" + serviceRequest.getUser() + "/aaaaa/login");
+        serviceResponse.setFoundRedirect("https://searchlab.eu/" + serviceRequest.getUser() + "/aaaaa/github/login");
         return serviceResponse;
     }
 }
