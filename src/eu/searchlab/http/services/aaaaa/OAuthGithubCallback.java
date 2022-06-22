@@ -37,6 +37,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -92,6 +93,12 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
 
         final String client_id = System.getProperty("github.client.id", "");
         final String client_secret = System.getProperty("github.client.secret", "");
+        String userGithubLogin = "";
+        String userGithubId = "";
+        String userName = "";
+        String userEmail = "";
+        String userLocationName = "";
+        String userTwitterUsername = "";
 
         try {
             final HttpClient httpclient = HttpClients.createDefault();
@@ -102,9 +109,8 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
             params.add(new BasicNameValuePair("client_secret", client_secret));
             params.add(new BasicNameValuePair("code", code));
             httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
-
-            final HttpResponse response = httpclient.execute(httppost);
-            final HttpEntity entity = response.getEntity();
+            HttpResponse response = httpclient.execute(httppost);
+            HttpEntity entity = response.getEntity();
 
             if (entity != null) {
                 // the response has the following form:
@@ -119,28 +125,53 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
                 Logger.info("Access Token is " + s);
 
                 // read the user information
+                // see https://docs.github.com/en/rest/users/users#get-the-authenticated-user
+                // i.e.
                 // curl -H "Authorization: token TOKEN" https://api.github.com/user
-                final HttpClient client = HttpClients.custom().build();
-                final HttpUriRequest request = RequestBuilder.get()
+                HttpUriRequest request = RequestBuilder.get()
                   .setUri("https://api.github.com/user")
-                  .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                  .setHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
                   .setHeader(HttpHeaders.AUTHORIZATION, "token " + s)
                   .build();
-                final HttpResponse userResponse = client.execute(request);
-                final HttpEntity userEntity = userResponse.getEntity();
-
-                final String t = new BufferedReader(new InputStreamReader(userEntity.getContent())).lines().collect(Collectors.joining("\n"));
+                response = httpclient.execute(request);
+                entity = response.getEntity();
+                String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject user = new JSONObject(new JSONTokener(t));
-                final String userEmail = user.optString("email", "");
+                userGithubLogin = user.optString("login", "");
+                userGithubId = Long.toString(user.optLong("id", 0));
+                userName = user.optString("name", "");
+                userEmail = user.optString("email", "");
+                userLocationName = user.optString("location", "");
+                userTwitterUsername = user.optString("twitter_username", "");
+                if ("null".equals(userEmail)) userEmail = "";
 
-                Logger.info("User Email is " + userEmail);
-
+                // in case that the email is not part of a public user profile, we call the user/emails api
+                // which we should be allowed to use since we required that user right
+                if (userEmail.length() == 0) {
+                	// call the user/emails API to get the users email addresses. The email address is the single point of identification for searchlab
+                	// see https://docs.github.com/en/rest/users/emails#list-email-addresses-for-the-authenticated-user
+                	request = RequestBuilder.get()
+                            .setUri("https://api.github.com/user/emails")
+                            .setHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
+                            .setHeader(HttpHeaders.AUTHORIZATION, "token " + s)
+                            .build();
+                	response = httpclient.execute(request);
+                    entity = response.getEntity();
+                    t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
+                    final JSONArray emails = new JSONArray(new JSONTokener(t));
+                    for (int i = 0; i < emails.length(); i++) {
+                    	final JSONObject j = emails.getJSONObject(i);
+                    	if (j.optBoolean("verified") && j.optBoolean("primary")) {
+                    		userEmail = j.optString("email");
+                    	}
+                    }
+                }
             }
-
-
         } catch (final IOException | JSONException e) {
             Logger.warn(e);
         }
+
+        Logger.info("User Email is " + userEmail);
 
         // after evaluation of this code, we redirect again to a page where we tell the user that the log-in actually happened.
         final ServiceResponse serviceResponse = new ServiceResponse(json);
