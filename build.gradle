@@ -44,7 +44,7 @@ repositories {
 dependencies {
   implementation 'org.elasticsearch.client:transport:6.8.+'
   implementation 'io.swagger.core.v3:swagger-jaxrs2:2.1.2'
-  implementation 'io.undertow:undertow-core:2.2.16.Final'
+  implementation 'io.undertow:undertow-core:2.2.18.Final'
   implementation 'tech.tablesaw:tablesaw-jsplot:0.43.+'
   implementation 'tech.tablesaw:tablesaw-json:0.43.+'
   implementation 'tech.tablesaw:tablesaw-core:0.43.+'
