@@ -28,6 +28,8 @@ import java.util.zip.GZIPOutputStream;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import eu.searchlab.tools.Logger;
+
 /**
  * Use lock files to get exclusive access to shared files.
  */
@@ -50,7 +52,7 @@ public final class ConcurrentIO {
     }
 
     private final static IOPath lockFile(final IOPath iop) {
-    	if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
+        if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
         final IOPath lockFile = new IOPath(iop.getBucket(), iop.getPath() + ".lock");
         return lockFile;
     }
@@ -139,7 +141,7 @@ public final class ConcurrentIO {
     }
 
     public final boolean exists(final IOPath iop) {
-    	return this.io.exists(iop);
+        return this.io.exists(iop);
     }
 
     public final void write(final IOObject... ioos) throws IOException {
@@ -194,7 +196,13 @@ public final class ConcurrentIO {
             return read(iops);
         } catch (final IOException e) {
             deleteLock(iops);
-            return read(iops);
+            try {
+                return read(iops);
+            } catch (final IOException e1) {
+                // if this fails again, we must remove the lock files
+                deleteLock(iops);
+                throw e1;
+            }
         }
     }
 
@@ -203,13 +211,13 @@ public final class ConcurrentIO {
         if (waitUntilUnlock(lockFile)) {
             writeLockFiles(lockFile);
             if (this.io.exists(iop)) {
-            	final byte[] a = this.io.readAll(iop);
-            	final byte[] ab = new byte[a.length + b.length];
-            	System.arraycopy(a, 0, ab, 0, a.length);
-            	System.arraycopy(b, 0, ab, a.length, b.length);
-            	this.io.write(iop, ab);
+                final byte[] a = this.io.readAll(iop);
+                final byte[] ab = new byte[a.length + b.length];
+                System.arraycopy(a, 0, ab, 0, a.length);
+                System.arraycopy(b, 0, ab, a.length, b.length);
+                this.io.write(iop, ab);
             } else {
-            	this.io.write(iop, b);
+                this.io.write(iop, b);
             }
             releaseLockFiles(lockFile);
         } else {
@@ -262,7 +270,9 @@ public final class ConcurrentIO {
             for (int i = 0; i < lockFiles.length; i++) {
                 this.io.remove(lockFiles[i]);
             }
-        } catch (final IOException e) {}
+        } catch (final IOException e) {
+            Logger.warn(e);
+        }
     }
 
     public final String lockedByHost(final IOPath iop) throws IOException {
@@ -312,7 +322,7 @@ public final class ConcurrentIO {
 
     @Override
     public String toString() {
-    	return this.io.toString();
+        return this.io.toString();
     }
 
 }

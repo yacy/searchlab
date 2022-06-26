@@ -269,7 +269,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
      * reading of an object into a stream
      * @param bucketName
      * @param objectName
-     * @return
+     * @return an input stream if object exists, throws exception if not
      * @throws IOException
      */
     @Override
@@ -286,7 +286,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
-            throw new IOException(e.getMessage());
+            throw new IOException(e.getMessage() + "; path = " + iop.toString());
         }
     }
 
@@ -295,7 +295,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
      * @param bucketName
      * @param objectName
      * @param offset
-     * @return
+     * @return an input stream if object exists, throws exception if not
      * @throws IOException
      */
     @Override
@@ -313,7 +313,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
-            throw new IOException(e.getMessage());
+            throw new IOException(e.getMessage() + "; path = " + iop.toString());
         }
     }
 
@@ -323,7 +323,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
      * @param objectName
      * @param offset
      * @param len
-     * @return
+     * @return an input stream if object exists, throws exception if not
      * @throws IOException
      */
     @Override

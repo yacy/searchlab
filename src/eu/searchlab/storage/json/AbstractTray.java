@@ -30,6 +30,7 @@ import org.json.JSONObject;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOObject;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.tools.Logger;
 
 public abstract class AbstractTray implements Tray {
 
@@ -49,6 +50,23 @@ public abstract class AbstractTray implements Tray {
         this.iop = iop;
         this.object = null;
         this.mutex = this;
+
+        // check if file exists and create it if not
+        try {
+            load();
+        } catch (final IOException e) {
+            if (this.io.exists(iop)) {
+                Logger.error(e);
+            } else {
+                final JSONObject json = new JSONObject();
+                try {
+                    this.io.writeForced(new IOObject(this.iop, json));
+                } catch (final IOException e1) {
+                    Logger.error(e1);
+                }
+            }
+        }
+
     }
 
     public static JSONObject read(final File f) throws IOException {
