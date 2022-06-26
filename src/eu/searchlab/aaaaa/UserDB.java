@@ -143,11 +143,13 @@ public class UserDB {
     }
 
     public Authorization getAuthorization(final String sessionID) throws IOException {
+    	if (sessionID == null) return null;
         try {
             final JSONObject json = this.authrDB.getObject(sessionID);
             return new Authorization(json);
         } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
+        	Logger.error(e);
+            return null;
         }
     }
 

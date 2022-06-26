@@ -91,7 +91,8 @@ public class ServiceRequest {
         try {
             final JSONObject json = new JSONObject(new JSONTokener(cookie));
             final Authorization authorization = new Authorization(json);
-            final Authorization stored_authorization = Searchlab.userDB.getAuthorization(authorization.getSessionID());
+            final String session_id = authorization.getSessionID();
+            final Authorization stored_authorization = session_id == null ? null : Searchlab.userDB.getAuthorization(session_id);
             if (stored_authorization != null &&
                 authorization.getSessionID().equals(stored_authorization.getSessionID()) &&
                 authorization.getUserID().equals(stored_authorization.getUserID())) return authorization;

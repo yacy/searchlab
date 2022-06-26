@@ -49,6 +49,7 @@ import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
 import eu.searchlab.aaaaa.Authentication;
+import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.aaaaa.IDGeneratorService;
 import eu.searchlab.http.services.aaaaa.IDValidationService;
@@ -211,9 +212,15 @@ public class WebServer {
             final String query = serviceRequest.getQuery();
 
             // we force using of a user/language path
-            if (user == null || user.length() == 0) {
+            if (user == null || user.length() == 0 || user.equals("en")) {
+            	String user_id = "en";
+            	// in case the user accesses with a valid cookie we forward to the users id
+            	final Authorization authorization = serviceRequest.getAuthorization();
+            	if (authorization != null) user_id = authorization.getUserID();
+
+            	// now forward to the location with that path
                 exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
-                exchange.getResponseHeaders().put(Headers.LOCATION, "/en" + path + (query.length() > 0 ? "?" + query : ""));
+                exchange.getResponseHeaders().put(Headers.LOCATION, "/" + user_id + path + (query.length() > 0 ? "?" + query : ""));
                 exchange.getResponseSender().send("");
                 log(ip, client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0);
                 return;
