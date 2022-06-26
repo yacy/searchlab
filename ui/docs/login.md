@@ -7,14 +7,40 @@ User Accounts in the Searchlab are used to personalize search indexes:
 - user-IDs may become group IDs where several users are able to modify the group content
 - a future extension will allow named user-IDs so search indexes can be accessed also with names, not only IDs
 
-## Accounts
+## Authorized Accounts
 
-We currently have no user-owned accounts, only virtual accounts with user-IDs that cannot be owned by anyone.
+You can currently only sign-up using an existing GitHub account:
 
-This will change in the future, by now you can only
+<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #000000; border-radius:8px; font-size:18px; width:300px;"><img src="/img/login_with_github.png" width="32" height="32">&nbsp;&nbsp;Login with Github</button>
+</form>
+</br></br>
 
-- re-use a previously generated user-id that you know, or
-- generate a new one.
+We are also preparing sign-up with the following OAuth providers:
+
+<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #FF424D; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_patreon.png" width="32" height="32">&nbsp;&nbsp;Login with Patreon</button>
+</form>
+</br></br>
+
+<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #1DA1F2; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_twitter.png" width="32" height="32">&nbsp;&nbsp;Login with Twitter</button>
+</form>
+</br></br>
+
+<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #9147FF; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_twitch.png" width="32" height="32">&nbsp;&nbsp;Login with Twitch</button>
+</form>
+</br></br>
+
+We do not provide sign-up by email here yet.
+
+## Demo Accounts with limited Authorization
+
+We also provide anonymous authentication using temporary User IDs for demo purpose.
+Existing IDs can be submitted here to access any account, even authorized ones, but without access to changes to those accounts.
+
+Enter existing IDs or generate a new one:
 
 <form action="#" class="navbar-form navbar-left">
   <div class="form-group">
@@ -24,9 +50,7 @@ This will change in the future, by now you can only
   <button type="submit" id="loginbtn" class="btn btn-default btn-sm" disabled="disabled" onclick="return login()">Login</button>
 </form></br></br>
 
-You can keep your id private or you can share it publicly. Because every id may be owned/lost or never be used again, we treat user accounts without
-ownership right now as temporary and expendable entity. Please be prepared that your id may be deleted by the platform at any time.
-
+You can keep your id private or you can share it publicly. Because every id may be owned/lost or never be used again, we treat user accounts without ownership right now as temporary and expendable entity. Please be prepared that your id may be deleted by the platform at any time.
 
 <script>
     var input = document.getElementById('idinput');
