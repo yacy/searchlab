@@ -37,7 +37,7 @@ public class OAuthGithubDismiss  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/aaaaa/github_dismiss"};
+        return new String[] {"/aaaaa/github_dismiss/"};
     }
 
     @Override

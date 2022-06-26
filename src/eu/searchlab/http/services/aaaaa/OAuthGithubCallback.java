@@ -203,7 +203,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
             // - authorization with cookie entry to give user access and operation right when accessing further webpages
             Searchlab.userDB.setAuthorization(authorization);
 
-            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/github_login");
+            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/github_login/");
 
             return serviceResponse;
         } catch (final IOException e) {
@@ -211,7 +211,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         }
 
         // user is rejected
-        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github_dismiss");
+        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github_dismiss/");
         return serviceResponse;
     }
 }

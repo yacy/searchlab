@@ -60,7 +60,7 @@ public class OAuthGithubLogin  extends AbstractService implements Service {
             // forward again to dismiss option
             final JSONObject json = new JSONObject(true);
             final ServiceResponse serviceResponse = new ServiceResponse(json);
-            serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github_dismiss");
+            serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github_dismiss/");
             return serviceResponse;
         }
 
