@@ -1,6 +1,6 @@
 /**
- *  PersistentTray
- *  Copyright 08.10.2021 by Michael Peter Christen, @orbiterlab
+ *  ImmutableTray
+ *  Copyright 26.06.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,7 @@
 package eu.searchlab.storage.json;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,15 +29,30 @@ import org.json.JSONObject;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 
-public class PersistentTray extends AbstractTray implements Tray {
+/**
+ * An ImmutableTray is like a PersistentTray and stores all write operations
+ * of new objects immediately to the backend. But unlinke the PersistentTray
+ * it does not allow the change of an existing object. That causes that read
+ * operations to the tray do not need to check the file storage date.
+ * In concurrent situations this applies also: if the object exists, there is
+ * no need to check the backend. However, if the object does not exist, a check
+ * must be done unless the object is in a volatile delete-list.
+ */
+public class ImmutableTray extends AbstractTray implements Tray {
 
-    public PersistentTray(final ConcurrentIO io, final IOPath iop) {
+    ConcurrentHashMap<String, Object> deleted;
+
+    public ImmutableTray(final ConcurrentIO io, final IOPath iop) {
         super(io, iop);
+        this.deleted = new ConcurrentHashMap<>();
     }
 
     @Override
     public JSONObject getObject(final String key) throws IOException {
         synchronized (this.mutex) {
+            if (this.deleted.containsKey(key)) return null;
+            final JSONObject json = this.object.optJSONObject(key);
+            if (json != null) return json;
             ensureLoaded();
             return this.object.optJSONObject(key);
         }
@@ -45,6 +61,9 @@ public class PersistentTray extends AbstractTray implements Tray {
     @Override
     public JSONArray getArray(final String key) throws IOException {
         synchronized (this.mutex) {
+            if (this.deleted.containsKey(key)) return null;
+            final JSONArray json = this.object.optJSONArray(key);
+            if (json != null) return json;
             ensureLoaded();
             return this.object.optJSONArray(key);
         }
@@ -81,6 +100,8 @@ public class PersistentTray extends AbstractTray implements Tray {
     @Override
     public Tray remove(final String key) throws IOException {
         synchronized (this.mutex) {
+            if (this.deleted.contains(key)) return this;
+            this.deleted.put(key, null);
             ensureLoaded();
             if (!this.object.has(key)) return this;
             this.object.remove(key);

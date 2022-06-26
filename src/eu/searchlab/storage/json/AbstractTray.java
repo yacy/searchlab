@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import eu.searchlab.storage.io.ConcurrentIO;
@@ -115,22 +114,6 @@ public abstract class AbstractTray implements Tray {
         synchronized (this.mutex) {
             ensureLoaded();
             return this.object.keySet();
-        }
-    }
-
-    @Override
-    public JSONObject getObject(final String key) throws IOException {
-        synchronized (this.mutex) {
-            ensureLoaded();
-            return this.object.optJSONObject(key);
-        }
-    }
-
-    @Override
-    public JSONArray getArray(final String key) throws IOException {
-        synchronized (this.mutex) {
-            ensureLoaded();
-            return this.object.optJSONArray(key);
         }
     }
 

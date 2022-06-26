@@ -38,6 +38,22 @@ public class VolatileTray extends AbstractTray implements Tray {
     }
 
     @Override
+    public JSONObject getObject(final String key) throws IOException {
+        synchronized (this.mutex) {
+            ensureLoaded();
+            return this.object.optJSONObject(key);
+        }
+    }
+
+    @Override
+    public JSONArray getArray(final String key) throws IOException {
+        synchronized (this.mutex) {
+            ensureLoaded();
+            return this.object.optJSONArray(key);
+        }
+    }
+
+    @Override
     public Tray put(final String key, final JSONObject value) throws IOException  {
         synchronized (this.mutex) {
             ensureLoaded();
