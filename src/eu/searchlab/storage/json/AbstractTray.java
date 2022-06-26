@@ -53,7 +53,7 @@ public abstract class AbstractTray implements Tray {
 
         // check if file exists and create it if not
         try {
-            load();
+        	ensureLoaded();
         } catch (final IOException e) {
             if (this.io.exists(iop)) {
                 Logger.error(e);

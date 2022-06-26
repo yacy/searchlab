@@ -49,6 +49,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
 
     @Override
     public JSONObject getObject(final String key) throws IOException {
+    	assert key != null;
         synchronized (this.mutex) {
             if (this.deleted.containsKey(key)) return null;
             final JSONObject json = this.object.optJSONObject(key);
@@ -60,6 +61,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
 
     @Override
     public JSONArray getArray(final String key) throws IOException {
+    	assert key != null;
         synchronized (this.mutex) {
             if (this.deleted.containsKey(key)) return null;
             final JSONArray json = this.object.optJSONArray(key);
@@ -71,6 +73,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
 
     @Override
     public Tray put(final String key, final JSONObject value) throws IOException  {
+    	assert key != null;
         synchronized (this.mutex) {
             ensureLoaded();
             try {
@@ -85,6 +88,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
 
     @Override
     public Tray put(final String key, final JSONArray value) throws IOException {
+    	assert key != null;
         synchronized (this.mutex) {
             ensureLoaded();
             try {
@@ -99,6 +103,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
 
     @Override
     public Tray remove(final String key) throws IOException {
+    	assert key != null;
         synchronized (this.mutex) {
             if (this.deleted.contains(key)) return this;
             this.deleted.put(key, null);
