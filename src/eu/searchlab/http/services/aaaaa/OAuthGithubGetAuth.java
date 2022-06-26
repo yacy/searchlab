@@ -38,7 +38,7 @@ import eu.searchlab.http.ServiceResponse;
  * https://github.com/settings/applications/<application-id>
  *
  * example: call
- * http://localhost:8400/en/aaaaa/github/get_auth
+ * http://localhost:8400/en/aaaaa/github_get_auth
  */
 public class OAuthGithubGetAuth  extends AbstractService implements Service {
 
@@ -46,7 +46,7 @@ public class OAuthGithubGetAuth  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/aaaaa/github/get_auth"};
+        return new String[] {"/aaaaa/github_get_auth"};
     }
 
     @Override

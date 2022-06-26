@@ -60,13 +60,13 @@ import eu.searchlab.tools.Logger;
  * to get the user authentication details.
  *
  * example: call
- * http://localhost:8400/en/aaaaa/github/callback
+ * http://localhost:8400/en/aaaaa/github_callback
  */
 public class OAuthGithubCallback  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/aaaaa/github/callback"};
+        return new String[] {"/aaaaa/github_callback"};
     }
 
     @Override
@@ -85,7 +85,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         if (!callbackForward && OAuthGithubGetAuth.DEVELOPMENT_FORWARD_STATE.equals(state)) {
             Logger.info("catched callback for development, forwarding to localhost");
             final ServiceResponse serviceResponse = new ServiceResponse(json);
-            serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/github/callback?code=" + code + "&state=" + state);
+            serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/github_callback?code=" + code + "&state=" + state);
             return serviceResponse;
         }
 
@@ -203,7 +203,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
             // - authorization with cookie entry to give user access and operation right when accessing further webpages
             Searchlab.userDB.setAuthorization(authorization);
 
-            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/github/login");
+            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/github_login");
 
             return serviceResponse;
         } catch (final IOException e) {
@@ -211,7 +211,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         }
 
         // user is rejected
-        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github/dismiss");
+        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github_dismiss");
         return serviceResponse;
     }
 }

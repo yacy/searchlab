@@ -11,24 +11,24 @@ User Accounts in the Searchlab are used to personalize search indexes:
 
 You can currently only sign-up using an existing GitHub account:
 
-<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+<form action="/en/aaaaa/github_get_auth" class="navbar-form navbar-left">
   <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #000000; border-radius:8px; font-size:18px; width:300px;"><img src="/img/login_with_github.png" width="32" height="32">&nbsp;&nbsp;Login with Github</button>
 </form>
 </br></br>
 
 We are also preparing sign-up with the following OAuth providers:
 
-<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+<form action="/en/aaaaa/patreon_get_auth" class="navbar-form navbar-left">
   <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #FF424D; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_patreon.png" width="32" height="32">&nbsp;&nbsp;Login with Patreon</button>
 </form>
 </br></br>
 
-<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+<form action="/en/aaaaa/twitter_get_auth" class="navbar-form navbar-left">
   <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #1DA1F2; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_twitter.png" width="32" height="32">&nbsp;&nbsp;Login with Twitter</button>
 </form>
 </br></br>
 
-<form action="/en/aaaaa/github/get_auth" class="navbar-form navbar-left">
+<form action="/en/aaaaa/twitch_get_auth" class="navbar-form navbar-left">
   <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #9147FF; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_twitch.png" width="32" height="32">&nbsp;&nbsp;Login with Twitch</button>
 </form>
 </br></br>

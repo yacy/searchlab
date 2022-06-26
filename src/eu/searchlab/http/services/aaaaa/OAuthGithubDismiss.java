@@ -31,13 +31,13 @@ import eu.searchlab.http.ServiceResponse;
  * This class is called when a user is not authorized and not authenticated.
  *
  * Example call:
- * http://localhost:8400/en/aaaaa/github/dismiss
+ * http://localhost:8400/en/aaaaa/github_dismiss
  */
 public class OAuthGithubDismiss  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/aaaaa/github/dismiss"};
+        return new String[] {"/aaaaa/github_dismiss"};
     }
 
     @Override
