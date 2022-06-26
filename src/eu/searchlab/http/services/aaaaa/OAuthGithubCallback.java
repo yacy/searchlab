@@ -42,10 +42,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authentication;
+import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
+import eu.searchlab.http.WebServer;
 import eu.searchlab.tools.Logger;
 
 /**
@@ -79,8 +83,8 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         Logger.info("Catched callback from github; state = " + state + "; callbackForward = " + callbackForward);
         // to prevent that in development environments the call is executed forever, we must check the forward flag here as well
         if (!callbackForward && OAuthGithubGetAuth.DEVELOPMENT_FORWARD_STATE.equals(state)) {
-        	Logger.info("catched callback for development, forwarding to localhost");
-        	final ServiceResponse serviceResponse = new ServiceResponse(json);
+            Logger.info("catched callback for development, forwarding to localhost");
+            final ServiceResponse serviceResponse = new ServiceResponse(json);
             serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/github/callback?code=" + code + "&state=" + state);
             return serviceResponse;
         }
@@ -94,7 +98,6 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         final String client_id = System.getProperty("github.client.id", "");
         final String client_secret = System.getProperty("github.client.secret", "");
         String userGithubLogin = "";
-        String userGithubId = "";
         String userName = "";
         String userEmail = "";
         String userLocationName = "";
@@ -138,7 +141,6 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
                 String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject user = new JSONObject(new JSONTokener(t));
                 userGithubLogin = user.optString("login", "");
-                userGithubId = Long.toString(user.optLong("id", 0));
                 userName = user.optString("name", "");
                 userEmail = user.optString("email", "");
                 userLocationName = user.optString("location", "");
@@ -148,22 +150,22 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
                 // in case that the email is not part of a public user profile, we call the user/emails api
                 // which we should be allowed to use since we required that user right
                 if (userEmail.length() == 0) {
-                	// call the user/emails API to get the users email addresses. The email address is the single point of identification for searchlab
-                	// see https://docs.github.com/en/rest/users/emails#list-email-addresses-for-the-authenticated-user
-                	request = RequestBuilder.get()
+                    // call the user/emails API to get the users email addresses. The email address is the single point of identification for searchlab
+                    // see https://docs.github.com/en/rest/users/emails#list-email-addresses-for-the-authenticated-user
+                    request = RequestBuilder.get()
                             .setUri("https://api.github.com/user/emails")
                             .setHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
                             .setHeader(HttpHeaders.AUTHORIZATION, "token " + s)
                             .build();
-                	response = httpclient.execute(request);
+                    response = httpclient.execute(request);
                     entity = response.getEntity();
                     t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                     final JSONArray emails = new JSONArray(new JSONTokener(t));
                     for (int i = 0; i < emails.length(); i++) {
-                    	final JSONObject j = emails.getJSONObject(i);
-                    	if (j.optBoolean("verified") && j.optBoolean("primary")) {
-                    		userEmail = j.optString("email");
-                    	}
+                        final JSONObject j = emails.getJSONObject(i);
+                        if (j.optBoolean("verified") && j.optBoolean("primary")) {
+                            userEmail = j.optString("email");
+                        }
                     }
                 }
             }
@@ -171,11 +173,45 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
             Logger.warn(e);
         }
 
-        Logger.info("User Email is " + userEmail);
-
-        // after evaluation of this code, we redirect again to a page where we tell the user that the log-in actually happened.
+        // Decide if the credentials are sufficient for authentication
+        // We redirect again to a page where we tell the user that the log-in actually happened.
         final ServiceResponse serviceResponse = new ServiceResponse(json);
-        serviceResponse.setFoundRedirect("https://searchlab.eu/" + serviceRequest.getUser() + "/aaaaa/github/login");
+        if (userEmail.length() > 0 && userEmail.indexOf('@') > 1) try {
+
+            Logger.info("User Login: " + userEmail);
+
+            // get userid for user to authenticate the user
+            // - search email address in authentication database
+            Authentication authentication = Searchlab.userDB.getAuthentiationByEmail(userEmail);
+            // - if not present, generate new entry
+            if (authentication == null) {
+                authentication = new Authentication();
+                authentication.setEmail(userEmail);
+            }
+            authentication.setGithubLogin(userGithubLogin);
+            authentication.setName(userName);
+
+            // create an authorization cookie
+            final String id = authentication.getID();
+            final Authorization authorization = new Authorization(id);
+            final String cookie = authorization.toString();
+            serviceResponse.addSessionCookie(WebServer.COOKIE_USER_ID_NAME, cookie);
+
+            // create an enry in two databases:
+            // - authentication to store the user credentials
+            Searchlab.userDB.setAuthentication(authentication);
+            // - authorization with cookie entry to give user access and operation right when accessing further webpages
+            Searchlab.userDB.setAuthorization(authorization);
+
+            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/github/login");
+
+            return serviceResponse;
+        } catch (final IOException e) {
+            Logger.error(e);
+        }
+
+        // user is rejected
+        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github/dismiss");
         return serviceResponse;
     }
 }

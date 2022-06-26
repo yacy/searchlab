@@ -27,8 +27,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import eu.searchlab.aaaaa.Accounting;
-import eu.searchlab.aaaaa.Authorization;
+import eu.searchlab.aaaaa.AccountingTS;
+import eu.searchlab.aaaaa.AuthorizationTS;
+import eu.searchlab.aaaaa.UserDB;
 import eu.searchlab.audit.AuditScheduler;
 import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.WebServer;
@@ -63,8 +64,9 @@ public class Searchlab {
     public static AuditScheduler auditScheduler;
 
     // AAAAA
-    public static Accounting accounting;
-    public static Authorization authorization;
+    public static UserDB userDB;
+    public static AccountingTS accounting;
+    public static AuthorizationTS authorization;
     public static String github_client_id, github_client_secret, patreon_client_id, patreon_client_secret;
 
     // Ready
@@ -228,9 +230,10 @@ public class Searchlab {
         // initialize audit and aaaaa
         // if this fails, we cannot start the searchlab!
         try {
+            userDB = new UserDB(io, io, aaaaaIOp);
             userAudit = new UserAudit(io, auditUserRequestsIOp, auditUserVisitorsIOp);
-            accounting = new Accounting(io, aaaaaIOp);
-            authorization = new Authorization(io, aaaaaIOp);
+            accounting = new AccountingTS(io, aaaaaIOp);
+            authorization = new AuthorizationTS(io, aaaaaIOp);
         } catch (final IOException e) {
             Logger.error("could not load data from IO", e);
             System.exit(-1);

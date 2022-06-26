@@ -28,140 +28,143 @@ import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import eu.searchlab.Searchlab;
+import eu.searchlab.tools.Logger;
+
 public class Authentication {
 
-	private final static Random random = new Random(System.currentTimeMillis());
+    private final static Random random = new Random(System.currentTimeMillis());
 
-	public final static String ANONYMOUS_ID = "112358132";
-	public final static String[] GOLDEN_ID = new String[]{"123456789", "123456798",  "123456987",  "123459876",  "123498765",  "123987654",  "129876543", "198765432", "987654321"}; // includes at this time only special ids
+    public final static String ANONYMOUS_ID = "112358132";
+    public final static String[] GOLDEN_ID = new String[]{"123456789", "123456798",  "123456987",  "123459876",  "123498765",  "123987654",  "129876543", "198765432", "987654321"}; // includes at this time only special ids
 
-	private final JSONObject json;
+    private final JSONObject json;
 
-	public Authentication() {
-		this.json = new JSONObject();
-	}
+    public Authentication(final JSONObject json) {
+        this.json = json;
+    }
 
-	/**
-	 * set property email from https://schema.org/Person
-	 * @param email - the email address; must contain a '@'
-	 * @return this
-	 * @throws RuntimeException
-	 */
-	public Authentication setEmail(final String email) throws RuntimeException {
-		if (email.indexOf('@') < 0) throw new RuntimeException("email address invalid: " + email);
-		try {
-			this.json.put("email", email);
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-		return this;
-	}
+    public Authentication() {
+        this.json = new JSONObject();
+        while (true) {
+            // get a new ID
+            final String id = generateRandomID();
+            try {
+                if (Searchlab.userDB.getAuthentiationByID(id) == null) {
+                    setID(id);
+                    break;
+                }
+            } catch (final RuntimeException e) {
+                Logger.error(e);
+            }
+        }
+    }
 
-	/**
-	 * get property email from https://schema.org/Person
-	 * @return the email address
-	 * @throws RuntimeException
-	 */
-	public String getEmail() throws RuntimeException {
-		try {
-			return this.json.getString("email");
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+    /**
+     * set property email from https://schema.org/Person
+     * @param email - the email address; must contain a '@'
+     * @return this
+     * @throws RuntimeException
+     */
+    public Authentication setEmail(final String email) throws RuntimeException {
+        if (email.indexOf('@') < 0) throw new RuntimeException("email address invalid: " + email);
+        try {this.json.put("email", email);} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
 
-	/**
-	 * set property identifier from https://schema.org/Person
-	 * @param identifier
-	 * @return
-	 * @throws RuntimeException
-	 */
-	public Authentication setIdentifier(final String identifier) throws RuntimeException {
-		if (!isValid(identifier)) throw new RuntimeException("identifier invalid: " + identifier);
-		try {
-			this.json.put("identifier", identifier);
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-		return this;
-	}
+    /**
+     * get property email from https://schema.org/Person
+     * @return the email address
+     * @throws RuntimeException
+     */
+    public String getEmail() throws RuntimeException {
+        try {return this.json.getString("email");} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 
-	public String getIdentifier() throws RuntimeException {
-		try {
-			return this.json.getString("identifier");
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+    /**
+     * set searchlab id, 9 digit number
+     * @param id
+     * @return
+     * @throws RuntimeException
+     */
+    public Authentication setID(final String id) throws RuntimeException {
+        if (!isValid(id)) throw new RuntimeException("identifier invalid: " + id);
+        try {this.json.put("id", id);} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
 
-	/**
-	 * set property name from https://schema.org/Person
-	 * This shall be considered as visible name that the person wants to be displayed
-	 * @param name
-	 * @return
-	 * @throws RuntimeException
-	 */
-	public Authentication setName(final String name) throws RuntimeException {
-		try {
-			this.json.put("name", name);
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-		return this;
-	}
+    public String getID() throws RuntimeException {
+        try {return this.json.getString("id");} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 
-	public String getName() throws RuntimeException {
-		try {
-			return this.json.getString("name");
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+    public Authentication setGithubLogin(final String github_login) throws RuntimeException {
+        try {this.json.put("login_github", github_login);} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
 
-	/**
-	 * set property alternateName from https://schema.org/Person
-	 * This shall be considered as the nickname of the person which the user wants to be displayed and used as handle for links and sharing.
-	 * If the
-	 * @param alternateName
-	 * @return
-	 * @throws RuntimeException
-	 */
-	public Authentication setAlternateName(final String alternateName) throws RuntimeException {
-		try {
-			this.json.put("alternateName", alternateName);
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-		return this;
-	}
+    public Authentication setPatreonLogin(final String patreon_login) throws RuntimeException {
+        try {this.json.put("login_patreon", patreon_login);} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
 
-	public String getAlternateName() throws RuntimeException {
-		try {
-			return this.json.getString("alternateName");
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+    public Authentication setTwitterLogin(final String twitter_login) throws RuntimeException {
+        try {this.json.put("login_twitter", twitter_login);} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
 
-	public JSONObject getJSON() {
-		return this.json;
-	}
+    /**
+     * set property name from https://schema.org/Person
+     * This shall be considered as visible name that the person wants to be displayed
+     * @param name
+     * @return
+     * @throws RuntimeException
+     */
+    public Authentication setName(final String name) throws RuntimeException {
+        try {this.json.put("name", name);} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
 
-	@Override
-	public String toString() {
-		try {
-			return this.json.toString(2);
-		} catch (final JSONException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+    public String getName() throws RuntimeException {
+        try {return this.json.getString("name");} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 
-	public static boolean isValid(final String userID) {
-		if (userID.length() == 2) {
-			return "en".equals(userID);
-		}
-		if (userID.length() == 9) {
-			if (ANONYMOUS_ID.equals(userID)) return true;
+    public JSONObject getJSON() {
+        return this.json;
+    }
+
+    @Override
+    public String toString() {
+        try {
+            return this.json.toString(2);
+        } catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public static boolean isValid(final String userID) {
+        if (userID.length() == 2) {
+            return "en".equals(userID);
+        }
+        if (userID.length() == 9) {
+            if (ANONYMOUS_ID.equals(userID)) return true;
 
             // must consist of only digits and every digit must appear only once;
             final Set<Integer> c = new HashSet<>(); for (int i = 1; i <= 9; i++) c.add(i);
@@ -170,35 +173,35 @@ public class Authentication {
             }
             return true;
         }
-		return false;
-	}
+        return false;
+    }
 
-	public static String generateRandomID() {
-		final StringBuilder sb = new StringBuilder();
-		final List<Integer> a = new ArrayList<>();
-		for (int i = 1; i <= 9; i++) a.add(i);
-		while (a.size() > 1) {
-			final int c = a.remove(random.nextInt(a.size()));
-			sb.append(Integer.toString(c));
-		}
-		sb.append(Integer.toString(a.get(0)));
-		final String id = sb.toString();
-		assert isValid(id);
-		return id;
-	}
+    public static String generateRandomID() {
+        final StringBuilder sb = new StringBuilder();
+        final List<Integer> a = new ArrayList<>();
+        for (int i = 1; i <= 9; i++) a.add(i);
+        while (a.size() > 1) {
+            final int c = a.remove(random.nextInt(a.size()));
+            sb.append(Integer.toString(c));
+        }
+        sb.append(Integer.toString(a.get(0)));
+        final String id = sb.toString();
+        assert isValid(id);
+        return id;
+    }
 
-	/*
-	 * Properties we want for authentication (taken from https://schema.org/Person
-	 * - email          | used for authorization
-	 * - identifier     | the id of the account
-	 * - name           | the public name of the account
-	 * - alternateName  | a nickname of the account
-	 *
-	 */
+    /*
+     * Properties we want for authentication (taken from https://schema.org/Person
+     * - email          | used for authorization
+     * - identifier     | the id of the account
+     * - name           | the public name of the account
+     * - alternateName  | a nickname of the account
+     *
+     */
 
-	public static void main(final String[] args) {
-		for (int i = 0; i < 100; i++) {
-			System.out.println(generateRandomID());
-		}
-	}
+    public static void main(final String[] args) {
+        for (int i = 0; i < 100; i++) {
+            System.out.println(generateRandomID());
+        }
+    }
 }

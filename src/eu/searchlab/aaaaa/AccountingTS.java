@@ -45,12 +45,12 @@ import eu.searchlab.tools.MultiProtocolURL;
  * - "crawl" a crawl start audit log which also contains index deletions in one timeline
  * - "corpus" a corpora set of index corpus definitions for each index collection
  */
-public class Accounting {
+public class AccountingTS {
 
     private final ConcurrentIO cio;
     private final IOPath aaaaaIop, accountingIop;
 
-    public Accounting(final GenericIO io, final IOPath aaaaaIop) {
+    public AccountingTS(final GenericIO io, final IOPath aaaaaIop) {
         this.cio = new ConcurrentIO(io, 10000);
         this.aaaaaIop = aaaaaIop;
         this.accountingIop = this.aaaaaIop.append("accounting");
@@ -83,9 +83,9 @@ public class Accounting {
         TimeSeriesTable corpusTable = new TimeSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
         if (this.cio.exists(corpusPath)) try {corpusTable = new TimeSeriesTable(this.cio, corpusPath, false);} catch (final IOException e) {}
         if (corpusTable.viewCols.length != corpusViewColNames.length ||
-        	corpusTable.metaCols.length != corpusMetaColNames.length ||
-        	corpusTable.dataCols.length != corpusDataColNames.length) {
-        	corpusTable = new TimeSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
+            corpusTable.metaCols.length != corpusMetaColNames.length ||
+            corpusTable.dataCols.length != corpusDataColNames.length) {
+            corpusTable = new TimeSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
         }
 
         for (final MultiProtocolURL url: urls) {

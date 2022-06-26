@@ -19,28 +19,49 @@
 
 package eu.searchlab.aaaaa;
 
+import java.io.IOException;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.json.ImmutableTray;
+import eu.searchlab.storage.json.PersistentTray;
+import eu.searchlab.storage.json.Tray;
+import eu.searchlab.tools.Logger;
 import io.findify.s3mock.S3Mock;
 
 public class UserDB {
 
-	private final static String AUTHENTICATION_PATH = "authn"; // who is the user & identification
-	private final static String AUTHORIZATION_PATH  = "authr"; // what is the user allowed to do
-	private final static String ACCOUNTING_PATH     = "acctg"; // what has the user done / audit log
-	private final static String ASSIGNMENT_PATH     = "asgmt"; // what is due to be done (technical)
-	
-	private final GenericIO aaaIO, assignmentIO;
-	private final IOPath authnPath, authrPath, acctgPath, asgmtPath;
-	
+    private final static String AUTHENTICATION_PATH = "authn.json"; // who is the user & identification
+    private final static String AUTHORIZATION_PATH  = "authr.json"; // what is the user allowed to do
+    private final static String ACCOUNTING_PATH     = "acctg.json"; // what has the user done / statistics
+    private final static String AUDIT_PATH          = "audit.json"; // what has the user done / timeline
+    private final static String ASSIGNMENT_PATH     = "asgmt.json"; // what is due to be done (technical)
 
-    public UserDB(final GenericIO aaaIO, final GenericIO assignmentIO, IOPath basePath) {
+    private final GenericIO aaaIO, assignmentIO;
+    private final ConcurrentIO aaaCIO, assignmentCIO;
+    private final IOPath authnPath, authrPath, acctgPath, asgmtPath, auditPath;
+    private final Tray authnDB, authrDB, acctgDB, asgmtDB, auditDB;
+
+
+    public UserDB(final GenericIO aaaIO, final GenericIO assignmentIO, final IOPath basePath) {
         this.aaaIO = aaaIO;
         this.assignmentIO = assignmentIO;
+        this.aaaCIO = new ConcurrentIO(this.aaaIO, 10000);
+        this.assignmentCIO = new ConcurrentIO(this.assignmentIO, 1000);
         this.authnPath = basePath.append(AUTHENTICATION_PATH);
         this.authrPath = basePath.append(AUTHORIZATION_PATH);
         this.acctgPath = basePath.append(ACCOUNTING_PATH);
+        this.auditPath = basePath.append(AUDIT_PATH);
         this.asgmtPath = basePath.append(ASSIGNMENT_PATH);
+        this.authnDB = new PersistentTray(this.aaaCIO, this.authnPath);
+        this.authrDB = new ImmutableTray(this.aaaCIO, this.authrPath);
+        this.acctgDB = new PersistentTray(this.aaaCIO, this.acctgPath);
+        this.auditDB = new PersistentTray(this.aaaCIO, this.auditPath);
+        this.asgmtDB = new PersistentTray(this.assignmentCIO, this.asgmtPath);
     }
 
     public GenericIO getAuthenticationIO() {
@@ -55,10 +76,14 @@ public class UserDB {
         return this.aaaIO;
     }
 
+    public GenericIO getAuditIO() {
+        return this.aaaIO;
+    }
+
     public GenericIO getAssignmentIO() {
         return this.assignmentIO;
     }
-    
+
     public IOPath getAuthenticationPath() {
         return this.authnPath;
     }
@@ -71,11 +96,62 @@ public class UserDB {
         return this.acctgPath;
     }
 
+    public IOPath getAuditPath() {
+        return this.auditPath;
+    }
+
     public IOPath getAssignmentPath() {
         return this.asgmtPath;
     }
-    
-    public static void main(String[] args) {
+
+    public void setAuthentication(final Authentication authn) throws IOException {
+        this.authnDB.put(authn.getID(), authn.getJSON());
+    }
+
+    public Authentication getAuthentiationByID(final String id) {
+        try {
+            final JSONObject json = this.authnDB.getObject(id);
+            return json == null ? null : new Authentication(json);
+        } catch (final JSONException | IOException e) {
+            Logger.error(e);
+            return null;
+        }
+    }
+
+    /**
+     * get the authentication object by email
+     * @param email
+     * @return the authentication object if one exist or NULL otherwise
+     * @throws IOException
+     */
+    public Authentication getAuthentiationByEmail(final String email) throws IOException {
+        try {
+            for (final String id: this.authnDB.keys()) {
+                final Authentication a = new Authentication(this.authnDB.getObject(id));
+                if (a.getEmail().equals(email)) {
+                    return a;
+                }
+            }
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+        return null;
+    }
+
+    public void setAuthorization(final Authorization authr) throws IOException {
+        this.authrDB.put(authr.getSessionID(), authr.getJSON());
+    }
+
+    public Authorization getAuthorization(final String sessionID) throws IOException {
+        try {
+            final JSONObject json = this.authrDB.getObject(sessionID);
+            return new Authorization(json);
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
+    public static void main(final String[] args) {
         final S3Mock api = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
         api.start();
     }

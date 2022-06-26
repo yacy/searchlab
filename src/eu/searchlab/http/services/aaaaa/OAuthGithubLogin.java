@@ -21,6 +21,9 @@ package eu.searchlab.http.services.aaaaa;
 
 import org.json.JSONObject;
 
+import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authentication;
+import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
@@ -44,16 +47,26 @@ public class OAuthGithubLogin  extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-    	// Read a session cookie which has a temporary ID that identifies the user
-    	// The user has a permanent ID which should be part of the url.
-    	// In case that the temporary ID can be used to retrieve a authentication record with the permanent ID
-    	// that is identical to the path-ID, then the user is not only authenticated but also authorized.
+        // Read a session cookie which has a temporary ID that identifies the user
+        // The user has a permanent ID which should be part of the url.
+        // In case that the temporary ID can be used to retrieve a authentication record with the permanent ID
+        // that is identical to the path-ID, then the user is not only authenticated but also authorized.
+        final Authorization authorization = serviceRequest.getAuthorization();
+        // If the authorization object exists, then the user is authorized;
+        // We can use that object to get the user credentials
+        final Authentication authentication = authorization == null ? null : Searchlab.userDB.getAuthentiationByID(authorization.getUserID());
+        if (authentication == null) {
+            // failed authentication & authorization
+            // forward again to dismiss option
+            final JSONObject json = new JSONObject(true);
+            final ServiceResponse serviceResponse = new ServiceResponse(json);
+            serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/github/dismiss");
+            return serviceResponse;
+        }
 
-
-
-        final JSONObject json = new JSONObject(true);
+        // all good, we respond with user credentials
+        final JSONObject json = authentication.getJSON();
         final ServiceResponse serviceResponse = new ServiceResponse(json);
-        serviceResponse.setFoundRedirect("https://searchlab.eu");
         return serviceResponse;
     }
 }

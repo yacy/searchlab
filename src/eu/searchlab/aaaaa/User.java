@@ -21,12 +21,12 @@ package eu.searchlab.aaaaa;
 
 public class User {
 
-	Authentication authentication;
-	//Authorization authorization;
-	//Accounting accounting;
+    Authentication authentication;
+    //Authorization authorization;
+    //Accounting accounting;
 
-	public User() {
+    public User() {
 
-	}
+    }
 
 }

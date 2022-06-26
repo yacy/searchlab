@@ -19,8 +19,14 @@
 
 package eu.searchlab.http;
 
-import org.json.JSONObject;
+import java.io.IOException;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
+import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authorization;
 import io.undertow.server.handlers.Cookie;
 
 
@@ -78,6 +84,25 @@ public class ServiceRequest {
 
     public String getCookieValue() {
         return this.cookie == null ? "" : this.cookie.getValue();
+    }
+
+    public Authorization getAuthorization() {
+        final String cookie = this.getCookieValue();
+        try {
+            final JSONObject json = new JSONObject(new JSONTokener(cookie));
+            final Authorization authorization = new Authorization(json);
+            final Authorization stored_authorization = Searchlab.userDB.getAuthorization(authorization.getSessionID());
+            if (stored_authorization != null &&
+                authorization.getSessionID().equals(stored_authorization.getSessionID()) &&
+                authorization.getUserID().equals(stored_authorization.getUserID())) return authorization;
+            return null;
+        } catch (JSONException | IOException e) {
+            return null; // no authorization
+        }
+    }
+
+    public boolean isAuthorized() {
+        return getAuthorization() != null;
     }
 
 }

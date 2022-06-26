@@ -69,9 +69,6 @@ public final class IOObject {
      * @param object
      */
     public IOObject(final IOPath path, final byte[] object) {
-        assert object.length > 0;
-        assert object[0] != '[';
-        assert object[0] != '{';
         this.path = path;
         this.object = object;
     }
@@ -84,9 +81,6 @@ public final class IOObject {
      * @param string
      */
     public IOObject(final IOPath path, final String string) {
-        assert string.length() > 0;
-        assert string.charAt(0) != '[';
-        assert string.charAt(0) != '{';
         this.path = path;
         this.object = string.getBytes(StandardCharsets.UTF_8);
     }
