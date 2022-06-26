@@ -53,6 +53,7 @@ import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.aaaaa.IDGeneratorService;
 import eu.searchlab.http.services.aaaaa.IDValidationService;
+import eu.searchlab.http.services.aaaaa.LogoutService;
 import eu.searchlab.http.services.aaaaa.OAuthGithubCallback;
 import eu.searchlab.http.services.aaaaa.OAuthGithubDismiss;
 import eu.searchlab.http.services.aaaaa.OAuthGithubGetAuth;
@@ -145,6 +146,7 @@ public class WebServer {
         ServiceMap.register(new OAuthGithubCallback());
         ServiceMap.register(new OAuthGithubLogin());
         ServiceMap.register(new OAuthGithubDismiss());
+        ServiceMap.register(new LogoutService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
@@ -218,12 +220,14 @@ public class WebServer {
             	final Authorization authorization = serviceRequest.getAuthorization();
             	if (authorization != null) user_id = authorization.getUserID();
 
-            	// now forward to the location with that path
-                exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
-                exchange.getResponseHeaders().put(Headers.LOCATION, "/" + user_id + path + (query.length() > 0 ? "?" + query : ""));
-                exchange.getResponseSender().send("");
-                log(ip, client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0);
-                return;
+            	if (user == null || !user.equals("en") || !user_id.equals(user)) {
+            		// now forward to the location with that path
+            		exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
+            		exchange.getResponseHeaders().put(Headers.LOCATION, "/" + user_id + path + (query.length() > 0 ? "?" + query : ""));
+            		exchange.getResponseSender().send("");
+            		log(ip, client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0);
+            		return;
+            	}
             }
 
             WebServer.this.audit.event(user, ip);

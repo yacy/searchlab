@@ -153,6 +153,16 @@ public class UserDB {
         }
     }
 
+    public void deleteAuthorization(final String sessionID) {
+    	if (sessionID == null) return;
+        try {
+			this.authrDB.remove(sessionID);
+		} catch (final IOException e) {
+        	Logger.error(e);
+		}
+
+    }
+
     public static void main(final String[] args) {
         final S3Mock api = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
         api.start();

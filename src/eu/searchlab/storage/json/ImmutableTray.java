@@ -106,7 +106,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
     	assert key != null;
         synchronized (this.mutex) {
             if (this.deleted.contains(key)) return this;
-            this.deleted.put(key, null);
+            this.deleted.put(key, new Object());
             ensureLoaded();
             if (!this.object.has(key)) return this;
             this.object.remove(key);
