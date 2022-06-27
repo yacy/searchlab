@@ -65,7 +65,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/aaaaa/patreon_callback"};
+        return new String[] {"/aaaaa/patreon_callback", "/aaaaa/patreon_callback/index.html"};
     }
 
     @Override
