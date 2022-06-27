@@ -134,7 +134,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 //      --url https://www.patreon.com/api/oauth2/v2/identity \
                 //      --header 'authorization: Bearer <access_token>'
                 final HttpUriRequest request = RequestBuilder.get()
-                  .setUri("https://www.patreon.com/api/oauth2/v2/identity")
+                  .setUri("https://www.patreon.com/api/oauth2/api/current_user")
                   .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + access_token)
                   .build();
                 response = httpclient.execute(request);
