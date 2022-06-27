@@ -84,7 +84,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         if (!callbackForward && OAuthGithubGetAuth.DEVELOPMENT_FORWARD_STATE.equals(state)) {
             Logger.info("catched callback for development, forwarding to localhost");
             final ServiceResponse serviceResponse = new ServiceResponse(json);
-            serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/patreon_callback?code=" + code + "&state=" + state);
+            serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/patreon_callback/?code=" + code + "&state=" + state);
             return serviceResponse;
         }
 
