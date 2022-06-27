@@ -61,9 +61,10 @@ public class OAuthPatreonGetAuth  extends AbstractService implements Service {
         if (callbackForward) state = OAuthGithubGetAuth.DEVELOPMENT_FORWARD_STATE;
 
         // forward to github for authentication
-        final String url = "https://www.patreon.com/oauth2/authorize?response_type=code&client_id=" + client_id
-                + "&state=" + state + "&scope="
-        		+ "&redirect_uri=https://searchlab.eu/en/aaaaa/patreon_callback/";
+        final String url = "https://www.patreon.com/oauth2/authorize?client_id=" + client_id
+                + "&redirect_uri=https%3A%2F%2Fsearchlab.eu%2Fen%2Faaaaa%2Fpatreon_callback%2F"
+                + "&response_type=code"
+                + "&state=" + state;
 
         final JSONObject json = new JSONObject(true);
         final ServiceResponse serviceResponse = new ServiceResponse(json);

@@ -71,6 +71,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
         Logger.info("serviceRequest: " + serviceRequest.getPost().toString());
+        // {'error':'invalid_scope','state':'development.forward','USER':'273584169','PATH':'\/aaaaa\/patreon_callback\/','QUERY':'error=invalid_scope&state=development.forward'}"
         final String code = serviceRequest.get("code", "");
         final String state = serviceRequest.get("state", "");
         final JSONObject json = new JSONObject(true);
