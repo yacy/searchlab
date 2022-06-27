@@ -70,6 +70,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
+        Logger.info("serviceRequest: " + serviceRequest.getPost().toString());
         final String code = serviceRequest.get("code", "");
         final String state = serviceRequest.get("state", "");
         final JSONObject json = new JSONObject(true);
@@ -133,6 +134,9 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 entity = response.getEntity();
                 final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject user = new JSONObject(new JSONTokener(t));
+                // {"errors":[{"code":1,"code_name":"Unauthorized",
+                // "detail":"The server could not verify that you are authorized to access the URL requested. You either supplied the wrong credentials (e.g. a bad password), or your browser doesn't understand how to supply the credentials required.",
+                // "id":"47c651c1-7a40-58e7-83a7-2a1c9e2d6411","status":"401","title":"Unauthorized"}]}
                 final JSONObject data = user.getJSONObject("data");
                 final JSONObject attributes = data.getJSONObject("attributes");
                 userEmail = user.optString("email", "");

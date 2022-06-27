@@ -143,23 +143,24 @@ public class UserDB {
     }
 
     public Authorization getAuthorization(final String sessionID) throws IOException {
-    	if (sessionID == null) return null;
+        if (sessionID == null) return null;
         try {
             final JSONObject json = this.authrDB.getObject(sessionID);
+            if (json == null) return null;
             return new Authorization(json);
         } catch (final JSONException e) {
-        	Logger.error(e);
+            Logger.error(e);
             return null;
         }
     }
 
     public void deleteAuthorization(final String sessionID) {
-    	if (sessionID == null) return;
+        if (sessionID == null) return;
         try {
-			this.authrDB.remove(sessionID);
-		} catch (final IOException e) {
-        	Logger.error(e);
-		}
+            this.authrDB.remove(sessionID);
+        } catch (final IOException e) {
+            Logger.error(e);
+        }
 
     }
 
