@@ -42,6 +42,9 @@ import eu.searchlab.http.ServiceResponse;
  */
 public class OAuthPatreonGetAuth  extends AbstractService implements Service {
 
+    public static final String redirect_uri = "https://searchlab.eu/en/aaaaa/patreon_callback/index.html";
+    public static final String redirect_uri_urlencoded = redirect_uri.replaceAll(":", "%3A").replaceAll("/", "%2F");
+
     @Override
     public String[] getPaths() {
         return new String[] {"/aaaaa/patreon_get_auth"};
@@ -62,7 +65,7 @@ public class OAuthPatreonGetAuth  extends AbstractService implements Service {
 
         // forward to github for authentication
         final String url = "https://www.patreon.com/oauth2/authorize?client_id=" + client_id
-                + "&redirect_uri=https%3A%2F%2Fsearchlab.eu%2Fen%2Faaaaa%2Fpatreon_callback%2Findex.html"
+                + "&redirect_uri=" + redirect_uri_urlencoded
                 + "&response_type=code"
                 + "&state=" + state;
 

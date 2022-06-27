@@ -113,6 +113,8 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
             params.add(new BasicNameValuePair("grant_type", "authorization_code"));
             params.add(new BasicNameValuePair("client_id", client_id));
             params.add(new BasicNameValuePair("client_secret", client_secret));
+            params.add(new BasicNameValuePair("redirect_uri", OAuthPatreonGetAuth.redirect_uri));
+
             httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
             httppost.addHeader("Content-Type", "application/x-www-form-urlencoded");
             HttpResponse response = httpclient.execute(httppost);
