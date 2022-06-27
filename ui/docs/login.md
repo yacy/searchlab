@@ -19,7 +19,7 @@ You can currently only sign-up using an existing GitHub account:
 We are also preparing sign-up with the following OAuth providers:
 
 <form action="/en/aaaaa/patreon_get_auth" class="navbar-form navbar-left">
-  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #FF424D; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_patreon.png" width="32" height="32">&nbsp;&nbsp;Login with Patreon</button>
+  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #FF424D; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_patreon.png" width="32" height="32">&nbsp;&nbsp;Connect with Patreon</button>
 </form>
 </br></br>
 
