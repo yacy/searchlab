@@ -114,6 +114,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
             params.add(new BasicNameValuePair("client_id", client_id));
             params.add(new BasicNameValuePair("client_secret", client_secret));
             httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+            httppost.addHeader("Content-Type", "application/x-www-form-urlencoded");
             HttpResponse response = httpclient.execute(httppost);
             HttpEntity entity = response.getEntity();
 
@@ -121,6 +122,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 // the response is a JSON
                 final String j = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject receipt = new JSONObject(new JSONTokener(j));
+                Logger.info("receipt = " + receipt.toString());
                 final String access_token = receipt.optString("access_token");
 
                 Logger.info("Access Token is " + access_token);
@@ -135,6 +137,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 entity = response.getEntity();
                 final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject user = new JSONObject(new JSONTokener(t));
+                Logger.info("user = " + user.toString());
                 // {"errors":[{"code":1,"code_name":"Unauthorized",
                 // "detail":"The server could not verify that you are authorized to access the URL requested. You either supplied the wrong credentials (e.g. a bad password), or your browser doesn't understand how to supply the credentials required.",
                 // "id":"47c651c1-7a40-58e7-83a7-2a1c9e2d6411","status":"401","title":"Unauthorized"}]}
