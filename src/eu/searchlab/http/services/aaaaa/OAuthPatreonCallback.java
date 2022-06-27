@@ -74,7 +74,6 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         // {'error':'invalid_scope','state':'development.forward','USER':'273584169','PATH':'\/aaaaa\/patreon_callback\/','QUERY':'error=invalid_scope&state=development.forward'}"
         final String code = serviceRequest.get("code", "");
         final String state = serviceRequest.get("state", "");
-        final JSONObject json = new JSONObject(true);
 
         // In case that we set callback.forward = true, we are in a development environment.
         // Then we produce an additional forwarding to localhost. Patreon will always call the
@@ -85,7 +84,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         // to prevent that in development environments the call is executed forever, we must check the forward flag here as well
         if (!callbackForward && OAuthGithubGetAuth.DEVELOPMENT_FORWARD_STATE.equals(state)) {
             Logger.info("catched callback for development, forwarding to localhost");
-            final ServiceResponse serviceResponse = new ServiceResponse(json);
+            final ServiceResponse serviceResponse = new ServiceResponse(new JSONObject(true));
             serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/patreon_callback/?code=" + code + "&state=" + state);
             return serviceResponse;
         }
@@ -140,16 +139,13 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 response = httpclient.execute(request);
                 entity = response.getEntity();
                 final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
-                final JSONObject user = new JSONObject(new JSONTokener(t));
-                Logger.info("user = " + user.toString());
-                // {"errors":[{"code":1,"code_name":"Unauthorized",
-                // "detail":"The server could not verify that you are authorized to access the URL requested. You either supplied the wrong credentials (e.g. a bad password), or your browser doesn't understand how to supply the credentials required.",
-                // "id":"47c651c1-7a40-58e7-83a7-2a1c9e2d6411","status":"401","title":"Unauthorized"}]}
-                final JSONObject data = user.getJSONObject("data");
+                final JSONObject json = new JSONObject(new JSONTokener(t));
+                Logger.info("json = " + json.toString());
+                final JSONObject data = json.getJSONObject("data");
                 final JSONObject attributes = data.getJSONObject("attributes");
-                userEmail = user.optString("email", "");
-                userName = user.optString("full_name", "");
-                userPatreonLogin = data.optString("id", "");
+                userEmail = attributes.optString("email", "");
+                userName = attributes.optString("full_name", "");
+                userPatreonLogin = data.optString("vanity", "");
 
                 if ("null".equals(userEmail)) userEmail = "";
             }
@@ -159,7 +155,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
 
         // Decide if the credentials are sufficient for authentication
         // We redirect again to a page where we tell the user that the log-in actually happened.
-        final ServiceResponse serviceResponse = new ServiceResponse(json);
+        final ServiceResponse serviceResponse = new ServiceResponse(new JSONObject(true));
         if (userEmail.length() > 0 && userEmail.indexOf('@') > 1) try {
 
             Logger.info("User Login: " + userEmail);
