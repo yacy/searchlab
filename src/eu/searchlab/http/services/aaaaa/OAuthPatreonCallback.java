@@ -130,10 +130,12 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 Logger.info("Access Token is " + access_token);
 
                 // read the user information
-                // curl -H "Authorization: token TOKEN" https://www.patreon.com/api/oauth2/v2/identity
+                // curl --request GET \
+                //      --url https://www.patreon.com/api/oauth2/v2/identity \
+                //      --header 'authorization: Bearer <access_token>'
                 final HttpUriRequest request = RequestBuilder.get()
                   .setUri("https://www.patreon.com/api/oauth2/v2/identity")
-                  .setHeader(HttpHeaders.AUTHORIZATION, "token " + access_token)
+                  .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + access_token)
                   .build();
                 response = httpclient.execute(request);
                 entity = response.getEntity();
@@ -185,7 +187,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
             // - authorization with cookie entry to give user access and operation right when accessing further webpages
             Searchlab.userDB.setAuthorization(authorization);
 
-            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/patreon_login/");
+            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/login/");
 
             return serviceResponse;
         } catch (final IOException e) {
@@ -193,7 +195,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         }
 
         // user is rejected
-        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/patreon_dismiss/");
+        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/dismiss/");
         return serviceResponse;
     }
 }
