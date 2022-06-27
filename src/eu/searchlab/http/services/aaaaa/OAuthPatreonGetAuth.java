@@ -62,7 +62,7 @@ public class OAuthPatreonGetAuth  extends AbstractService implements Service {
 
         // forward to github for authentication
         final String url = "https://www.patreon.com/oauth2/authorize?client_id=" + client_id
-                + "&redirect_uri=https%3A%2F%2Fsearchlab.eu%2Fen%2Faaaaa%2Fpatreon_callback%2F"
+                + "&redirect_uri=https%3A%2F%2Fsearchlab.eu%2Fen%2Faaaaa%2Fpatreon_callback"
                 + "&response_type=code"
                 + "&state=" + state;
 
@@ -72,3 +72,4 @@ public class OAuthPatreonGetAuth  extends AbstractService implements Service {
         return serviceResponse;
     }
 }
+//https://searchlab.eu/en/aaaaa/patreon_callback
