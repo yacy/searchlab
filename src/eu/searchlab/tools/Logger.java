@@ -41,7 +41,7 @@ public class Logger {
     private static final AtomicInteger a = new AtomicInteger(0);
     private static final Map<String, org.slf4j.Logger> logger = new ConcurrentHashMap<>();
     private static final org.slf4j.Logger dfltLogger = org.slf4j.LoggerFactory.getLogger("default");
-    private static final String logFormat = "%1$-7s [%2$s] %3$-48s \"%4$s\"%5$s%n";
+    private static final String logFormat = "%1$-7s [%2$s] %3$-48s %4$s%5$s%n";
 
     static {
         final StreamHandler sh = new ConsoleHandler();
@@ -108,7 +108,6 @@ public class Logger {
                 source = new StringBuilder(message.substring(0, p));
                 message = message.substring(p + 1);
             }
-            message = message.replace('\"', '\''); // required to make the line parseable
             final String levelname = record.getLevel().getName();
             final String line = formatLine(levelname, this.dat, source.toString(), message, record.getThrown());
             return line;

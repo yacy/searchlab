@@ -181,6 +181,8 @@ public class WebServer {
             final HeaderMap requestHeaders = exchange.getRequestHeaders();
             final HeaderValues refererValues = requestHeaders.get(Headers.REFERER_STRING);
             final String referer = refererValues == null ? "" : refererValues.getFirst();
+            final HeaderValues userAgentValues = requestHeaders.get(Headers.USER_AGENT_STRING);
+            final String userAgent = userAgentValues == null ? "" : userAgentValues.getFirst();
 
             // read client address
             final SocketAddress address = exchange.getConnection().getPeerAddress();
@@ -235,7 +237,7 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, "/" + user_id + path + (query.length() > 0 ? "?" + query : ""));
                     exchange.getResponseSender().send("");
-                    log(ip, client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0, referer);
+                    log(ip, client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0, referer, userAgent);
                     return;
                 }
             }
@@ -266,11 +268,11 @@ public class WebServer {
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
                     exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
                     exchange.getResponseSender().send(bb);
-                    log(ip, client, user, method, path, StatusCodes.OK, f.length(), referer);
+                    log(ip, client, user, method, path, StatusCodes.OK, f.length(), referer, userAgent);
                 } catch (final IOException e) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found");
                     exchange.getResponseSender().send("");
-                    log(ip, client, user, method, path, exchange.getStatusCode(), 0, referer);
+                    log(ip, client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
                 }
                 return;
             }
@@ -310,7 +312,7 @@ public class WebServer {
                 log(ip, client, user, method,
                     "GET".equals(method) ? path + (exchange.getQueryString().length() > 0 ? ("?" + exchange.getQueryString()) : "") : path,
                     exchange.getStatusCode(), b == null ? 0 : b.length,
-                    referer);
+                    referer, userAgent);
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
@@ -322,12 +324,12 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE).setReasonPhrase(e.getMessage());
                     exchange.getResponseSender().send("");
                 }
-                log(ip, client, user, method, path, exchange.getStatusCode(), 0, referer);
+                log(ip, client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
             }
         }
 
-        private final void log(final String ip, final String client, final String user, final String method, final String path, final int response, final long size, final String referer) {
-            Logger.info(ip + " " + client + " " + user + " " + method + " " + path + " " + response + " " + size + (referer.length() > 0 ? (" " + referer) : ""));
+        private final void log(final String ip, final String client, final String user, final String method, final String path, final int response, final long size, final String referer, final String userAgent) {
+            Logger.info(ip + " " + client + " " + user + " \"" + method + " " + path + "\" " + response + " " + size + " \"" + referer + "\" \"" + userAgent + "\"");
         }
 
         /**
