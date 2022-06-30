@@ -38,7 +38,7 @@ public class LogService extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
-        final int tail = serviceRequest.get("tail", serviceRequest.get("count", serviceRequest.get("lines", 0)));
+        final int tail = serviceRequest.get("tail", serviceRequest.get("count", serviceRequest.get("lines", 1000)));
         final StringBuilder buffer = new StringBuilder(1000);
         final List<String> lines = Logger.getLines(tail);
         for (final String line: lines) buffer.append(line); // line has line break attached
