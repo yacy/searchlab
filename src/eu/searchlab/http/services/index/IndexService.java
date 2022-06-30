@@ -54,12 +54,14 @@ public class IndexService extends AbstractService implements Service {
     }
 
     @Override
-    public ServiceResponse serve(final ServiceRequest serviceRequest) {
+    public ServiceResponse serve(final ServiceRequest request) {
+
+        final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
 
         // evaluate request parameter
-        final String indexName = serviceRequest.get("index", GridIndex.DEFAULT_INDEXNAME_WEB);
-        final String id = serviceRequest.get("id", "");
-        final String q = serviceRequest.get("query", "");
+        final String indexName = request.get("index", GridIndex.DEFAULT_INDEXNAME_WEB);
+        final String id = request.get("id", "");
+        final String q = request.get("query", request.get("q", "")).trim();
         final JSONObject json = new JSONObject(true);
 
         try {
@@ -86,14 +88,14 @@ public class IndexService extends AbstractService implements Service {
                     json.put("items", list.toArray());
                 }
             } else if (indexName.length() > 0 && q.length() > 0) {
-                final int startRecord = serviceRequest.get("startRecord", serviceRequest.get("start", 0));
-                final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(serviceRequest.get("contentdom", "all"));
-                String collection = serviceRequest.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
+                final int startRecord = request.get("startRecord", request.get("start", 0));
+                final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
+                String collection = request.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
                 collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
                 final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
-                final int timezoneOffset = serviceRequest.get("timezoneOffset", -1);
-                final Sort sort = new Sort(serviceRequest.get("sort", ""));
-                final int itemsPerPage = serviceRequest.get("itemsPerPage", serviceRequest.get("maximumRecords", serviceRequest.get("rows", serviceRequest.get("num", 10))));
+                final int timezoneOffset = request.get("timezoneOffset", -1);
+                final Sort sort = new Sort(request.get("sort", ""));
+                final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
 
                 final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
                 final ElasticsearchClient.Query query = Searchlab.ec.query(
@@ -111,11 +113,10 @@ public class IndexService extends AbstractService implements Service {
                 json.put("description", "Search for " + q);
                 json.put("startIndex", "" + startRecord);
                 json.put("searchTerms", q);
-                json.put("totalResults", Integer.toString(query.hitCount));
+                json.put("totalResults", hasReferer ? Integer.toString(query.hitCount) : Integer.toString(items.length()));
                 json.put("itemsPerPage", "" + itemsPerPage);
-                json.put("pages", "" + ((query.hitCount / itemsPerPage) + 1));
-                json.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
-
+                json.put("pages", "" + (hasReferer ? (query.hitCount / itemsPerPage) + 1 : 1));
+                json.put("page", "" + (hasReferer ? (startRecord / itemsPerPage) + 1 : 1)); // the current result page, first page has number 1
                 json.put("itemsCount", items.length());
                 json.put("items", items.toArray());
             }

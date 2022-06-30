@@ -74,6 +74,8 @@ public class YaCySearchService extends AbstractService implements Service {
     @Override
     public ServiceResponse serve(final ServiceRequest request) {
 
+        final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
+
         // evaluate request parameter
         final String q = request.get("query", request.get("q", "")).trim();
         if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
@@ -121,10 +123,6 @@ public class YaCySearchService extends AbstractService implements Service {
                 yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 
-            // search metadata
-            channel.put("totalResults", Integer.toString(query.hitCount));
-            channel.put("pages", "" + ((query.hitCount / itemsPerPage) + 1));
-
             // create result list
             final List<Map<String, Object>> result = query.results;
             final List<String> explanations = query.explanations;
@@ -158,6 +156,10 @@ public class YaCySearchService extends AbstractService implements Service {
                 }
                 items.put(hit);
             }
+
+            // search metadata
+            channel.put("totalResults", hasReferer ? Integer.toString(query.hitCount) : Integer.toString(items.length()));
+            channel.put("pages", "" + (hasReferer ? (query.hitCount / itemsPerPage) + 1 : 1));
             channel.put("itemsCount", items.length());
             channel.put("items", items);
 
@@ -200,24 +202,26 @@ public class YaCySearchService extends AbstractService implements Service {
 
             // create page navigation
             final JSONArray pagenav = new JSONArray();
-            JSONObject nave = new JSONObject(true);
-            nave.put("startRecord", startRecord < itemsPerPage ? 0 : startRecord - itemsPerPage);
-            nave.put("page", "&lt;");
-            nave.put("same", false);
-            pagenav.put(nave);
-            final int pages = query.hitCount / itemsPerPage + 1;
-            for (int p = 0; p < Math.min(pages, 20); p++) {
+            if (hasReferer) {
+                JSONObject nave = new JSONObject(true);
+                nave.put("startRecord", startRecord < itemsPerPage ? 0 : startRecord - itemsPerPage);
+                nave.put("page", "&lt;");
+                nave.put("same", false);
+                pagenav.put(nave);
+                final int pages = hasReferer ? (query.hitCount / itemsPerPage) + 1 : 1;
+                for (int p = 0; p < Math.min(pages, 20); p++) {
+                    nave = new JSONObject(true);
+                    nave.put("startRecord", p * itemsPerPage);
+                    nave.put("page", "" + (p + 1));
+                    nave.put("same", p * itemsPerPage == startRecord);
+                    pagenav.put(nave);
+                }
                 nave = new JSONObject(true);
-                nave.put("startRecord", p * itemsPerPage);
-                nave.put("page", "" + (p + 1));
-                nave.put("same", p * itemsPerPage == startRecord);
+                nave.put("startRecord", (startRecord + itemsPerPage > query.hitCount) ? startRecord : startRecord + itemsPerPage);
+                nave.put("page", "&gt;");
+                nave.put("same", false);
                 pagenav.put(nave);
             }
-            nave = new JSONObject(true);
-            nave.put("startRecord", (startRecord + itemsPerPage > query.hitCount) ? startRecord : startRecord + itemsPerPage);
-            nave.put("page", "&gt;");
-            nave.put("same", false);
-            pagenav.put(nave);
             channel.put("pagenav", pagenav);
         } catch (final Exception e) {
             // any kind of exception can happen if the elastic index is not ready or index does not exist

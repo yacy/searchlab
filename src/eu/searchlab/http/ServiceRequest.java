@@ -28,6 +28,9 @@ import org.json.JSONTokener;
 import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authorization;
 import io.undertow.server.handlers.Cookie;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 
 
 public class ServiceRequest {
@@ -37,13 +40,15 @@ public class ServiceRequest {
     private final String path; // this looks like "/js/jquery.min.js", a root path looks like "/"
     private final String query; // the part after "?"
     private final Cookie cookie;
+    private final HeaderMap requestHeaders;
 
-    public ServiceRequest(final JSONObject post, final String user, final String path, final String query, final Cookie cookie) {
+    public ServiceRequest(final JSONObject post, final String user, final String path, final String query, final Cookie cookie, final HeaderMap requestHeaders) {
         this.post = post == null ? new JSONObject() : post;
         this.user = user;
         this.path = path == null ? "" : path;
         this.query = query == null ? "" : query;
         this.cookie = cookie;
+        this.requestHeaders = requestHeaders;
     }
 
     public String getUser() {
@@ -100,6 +105,18 @@ public class ServiceRequest {
         } catch (JSONException | IOException e) {
             return null; // no authorization
         }
+    }
+
+    public String getHeader(final String name, final String dflt) {
+        if (this.requestHeaders == null) return dflt;
+        final HeaderValues val = this.requestHeaders.get(name);
+        return val == null ? dflt : val.getFirst();
+    }
+
+    public boolean hasReferer() {
+        final String referer = getHeader(Headers.REFERER_STRING, null);
+        if (referer == null) return false;
+        return referer.length() > 0;
     }
 
     public boolean isAuthorized() {

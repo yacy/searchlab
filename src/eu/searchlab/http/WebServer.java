@@ -529,7 +529,8 @@ public class WebServer {
             try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
             try {json.put("QUERY", query);} catch (final JSONException e) {} // TODO: delete
             final Cookie cookie = exchange.getRequestCookie(COOKIE_USER_ID_NAME);
-            return new ServiceRequest(json, user, path, query, cookie);
+            final HeaderMap requestHeaders = exchange.getRequestHeaders();
+            return new ServiceRequest(json, user, path, query, cookie, requestHeaders);
         }
 
         private ServiceRequest getQueryParams(final String knownuser, String path)  {
@@ -556,7 +557,7 @@ public class WebServer {
             try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
             try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
             try {json.put("QUERY", "");} catch (final JSONException e) {} // TODO: delete
-            return new ServiceRequest(json, user, path, "", null);
+            return new ServiceRequest(json, user, path, "", null, null);
         }
 
         /**
