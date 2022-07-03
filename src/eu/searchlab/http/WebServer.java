@@ -56,7 +56,7 @@ import eu.searchlab.http.services.aaaaa.IDValidationService;
 import eu.searchlab.http.services.aaaaa.LogoutService;
 import eu.searchlab.http.services.aaaaa.OAuthGithubCallback;
 import eu.searchlab.http.services.aaaaa.OAuthGithubGetAuth;
-import eu.searchlab.http.services.aaaaa.OAuthLogin;
+import eu.searchlab.http.services.aaaaa.HomeService;
 import eu.searchlab.http.services.aaaaa.OAuthPatreonCallback;
 import eu.searchlab.http.services.aaaaa.OAuthPatreonGetAuth;
 import eu.searchlab.http.services.assets.AssetDirectoryService;
@@ -147,7 +147,7 @@ public class WebServer {
         ServiceMap.register(new LogoutService());
         ServiceMap.register(new OAuthGithubGetAuth());
         ServiceMap.register(new OAuthGithubCallback());
-        ServiceMap.register(new OAuthLogin());
+        ServiceMap.register(new HomeService());
         ServiceMap.register(new OAuthPatreonGetAuth());
         ServiceMap.register(new OAuthPatreonCallback());
 

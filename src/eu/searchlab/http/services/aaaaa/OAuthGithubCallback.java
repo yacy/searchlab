@@ -203,7 +203,8 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
             // - authorization with cookie entry to give user access and operation right when accessing further webpages
             Searchlab.userDB.setAuthorization(authorization);
 
-            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/aaaaa/login/");
+            // successfully logged in
+            serviceResponse.setFoundRedirect("/" + authentication.getID() + "/home/");
 
             return serviceResponse;
         } catch (final IOException e) {

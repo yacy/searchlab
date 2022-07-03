@@ -36,13 +36,13 @@ import eu.searchlab.http.ServiceResponse;
  * successfully afterwards.
  *
  * Example call:
- * http://localhost:8400/en/aaaaa/login
+ * http://localhost:8400/en/homes
  */
-public class OAuthLogin  extends AbstractService implements Service {
+public class HomeService  extends AbstractService implements Service {
 
     @Override
     public String[] getPaths() {
-        return new String[] {"/aaaaa/login"};
+        return new String[] {"/home/"};
     }
 
     @Override
