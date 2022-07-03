@@ -22,12 +22,13 @@ package eu.searchlab.http.services.aaaaa;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
-import eu.searchlab.http.WebServer;
+import eu.searchlab.tools.Logger;
 
 /**
  * Logout
@@ -45,21 +46,28 @@ public class LogoutService  extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-    	final Authorization authorization = serviceRequest.getAuthorization();
         final JSONObject json = new JSONObject(true);
         final ServiceResponse serviceResponse = new ServiceResponse(json);
 
-    	// we do three things to log out:
-    	// - delete the cookie from the accessing browser
-        serviceResponse.addSessionCookie(WebServer.COOKIE_USER_ID_NAME, "");
+        // in case that a user is still logged in, check who we are logging out
+        final String user = serviceRequest.getUser();
+        Logger.info("logging out user: " + user);
 
-    	// - delete the cookie from the authorization table
+        // check if cookie exist
+        final Authorization authorization = serviceRequest.getAuthorization(); // read possible cookie
         if (authorization != null) {
-        	Searchlab.userDB.deleteAuthorization(authorization.getSessionID());
+            // delete the user authorization
+            Searchlab.userDB.deleteAuthorization(authorization.getSessionID());
+            Logger.info("logging out userID: " + authorization.getUserID());
         }
 
-    	// - forward to a /en/ path.
-        serviceResponse.setFoundRedirect("/en/");
+        final Authentication authentication = authorization == null ? null : Searchlab.userDB.getAuthentiationByID(authorization.getUserID());
+        if (authentication != null) {
+            Logger.info("logging out email:" + authentication.getEmailPseudonymized());
+        }
+
+        // delete the user cookie
+        serviceResponse.deleteUserIDCookie();
         return serviceResponse;
     }
 }

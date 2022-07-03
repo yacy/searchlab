@@ -57,10 +57,10 @@ public class OAuthLogin  extends AbstractService implements Service {
         final Authentication authentication = authorization == null ? null : Searchlab.userDB.getAuthentiationByID(authorization.getUserID());
         if (authentication == null) {
             // failed authentication & authorization
-            // forward again to dismiss option
+            // forward to logout
             final JSONObject json = new JSONObject(true);
             final ServiceResponse serviceResponse = new ServiceResponse(json);
-            serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/dismiss/");
+            serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/logout/");
             return serviceResponse;
         }
 

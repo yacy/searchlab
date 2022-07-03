@@ -54,7 +54,6 @@ import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.aaaaa.IDGeneratorService;
 import eu.searchlab.http.services.aaaaa.IDValidationService;
 import eu.searchlab.http.services.aaaaa.LogoutService;
-import eu.searchlab.http.services.aaaaa.OAuthDismiss;
 import eu.searchlab.http.services.aaaaa.OAuthGithubCallback;
 import eu.searchlab.http.services.aaaaa.OAuthGithubGetAuth;
 import eu.searchlab.http.services.aaaaa.OAuthLogin;
@@ -149,11 +148,8 @@ public class WebServer {
         ServiceMap.register(new OAuthGithubGetAuth());
         ServiceMap.register(new OAuthGithubCallback());
         ServiceMap.register(new OAuthLogin());
-        ServiceMap.register(new OAuthDismiss());
         ServiceMap.register(new OAuthPatreonGetAuth());
         ServiceMap.register(new OAuthPatreonCallback());
-        //ServiceMap.register(new OAuthPatreonLogin());
-        //ServiceMap.register(new OAuthPatreonDismiss());
 
         // Start webserver
         final PathHandler ph = Handlers.path();

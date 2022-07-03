@@ -85,6 +85,13 @@ public class Authentication {
         }
     }
 
+    public String getEmailPseudonymized() throws RuntimeException {
+        final String email = getEmail();
+        final int p = email.indexOf('@');
+        if (p < 0) throw new RuntimeException("email not valid");
+        return email.charAt(0) + "***" + email.substring(p - 1);
+    }
+
     /**
      * set searchlab id, 9 digit number
      * @param id

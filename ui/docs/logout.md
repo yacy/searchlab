@@ -1,6 +1,6 @@
 # Logout
 
-You will be logged out!
+You are logged out!
 
 <script>
   function delay(time) {

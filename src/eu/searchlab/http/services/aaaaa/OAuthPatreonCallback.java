@@ -191,7 +191,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         }
 
         // user is rejected
-        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/aaaaa/dismiss/");
+        serviceResponse.setFoundRedirect("/" + serviceRequest.getUser() + "/logout/");
         return serviceResponse;
     }
 }
