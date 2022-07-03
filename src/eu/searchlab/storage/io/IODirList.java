@@ -30,61 +30,61 @@ import eu.searchlab.storage.io.IODirList.Entry;
  */
 public class IODirList extends ArrayList<Entry> {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private final long created;
-	private long latestEntry;
+    private final long created;
+    private long latestEntry;
 
-	public IODirList() {
-		super();
-		this.created = System.currentTimeMillis();
-		this.latestEntry = 0;
-	}
+    public IODirList() {
+        super();
+        this.created = System.currentTimeMillis();
+        this.latestEntry = 0;
+    }
 
-	public long getCreated() {
-		return this.created;
-	}
+    public long getCreated() {
+        return this.created;
+    }
 
-	public long getAge() {
-		return System.currentTimeMillis() - this.created;
-	}
+    public long getAge() {
+        return System.currentTimeMillis() - this.created;
+    }
 
-	public long getLatestEntry() {
-		return this.latestEntry;
-	}
+    public long getLatestEntry() {
+        return this.latestEntry;
+    }
 
-	public boolean isStale() {
-		if (this.latestEntry == 0) {
-			// no actual information available, we simply use a time-out of 10 seconds
-			// which should cover clicking-around
-			return getAge() > 10000;
-		} else {
-			// use a typical time-to-live here
-			return getAge() * 2 > this.created - this.latestEntry;
-		}
-	}
+    public boolean isStale() {
+        if (this.latestEntry == 0) {
+            // no actual information available, we simply use a time-out of 10 seconds
+            // which should cover clicking-around
+            return getAge() > 10000;
+        } else {
+            // use a typical time-to-live here
+            return getAge() * 2 > this.created - this.latestEntry;
+        }
+    }
 
     @Override
-	public boolean add(final Entry e) {
-    	this.latestEntry = Math.max(this.latestEntry, e.time);
-    	assert this.latestEntry <= this.created;
+    public boolean add(final Entry e) {
+        this.latestEntry = Math.max(this.latestEntry, e.time);
+        assert this.latestEntry <= this.created;
         return super.add(e);
     }
 
-	public final static class Entry {
+    public final static class Entry {
 
-	    public final String name;
-	    public final boolean isDir;
-	    public final long size;
-	    public final long time;
+        public final String name;
+        public final boolean isDir;
+        public final long size;
+        public final long time;
 
-	    public Entry(final String name, final boolean isDir, final long size, final long time) {
-	        this.name = name; this.isDir = isDir; this.size = size; this.time = time;
-	    }
+        public Entry(final String name, final boolean isDir, final long size, final long time) {
+            this.name = name; this.isDir = isDir; this.size = size; this.time = time;
+        }
 
-	    @Override
-	    public String toString() {
-	        return this.name + " " + (this.isDir ? "" : this.size + " " + new Date(this.time).toString());
-	    }
-	}
+        @Override
+        public String toString() {
+            return this.name + " " + (this.isDir ? "" : this.size + " " + new Date(this.time).toString());
+        }
+    }
 }
