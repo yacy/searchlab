@@ -19,6 +19,7 @@
 
 package eu.searchlab.http.services.aaaaa;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
@@ -28,6 +29,7 @@ import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
+import eu.searchlab.tools.Logger;
 
 /**
  * OAuthGithubLogin
@@ -66,6 +68,11 @@ public class HomeService  extends AbstractService implements Service {
 
         // all good, we respond with user credentials
         final JSONObject json = authentication.getJSON();
+        try {
+            json.put("authentication", authentication.getJSON());
+        } catch (final JSONException e) {
+            Logger.warn(e);
+        }
         final ServiceResponse serviceResponse = new ServiceResponse(json);
         return serviceResponse;
     }

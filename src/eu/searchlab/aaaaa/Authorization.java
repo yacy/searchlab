@@ -20,17 +20,47 @@
 package eu.searchlab.aaaaa;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Authorization {
 
-    private final JSONObject json;
+    public final static Set<String> maintainers = new HashSet<>();
 
-    public Authorization(final JSONObject json) throws IOException {
+    static {
+        final String authorizationMaintainer = System.getProperty("authorization.maintainer", "");
+        for (final String s: authorizationMaintainer.split(",")) {
+            final String id = s.trim();
+            if (Authentication.isValid(id)) maintainers.add(id);
+        }
+    }
+
+    public JSONObject json;
+
+    public static enum Grade {
+        L00_Everyone(0),
+        L01_Anonymous(1),
+        L02_Authenticated(2),
+        L03_Primary(3),
+        L04_Level_One(4),
+        L05_Level_Five(5),
+        L06_Level_Twentyfive(6),
+        L07_Level_Fifty(7),
+        L08_Level_Twohundred(8),
+        L09_Maintainer(9);
+
+        public int level;
+
+        private Grade(final int level) {
+            this.level = level;
+        }
+    }
+
+    public Authorization(final JSONObject json) {
         this.json = json;
-        if (!isValid()) throw new IOException("cookie is not valid");
     }
 
     public Authorization(final String id) throws IOException {

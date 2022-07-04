@@ -158,6 +158,7 @@ public class CrawlStartService  extends AbstractService implements Service {
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
         final JSONObject crawlstart = crawlStartDefaultClone();
+        final int grade_level = serviceRequest.getAuthorizationGrade().level;
 
         // read call attributes using the default crawlstart key names
         final String user_id = serviceRequest.getUser();
@@ -165,10 +166,10 @@ public class CrawlStartService  extends AbstractService implements Service {
             for (final String key: crawlstart.keySet()) {
                 final Object object = crawlstart.get(key);
                 if (object instanceof String) {
-                	String v = serviceRequest.get(key, crawlstart.getString(key));
-                	if (v.equals("on")) v = "true";
-                	if (v.equals("off")) v = "false";
-                	crawlstart.put(key, v);
+                    String v = serviceRequest.get(key, crawlstart.getString(key));
+                    if (v.equals("on")) v = "true";
+                    if (v.equals("off")) v = "false";
+                    crawlstart.put(key, v);
                 }
                 else if (object instanceof Integer) crawlstart.put(key, serviceRequest.get(key, crawlstart.getInt(key)));
                 else if (object instanceof Long) crawlstart.put(key, serviceRequest.get(key, crawlstart.getLong(key)));
@@ -182,6 +183,7 @@ public class CrawlStartService  extends AbstractService implements Service {
         // fix attributes
         final ActionSequence allCrawlstarts = new ActionSequence();
         try {
+            allCrawlstarts.put("grade_level", grade_level);
             final CrawlstartURLSplitter crawlstartURLs = new CrawlstartURLSplitter(crawlstart.getString("crawlingURL"));
             final int crawlingDepth = crawlstart.optInt("crawlingDepth", 3);
             crawlstart.put("crawlingDepth", Math.min(crawlingDepth, 8)); // crawlingDepth shall not exceed 8 - this is used for enhanced balancing to be able to reach crawl leaves
@@ -200,10 +202,10 @@ public class CrawlStartService  extends AbstractService implements Service {
                     siteFilter = subpathFilter(crawlstartURLs.getURLs());
                 }
                 if (".*".equals(mustmatch)) {
-                	mustmatch = siteFilter;
+                    mustmatch = siteFilter;
                 } else if (!".*".equals(siteFilter)) {
                     // combine both
-                	mustmatch = "(" + mustmatch + ")|(" + siteFilter + ")";
+                    mustmatch = "(" + mustmatch + ")|(" + siteFilter + ")";
                 }
             }
             if (wide) mustmatch = ".*";

@@ -26,7 +26,9 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.aaaaa.Authorization;
+import eu.searchlab.aaaaa.Authorization.Grade;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
@@ -121,6 +123,13 @@ public class ServiceRequest {
 
     public boolean isAuthorized() {
         return getAuthorization() != null;
+    }
+
+    public Grade getAuthorizationGrade() {
+        if (this.user == null || this.user.length() <= 2 || !Authentication.isValid(this.user)) return Grade.L00_Everyone;
+        if (!isAuthorized()) return Grade.L01_Anonymous;
+        if (Authorization.maintainers.contains(getUser())) return Grade.L09_Maintainer;
+        return Grade.L02_Authenticated;
     }
 
 }
