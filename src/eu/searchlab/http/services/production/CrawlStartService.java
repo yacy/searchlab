@@ -54,6 +54,7 @@ import eu.searchlab.tools.MultiProtocolURL;
 import net.yacy.grid.io.index.CrawlstartDocument;
 import net.yacy.grid.io.index.CrawlstartMapping;
 import net.yacy.grid.io.index.FulltextIndex;
+import net.yacy.grid.io.index.GridIndex;
 import net.yacy.grid.io.index.Sort;
 import net.yacy.grid.io.index.WebMapping;
 
@@ -131,7 +132,7 @@ public class CrawlStartService  extends AbstractService implements Service {
     }
 
     public static String subpathFilter(final Collection<? extends MultiProtocolURL> urls) {
-        final LinkedHashSet<String> filters = new LinkedHashSet<String>(); // first collect in a set to eliminate doubles
+        final LinkedHashSet<String> filters = new LinkedHashSet<>(); // first collect in a set to eliminate doubles
         for (final MultiProtocolURL url: urls) filters.add(mustMatchSubpath(url));
         final StringBuilder filter = new StringBuilder();
         for (final String urlfilter: filters) filter.append('|').append(urlfilter);
@@ -220,11 +221,27 @@ public class CrawlStartService  extends AbstractService implements Service {
             crawlstarturls: for (final MultiProtocolURL url: crawlstartURLs.getURLs()) {
                 final JSONObject singlecrawl = new JSONObject();
                 for (final String key: crawlstart.keySet()) singlecrawl.put(key, crawlstart.get(key)); // create a clone of crawlstart
+
+                // find all user_ids which have participated in the same crawl
+                final Map<String, Long> agg_host_s = Searchlab.ec.aggregation(
+                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
+                        WebMapping.host_s.name(), url.getHost(), WebMapping.user_id_s.name());
+                final Map<String, Long> agg_host_sxt = Searchlab.ec.aggregation(
+                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
+                        WebMapping.host_s.name(), url.getHost(), WebMapping.user_id_sxt.name());
+                for (final String s: agg_host_s.keySet()) {
+                    if (!agg_host_sxt.containsKey(s)) agg_host_sxt.put(s, agg_host_s.get(s));
+                }
+                agg_host_sxt.put(user_id, 1L);
+                final JSONArray user_ids = new JSONArray();
+                for (final String s: agg_host_sxt.keySet()) user_ids.put(s);
+
                 final String crawl_id = getCrawlID(url, now, count++);
                 final String start_url = url.toNormalform(true);
                 final String start_ssld = Domains.getSmartSLD(url.getHost());
                 singlecrawl.put("id", crawl_id);
                 singlecrawl.put("user_id", user_id);
+                singlecrawl.put("user_ids", user_ids);
                 singlecrawl.put("start_url", start_url);
                 singlecrawl.put("start_ssld", start_ssld);
 
@@ -299,6 +316,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                         .put("queue", queueName)
                         .put("id", crawl_id)
                         .put("user_id", user_id)
+                        .put("user_ids", user_ids)
                         .put("depth", 0)
                         .put("sourcegraph", "rootasset");
                 final Action crawlAction = new Action(action);

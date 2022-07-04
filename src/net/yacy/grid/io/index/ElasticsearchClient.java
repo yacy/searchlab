@@ -76,6 +76,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
@@ -871,6 +872,34 @@ public class ElasticsearchClient implements FulltextIndex {
             continue;
         }
         return query;
+    }
+
+    public Map<String, Long> aggregation(final String indexName, final String fieldName, final String fieldValue, final String aggregationField) throws IOException {
+        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setFrom(0);
+
+        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(fieldName, fieldValue))));
+        request.setQuery(bFilter);
+        request.addAggregation(AggregationBuilders.terms(aggregationField).field(aggregationField).minDocCount(1).size(1000));
+
+        // get response
+        final SearchResponse response = request.execute().actionGet();
+        final Aggregations agg = response.getAggregations();
+        final Terms fieldCounts = agg.get(aggregationField);
+        final List<? extends Bucket> buckets = fieldCounts.getBuckets();
+        final Map<String, Long> checkMap = new HashMap<>();
+        for (final Bucket bucket: buckets) {
+            final String key = bucket.getKeyAsString().trim();
+            if (key.length() > 0) {
+                final String k = key.toLowerCase();
+                final Long v = checkMap.get(k);
+                checkMap.put(k, v == null ? bucket.getDocCount() : v + bucket.getDocCount());
+            }
+        }
+
+        return checkMap;
     }
 
     @SuppressWarnings("unused")
