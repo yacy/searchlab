@@ -178,9 +178,9 @@ public class ElasticsearchClient implements FulltextIndex {
     @SuppressWarnings("unused")
     private ClusterStatsNodes getClusterStatsNodes() {
         final ClusterStatsRequest clusterStatsRequest =
-            new ClusterStatsRequestBuilder(this.elasticsearchClient.admin().cluster(), ClusterStatsAction.INSTANCE).request();
+                new ClusterStatsRequestBuilder(this.elasticsearchClient.admin().cluster(), ClusterStatsAction.INSTANCE).request();
         final ClusterStatsResponse clusterStatsResponse =
-            this.elasticsearchClient.admin().cluster().clusterStats(clusterStatsRequest).actionGet();
+                this.elasticsearchClient.admin().cluster().clusterStats(clusterStatsRequest).actionGet();
         final ClusterStatsNodes clusterStatsNodes = clusterStatsResponse.getNodesStats();
         return clusterStatsNodes;
     }
@@ -251,8 +251,8 @@ public class ElasticsearchClient implements FulltextIndex {
                     .put("number_of_shards", shards)
                     .put("number_of_replicas", replicas);
             this.elasticsearchClient.admin().indices().prepareCreate(indexName)
-                .setSettings(settings)
-                .execute().actionGet();
+            .setSettings(settings)
+            .execute().actionGet();
         } else {
             //LOGGER.debug("Index with name {} already exists", indexName);
         }
@@ -262,8 +262,8 @@ public class ElasticsearchClient implements FulltextIndex {
     public void setMapping(final String indexName, final String mapping) {
         try {
             this.elasticsearchClient.admin().indices().preparePutMapping(indexName)
-                .setSource(mapping, XContentType.JSON)
-                .setType("_default_").execute().actionGet();
+            .setSource(mapping, XContentType.JSON)
+            .setType("_default_").execute().actionGet();
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
             Logger.warn("", e);
         };
@@ -300,9 +300,9 @@ public class ElasticsearchClient implements FulltextIndex {
      */
     public ClusterStatsNodes getStats() {
         final ClusterStatsRequest clusterStatsRequest =
-            new ClusterStatsRequestBuilder(this.elasticsearchClient.admin().cluster(), ClusterStatsAction.INSTANCE).request();
+                new ClusterStatsRequestBuilder(this.elasticsearchClient.admin().cluster(), ClusterStatsAction.INSTANCE).request();
         final ClusterStatsResponse clusterStatsResponse =
-            this.elasticsearchClient.admin().cluster().clusterStats(clusterStatsRequest).actionGet();
+                this.elasticsearchClient.admin().cluster().clusterStats(clusterStatsRequest).actionGet();
         final ClusterStatsNodes clusterStatsNodes = clusterStatsResponse.getNodesStats();
         return clusterStatsNodes;
     }
@@ -474,10 +474,10 @@ public class ElasticsearchClient implements FulltextIndex {
         final Map<String, String> ids = new TreeMap<>();
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName);
         request
-            .setSearchType(SearchType.QUERY_THEN_FETCH)
-            .setScroll(scrollKeepAlive)
-            .setQuery(q)
-            .setSize(100);
+        .setSearchType(SearchType.QUERY_THEN_FETCH)
+        .setScroll(scrollKeepAlive)
+        .setQuery(q)
+        .setSize(100);
         SearchResponse response = null;
         try {
             response = request.execute().actionGet();
@@ -630,13 +630,13 @@ public class ElasticsearchClient implements FulltextIndex {
         final Long version = (Long) jsonMap.remove("_version");
         // put this to the index
         final UpdateResponse r = this.elasticsearchClient
-            .prepareUpdate(indexName, typeName, id)
-            .setDoc(jsonMap)
-            .setUpsert(jsonMap)
-            //.setVersion(version == null ? 1 : version.longValue())
-            //.setVersionType(VersionType.EXTERNAL_GTE)
-            .execute()
-            .actionGet();
+                .prepareUpdate(indexName, typeName, id)
+                .setDoc(jsonMap)
+                .setUpsert(jsonMap)
+                //.setVersion(version == null ? 1 : version.longValue())
+                //.setVersionType(VersionType.EXTERNAL_GTE)
+                .execute()
+                .actionGet();
         if (version != null) jsonMap.put("_version", version); // to prevent side effects
         // documentation about the versioning is available at
         // https://www.elastic.co/blog/elasticsearch-versioning-support
@@ -679,8 +679,8 @@ public class ElasticsearchClient implements FulltextIndex {
             if (be.id == null) continue;
             bulkRequest.add(
                     this.elasticsearchClient.prepareIndex(indexName, be.type, be.id).setSource(be.jsonMap)
-                        .setCreate(false) // enforces OpType.INDEX
-                        .setVersionType(VersionType.INTERNAL));
+                    .setCreate(false) // enforces OpType.INDEX
+                    .setVersionType(VersionType.INTERNAL));
         }
         final BulkResponse bulkResponse = bulkRequest.get();
         final BulkWriteResult result = new BulkWriteResult();
@@ -721,12 +721,12 @@ public class ElasticsearchClient implements FulltextIndex {
             // prepare request
             SearchRequestBuilder request = ElasticsearchClient.this.elasticsearchClient.prepareSearch(indexName);
             request
-                    .setExplain(false)
-                    .setSearchType(SearchType.QUERY_THEN_FETCH)
-                    .setQuery(queryBuilder)
-                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH) // DFS_QUERY_THEN_FETCH is slower but provides stability of search results
-                    .setFrom(from)
-                    .setSize(resultCount);
+            .setExplain(false)
+            .setSearchType(SearchType.QUERY_THEN_FETCH)
+            .setQuery(queryBuilder)
+            .setSearchType(SearchType.DFS_QUERY_THEN_FETCH) // DFS_QUERY_THEN_FETCH is slower but provides stability of search results
+            .setFrom(from)
+            .setSize(resultCount);
 
             request.clearRescorers();
 
@@ -789,12 +789,12 @@ public class ElasticsearchClient implements FulltextIndex {
             // prepare request
             SearchRequestBuilder request = ElasticsearchClient.this.elasticsearchClient.prepareSearch(indexName);
             request
-                    .setExplain(explain)
-                    .setSearchType(SearchType.QUERY_THEN_FETCH)
-                    .setQuery(queryBuilder)
-                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH) // DFS_QUERY_THEN_FETCH is slower but provides stability of search results
-                    .setFrom(from)
-                    .setSize(resultCount);
+            .setExplain(explain)
+            .setSearchType(SearchType.QUERY_THEN_FETCH)
+            .setQuery(queryBuilder)
+            .setSearchType(SearchType.DFS_QUERY_THEN_FETCH) // DFS_QUERY_THEN_FETCH is slower but provides stability of search results
+            .setFrom(from)
+            .setSize(resultCount);
             if (highlightField != null) {
                 final HighlightBuilder hb = new HighlightBuilder().field(highlightField.getMapping().name()).preTags("").postTags("").fragmentSize(140);
                 request.highlighter(hb);
@@ -860,7 +860,7 @@ public class ElasticsearchClient implements FulltextIndex {
                 }
                 query.aggregations.put(field.getMapping().name(), list);
                 //if (field.equals("place_country")) {
-                    // special handling of country aggregation: add the country center as well
+                // special handling of country aggregation: add the country center as well
                 //}
             }
             return query;
@@ -874,32 +874,46 @@ public class ElasticsearchClient implements FulltextIndex {
         return query;
     }
 
-    public Map<String, Long> aggregation(final String indexName, final String fieldName, final String fieldValue, final String aggregationField) throws IOException {
-        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-                .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setFrom(0);
+    public Map<String, Long> aggregation(final String indexName, final String fieldName, final String fieldValue, final String aggregationField) {
 
-        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(fieldName, fieldValue))));
-        request.setQuery(bFilter);
-        request.addAggregation(AggregationBuilders.terms(aggregationField).field(aggregationField).minDocCount(1).size(1000));
+        final Map<String, Long> a = new HashMap<>();
 
-        // get response
-        final SearchResponse response = request.execute().actionGet();
-        final Aggregations agg = response.getAggregations();
-        final Terms fieldCounts = agg.get(aggregationField);
-        final List<? extends Bucket> buckets = fieldCounts.getBuckets();
-        final Map<String, Long> checkMap = new HashMap<>();
-        for (final Bucket bucket: buckets) {
-            final String key = bucket.getKeyAsString().trim();
-            if (key.length() > 0) {
-                final String k = key.toLowerCase();
-                final Long v = checkMap.get(k);
-                checkMap.put(k, v == null ? bucket.getDocCount() : v + bucket.getDocCount());
+        try {
+
+            final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                    .setSearchType(SearchType.QUERY_THEN_FETCH)
+                    .setFrom(0);
+
+            final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+            bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(fieldName, fieldValue))));
+            request.setQuery(bFilter);
+            request.addAggregation(AggregationBuilders.terms(aggregationField).field(aggregationField).minDocCount(1).size(1000));
+
+
+            // Fielddata is disabled on text fields by default.
+            // Set fielddata=true on [user_id_s] in order to load fielddata in memory by uninverting the inverted index.
+            // Note that this can however use significant memory. Alternatively use a keyword field instead.
+
+
+            // get response
+            final SearchResponse response = request.execute().actionGet();
+            final Aggregations agg = response.getAggregations();
+            final Terms fieldCounts = agg.get(aggregationField);
+            final List<? extends Bucket> buckets = fieldCounts.getBuckets();
+            for (final Bucket bucket: buckets) {
+                final String key = bucket.getKeyAsString().trim();
+                if (key.length() > 0) {
+                    final String k = key.toLowerCase();
+                    final Long v = agg.get(k);
+                    a.put(k, v == null ? bucket.getDocCount() : v + bucket.getDocCount());
+                }
             }
+
+        } catch (final Exception e) {
+            Logger.error(e);
         }
 
-        return checkMap;
+        return a;
     }
 
     @SuppressWarnings("unused")

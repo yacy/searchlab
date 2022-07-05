@@ -112,21 +112,21 @@ public enum WebMapping implements MappingDeclaration {
     scripts_sxt(MappingType.string, true, true, true, false, false, "normalized urls within a scripts tag"),
     scriptscount_i(MappingType.num_integer, true, true, false, false, false, "number of entries in scripts_sxt"),
     // encoded as binary value into an integer:
-            // bit  0: "all" contained in html header meta
-            // bit  1: "index" contained in html header meta
-            // bit  2: "follow" contained in html header meta
-            // bit  3: "noindex" contained in html header meta
-            // bit  4: "nofollow" contained in html header meta
-            // bit  5: "noarchive" contained in html header meta
-            // bit  8: "all" contained in http header X-Robots-Tag
-            // bit  9: "noindex" contained in http header X-Robots-Tag
-            // bit 10: "nofollow" contained in http header X-Robots-Tag
-            // bit 11: "noarchive" contained in http header X-Robots-Tag
-            // bit 12: "nosnippet" contained in http header X-Robots-Tag
-            // bit 13: "noodp" contained in http header X-Robots-Tag
-            // bit 14: "notranslate" contained in http header X-Robots-Tag
-            // bit 15: "noimageindex" contained in http header X-Robots-Tag
-            // bit 16: "unavailable_after" contained in http header X-Robots-Tag
+    // bit  0: "all" contained in html header meta
+    // bit  1: "index" contained in html header meta
+    // bit  2: "follow" contained in html header meta
+    // bit  3: "noindex" contained in html header meta
+    // bit  4: "nofollow" contained in html header meta
+    // bit  5: "noarchive" contained in html header meta
+    // bit  8: "all" contained in http header X-Robots-Tag
+    // bit  9: "noindex" contained in http header X-Robots-Tag
+    // bit 10: "nofollow" contained in http header X-Robots-Tag
+    // bit 11: "noarchive" contained in http header X-Robots-Tag
+    // bit 12: "nosnippet" contained in http header X-Robots-Tag
+    // bit 13: "noodp" contained in http header X-Robots-Tag
+    // bit 14: "notranslate" contained in http header X-Robots-Tag
+    // bit 15: "noimageindex" contained in http header X-Robots-Tag
+    // bit 16: "unavailable_after" contained in http header X-Robots-Tag
     robots_i(MappingType.num_integer, true, true, false, false, false, "content of <meta name=\"robots\" content=#content#> tag and the \"X-Robots-Tag\" HTTP property"),
     metagenerator_t(MappingType.text_general, true, true, false, false, false, "content of <meta name=\"generator\" content=#content#> tag"),
     inboundlinks_anchortext_txt(MappingType.text_general, true, true, true, false, true, "internal links, the visible anchor text"),
@@ -256,7 +256,7 @@ public enum WebMapping implements MappingDeclaration {
     }
 
     private WebMapping(final MappingType type, final boolean indexed, final boolean stored, final boolean multiValued, final boolean omitNorms, final boolean searchable, final String comment, final boolean mandatory,
-                       final String facetname, final String displayname, final String facettype, final String facetmodifier) {
+            final String facetname, final String displayname, final String facettype, final String facetmodifier) {
         this.mapping = new Mapping(this.name(), type, indexed, stored, multiValued, omitNorms, searchable, comment, mandatory, facetname, displayname, facettype, facetmodifier);
     }
 
@@ -283,30 +283,30 @@ public enum WebMapping implements MappingDeclaration {
      * to the indexed document identification. That graph document is used by the crawler to move on with crawling.
      */
     public final static WebMapping[] GRAPH_ATTRIBUTES = new WebMapping[]{
-        WebMapping.url_s,
-        WebMapping.url_protocol_s,
-        WebMapping.url_file_name_s,
-        WebMapping.url_file_ext_s,
-        WebMapping.inboundlinkscount_i,
-        WebMapping.inboundlinks_sxt,
-        WebMapping.inboundlinks_anchortext_txt,
-        WebMapping.inboundlinksnofollowcount_i,
-        WebMapping.outboundlinkscount_i,
-        WebMapping.outboundlinks_sxt,
-        WebMapping.outboundlinks_anchortext_txt,
-        WebMapping.outboundlinksnofollowcount_i,
-        WebMapping.imagescount_i,
-        WebMapping.images_sxt,
-        WebMapping.images_text_t,
-        WebMapping.images_alt_sxt,
-        WebMapping.images_height_val,
-        WebMapping.images_width_val,
-        WebMapping.images_pixel_val,
-        WebMapping.canonical_s,
-        WebMapping.frames_sxt,
-        WebMapping.framesscount_i,
-        WebMapping.iframes_sxt,
-        WebMapping.iframesscount_i
+            WebMapping.url_s,
+            WebMapping.url_protocol_s,
+            WebMapping.url_file_name_s,
+            WebMapping.url_file_ext_s,
+            WebMapping.inboundlinkscount_i,
+            WebMapping.inboundlinks_sxt,
+            WebMapping.inboundlinks_anchortext_txt,
+            WebMapping.inboundlinksnofollowcount_i,
+            WebMapping.outboundlinkscount_i,
+            WebMapping.outboundlinks_sxt,
+            WebMapping.outboundlinks_anchortext_txt,
+            WebMapping.outboundlinksnofollowcount_i,
+            WebMapping.imagescount_i,
+            WebMapping.images_sxt,
+            WebMapping.images_text_t,
+            WebMapping.images_alt_sxt,
+            WebMapping.images_height_val,
+            WebMapping.images_width_val,
+            WebMapping.images_pixel_val,
+            WebMapping.canonical_s,
+            WebMapping.frames_sxt,
+            WebMapping.framesscount_i,
+            WebMapping.iframes_sxt,
+            WebMapping.iframesscount_i
     };
 
     public static LinkedHashMap<String, Object> sortMapKeys(final Map<String, Object> source) {
