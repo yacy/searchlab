@@ -50,7 +50,7 @@ import oauth.signpost.exception.OAuthMessageSignerException;
  * https://developer.twitter.com/en/docs/authentication/guides/log-in-with-twitter
  *
  * example: call
- * http://localhost:8400/en/aaaaa/github_get_auth
+ * http://localhost:8400/en/aaaaa/twitter_get_auth
  */
 public class OAuthTwitterGetAuth  extends AbstractService implements Service {
 
@@ -106,8 +106,8 @@ public class OAuthTwitterGetAuth  extends AbstractService implements Service {
 
                 // send the request
                 request.connect();
-                System.out.println(request.getResponseCode());
-                System.out.println(request.getResponseMessage());
+                //System.out.println(request.getResponseCode());
+                //System.out.println(request.getResponseMessage());
                 BufferedReader br = null;
                 if (request.getResponseCode() == 200) {
                     br = new BufferedReader(new InputStreamReader(request.getInputStream()));
