@@ -58,6 +58,7 @@ import org.elasticsearch.action.search.SearchPhaseExecutionException;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
@@ -259,10 +260,11 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @Override
-    public void setMapping(final String indexName, final String mapping) {
+    public void setMapping(final String indexName, final String mappings_properties) {
         try {
             this.elasticsearchClient.admin().indices().preparePutMapping(indexName)
-            .setSource(mapping, XContentType.JSON)
+            .setSource(mappings_properties, XContentType.JSON)
+            .setIndicesOptions(IndicesOptions.LENIENT_EXPAND_OPEN)
             .setType("_default_").execute().actionGet();
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
             Logger.warn("", e);

@@ -26,6 +26,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.json.JSONException;
+import org.json.JSONObject;
+
+import eu.searchlab.tools.Logger;
 
 public enum WebMapping implements MappingDeclaration {
 
@@ -321,6 +324,25 @@ public enum WebMapping implements MappingDeclaration {
         return sorted;
     }
 
+    public static JSONObject getJSONMapping() {
+        final JSONObject json = new JSONObject(true);
+        final JSONObject mappings = new JSONObject(true);
+        final JSONObject default_ = new JSONObject(true);
+        final JSONObject properties = new JSONObject(true);
+
+        try {
+            json.put("mappings", mappings);
+            mappings.put("_default_", default_);
+            default_.put("properties", properties);
+            for (final WebMapping mapping: WebMapping.values()) {
+                properties.put(mapping.name(), mapping.mapping.toJSON());
+            }
+        } catch (final JSONException e) {
+            Logger.error(e);
+        }
+
+        return json;
+    }
 
     /**
      * helper main method to generate a mapping in elasticsearch.
@@ -337,7 +359,8 @@ public enum WebMapping implements MappingDeclaration {
      */
     public static void main(final String[] args) {
         try {
-            System.out.println(Mapping.elasticsearchMapping("web").toString(2));
+            //System.out.println(Mapping.elasticsearchMapping("web").toString(2));
+            System.out.println(getJSONMapping().toString(2));
         } catch (final JSONException e) {
             e.printStackTrace();
         }

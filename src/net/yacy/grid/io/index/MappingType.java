@@ -24,7 +24,7 @@ package net.yacy.grid.io.index;
 public enum MappingType {
     object("object", "o", "oxt"),                  // A json object
     string("keyword", "s", "sxt"),                 // The type is not analyzed, but indexed/stored verbatim
-    text_general("string", "t", "txt"),            // tokenizes with StandardTokenizer, removes stop words from case-insensitive "stopwords.txt", down cases, applies synonyms.
+    text_general("text", "t", "txt"),            // tokenizes with StandardTokenizer, removes stop words from case-insensitive "stopwords.txt", down cases, applies synonyms.
     text_en_splitting_tight("string", null, null), // can insert dashes in the wrong place and still match
     location("geo_point", "p", null),              // lat,lon - format: specialized field for geospatial search.
     date("date", "dt", "dts"),                     // date format as in http://www.w3.org/TR/xmlschema-2/#dateTime with trailing 'Z'
@@ -59,11 +59,11 @@ public enum MappingType {
     }
 
     public boolean appropriateName(final MappingDeclaration collectionSchema) {
-        String field = collectionSchema.name();
-        int p = field.indexOf('_');
+        final String field = collectionSchema.name();
+        final int p = field.indexOf('_');
         if (p < 0 || field.length() - p > 4) return true; // special names may have no type extension
-        String ext = field.substring(p + 1);
-        Mapping mapping = collectionSchema.getMapping();
+        final String ext = field.substring(p + 1);
+        final Mapping mapping = collectionSchema.getMapping();
         boolean ok = mapping.isMultiValued() ? this.multivalExt.equals(ext) : this.singlevalExt.equals(ext);
         assert ok : "SolrType = " + this.name() + ", field = " + field + ", ext = " + ext + ", multivalue = " + Boolean.valueOf(mapping.isMultiValued()).toString() + ", singlevalExt = " + this.singlevalExt + ", multivalExt = " + this.multivalExt;
         if (!ok) return ok;
@@ -80,10 +80,10 @@ public enum MappingType {
     }
 
     public boolean appropriateName(final Mapping maping) {
-        String field = maping.name();
-        int p = field.indexOf('_');
+        final String field = maping.name();
+        final int p = field.indexOf('_');
         if (p < 0 || field.length() - p > 4) return true; // special names may have no type extension
-        String ext = field.substring(p + 1);
+        final String ext = field.substring(p + 1);
         boolean ok = maping.isMultiValued() ? this.multivalExt.equals(ext) : this.singlevalExt.equals(ext);
         assert ok : "SolrType = " + this.name() + ", field = " + field + ", ext = " + ext + ", multivalue = " + Boolean.valueOf(maping.isMultiValued()).toString() + ", singlevalExt = " + this.singlevalExt + ", multivalExt = " + this.multivalExt;
         if (!ok) return ok;

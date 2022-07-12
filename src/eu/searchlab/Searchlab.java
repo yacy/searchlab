@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import eu.searchlab.aaaaa.AccountingTS;
 import eu.searchlab.aaaaa.AuthorizationTS;
 import eu.searchlab.aaaaa.UserDB;
@@ -41,6 +44,7 @@ import eu.searchlab.storage.queues.RabbitQueueFactory;
 import eu.searchlab.tools.Logger;
 import net.yacy.grid.io.index.ElasticsearchClient;
 import net.yacy.grid.io.index.GridIndex;
+import net.yacy.grid.io.index.WebMapping;
 
 public class Searchlab {
 
@@ -190,8 +194,16 @@ public class Searchlab {
                 try {
                     ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
                     Logger.info("Connected elasticsearch at " + elasticsearchAddress[0]);
+
+                    final String indexName = "web";
+                    ec.createIndexIfNotExists(indexName, 1 /*shards*/, 1 /*replicas*/);
+                    JSONObject mo = WebMapping.getJSONMapping();
+                    mo = mo.getJSONObject("mappings").getJSONObject("_default_");
+                    ec.setMapping(indexName, mo.toString());
+                    Logger.info("initiated mapping for index " + indexName);
+
                     if (readyCounter.incrementAndGet() >= 3) ready = true;
-                } catch (final IOException e) {
+                } catch (final IOException | JSONException e) {
                     Logger.warn("No connection to elasticsearch");
                 }
             }

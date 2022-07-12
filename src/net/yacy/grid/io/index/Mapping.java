@@ -147,8 +147,8 @@ public class Mapping {
         final JSONObject json = new JSONObject();
         try {
             json.put("type", getType().elasticName());
-            if (getType() == MappingType.string) json.put("index", "not_analyzed");
-            json.put("include_in_all", isIndexed() || isSearchable() ? "true":"false");
+            //if (getType() == MappingType.string) json.put("index", "not_analyzed");
+            //json.put("include_in_all", isIndexed() || isSearchable() ? "true" : "false");
         } catch (final JSONException e) {}
         return json;
     }
