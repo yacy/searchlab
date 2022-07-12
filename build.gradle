@@ -57,4 +57,6 @@ dependencies {
   implementation 'io.minio:minio:8.4.+'
   implementation 'com.amazonaws:aws-java-sdk-s3:1.12.+'
   implementation 'io.findify:s3mock_2.13:0.2.+'
+  implementation 'oauth.signpost:signpost-core:2.1.+'
+  
 }
