@@ -60,6 +60,8 @@ import eu.searchlab.http.services.aaaaa.OAuthGithubCallback;
 import eu.searchlab.http.services.aaaaa.OAuthGithubGetAuth;
 import eu.searchlab.http.services.aaaaa.OAuthPatreonCallback;
 import eu.searchlab.http.services.aaaaa.OAuthPatreonGetAuth;
+import eu.searchlab.http.services.aaaaa.OAuthTwitterCallback;
+import eu.searchlab.http.services.aaaaa.OAuthTwitterGetAuth;
 import eu.searchlab.http.services.assets.AssetDirectoryService;
 import eu.searchlab.http.services.assets.AssetDownloadService;
 import eu.searchlab.http.services.assets.TableGetService;
@@ -146,11 +148,13 @@ public class WebServer {
         ServiceMap.register(new CookieTestService());
         ServiceMap.register(new RedirectTestService());
         ServiceMap.register(new LogoutService());
+        ServiceMap.register(new HomeService());
         ServiceMap.register(new OAuthGithubGetAuth());
         ServiceMap.register(new OAuthGithubCallback());
-        ServiceMap.register(new HomeService());
         ServiceMap.register(new OAuthPatreonGetAuth());
         ServiceMap.register(new OAuthPatreonCallback());
+        ServiceMap.register(new OAuthTwitterGetAuth());
+        ServiceMap.register(new OAuthTwitterCallback());
 
         // Start webserver
         final PathHandler ph = Handlers.path();

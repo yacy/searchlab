@@ -107,7 +107,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
             final HttpClient httpclient = HttpClients.createDefault();
             final HttpPost httppost = new HttpPost("https://www.patreon.com/api/oauth2/token");
 
-            final List<NameValuePair> params = new ArrayList<>(3);
+            final List<NameValuePair> params = new ArrayList<>(5);
             params.add(new BasicNameValuePair("code", code));
             params.add(new BasicNameValuePair("grant_type", "authorization_code"));
             params.add(new BasicNameValuePair("client_id", client_id));
