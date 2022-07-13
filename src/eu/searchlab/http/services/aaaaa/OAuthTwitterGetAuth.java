@@ -68,17 +68,19 @@ public class OAuthTwitterGetAuth  extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-        final String client_id = System.getProperty("twitter.client.id", "");
-        final String client_secret = System.getProperty("twitter.client.secret", "");
+        final String consumerKey = System.getProperty("twitter.client.id", "");
+        final String consumerSecret = System.getProperty("twitter.client.secret", "");
 
         final JSONObject json = new JSONObject(true);
         final ServiceResponse serviceResponse = new ServiceResponse(json);
         try {
-            final RequestToken requestToken = new RequestToken(client_id, client_secret);
+            final RequestToken requestToken = new RequestToken(consumerKey, consumerSecret);
 
             // forward to twitter for authentication
             // see https://developer.twitter.com/en/docs/authentication/api-reference/authenticate
-            final String url = "https://api.twitter.com/oauth/authenticate?oauth_token=" + requestToken.oauth_token;
+            // see https://developer.twitter.com/en/docs/authentication/api-reference/authorize
+            //final String url = "https://api.twitter.com/oauth/authenticate?oauth_token=" + requestToken.oauth_token;
+            final String url = "https://api.twitter.com/oauth/authorize?oauth_token=" + requestToken.oauth_token;
             serviceResponse.setFoundRedirect(url);
         } catch (final IOException e) {
             Logger.warn(e);
@@ -91,9 +93,18 @@ public class OAuthTwitterGetAuth  extends AbstractService implements Service {
 
     public static class RequestToken {
 
-        public final String oauth_token, oauth_token_secret;
+        // Temporaray Credentials:
+        public final String oauth_token;        // == Request Token
+        public final String oauth_token_secret; // == Request Token Secret
         public final long time;
 
+        /**
+         * Call request_token API according to
+         * https://developer.twitter.com/en/docs/authentication/oauth-1-0a/obtaining-user-access-tokens
+         * @param consumerKey == App Key === API Key === Consumer API Key === Consumer Key === Customer Key === oauth_consumer_key
+         * @param consumerSecret == App Key Secret === API Secret Key === Consumer Secret === Consumer Key === Customer Key === oauth_consumer_secret
+         * @throws IOException
+         */
         public RequestToken(final String consumerKey, final String consumerSecret) throws IOException {
             this.time = System.currentTimeMillis();
             final URL url = new URL("https://api.twitter.com/oauth/request_token");
