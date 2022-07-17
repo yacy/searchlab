@@ -141,12 +141,13 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject json = new JSONObject(new JSONTokener(t));
                 Logger.info("json = " + json.toString());
-                final JSONObject data = json.getJSONObject("data");
-                final JSONObject attributes = data.getJSONObject("attributes");
-                userEmail = attributes.optString("email", "");
-                userName = attributes.optString("full_name", "");
-                userPatreonLogin = data.optString("vanity", "");
-
+                final JSONObject data = json.optJSONObject("data");
+                if (data != null) {
+                    final JSONObject attributes = data.getJSONObject("attributes");
+                    userEmail = attributes.optString("email", "");
+                    userName = attributes.optString("full_name", "");
+                    userPatreonLogin = data.optString("vanity", "");
+                }
                 if ("null".equals(userEmail)) userEmail = "";
             }
         } catch (final IOException | JSONException e) {
