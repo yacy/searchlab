@@ -28,6 +28,7 @@ import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -486,7 +487,7 @@ public class WebServer {
             final long fileSize = fc.size();
             final ByteBuffer bb = ByteBuffer.allocate((int) fileSize);
             fc.read(bb);
-            bb.flip();
+            ((Buffer)bb).flip();
             fc.close();
             raf.close();
             return bb;
