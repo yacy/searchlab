@@ -37,7 +37,8 @@ public class PersistentTray extends AbstractTray implements Tray {
     public JSONObject getObject(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            return (JSONObject) this.object.get(key);
+            final JSONObject json = (JSONObject) this.object.get(key);
+            return AbstractTray.clone(json);
         }
     }
 
@@ -45,7 +46,8 @@ public class PersistentTray extends AbstractTray implements Tray {
     public JSONArray getArray(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            return (JSONArray) this.object.get(key);
+            final JSONArray array = (JSONArray) this.object.get(key);
+            return AbstractTray.clone(array);
         }
     }
 
@@ -53,7 +55,7 @@ public class PersistentTray extends AbstractTray implements Tray {
     public Tray put(final String key, final JSONObject value) throws IOException  {
         synchronized (this.mutex) {
             ensureLoaded();
-            this.object.put(key, value);
+            this.object.put(key, AbstractTray.clone(value));
             this.commitInternal();
             return this;
         }
@@ -63,7 +65,7 @@ public class PersistentTray extends AbstractTray implements Tray {
     public Tray put(final String key, final JSONArray value) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            this.object.put(key, value);
+            this.object.put(key, AbstractTray.clone(value));
             this.commitInternal();
             return this;
         }

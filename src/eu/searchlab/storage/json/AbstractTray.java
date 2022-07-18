@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,6 +41,15 @@ public abstract class AbstractTray implements Tray {
     protected final ConcurrentIO io;
     protected final IOPath iop;
     protected ConcurrentHashMap<String, Object> object;
+
+
+    protected final static JSONObject clone(final JSONObject json) {
+        return new JSONObject(json, json.keySet().toArray(new String[json.length()]));
+    }
+
+    protected final static JSONArray clone(final JSONArray json) {
+        return new JSONArray(json.toList());
+    }
 
     /**
      * AbstractTray
@@ -149,7 +159,7 @@ public abstract class AbstractTray implements Tray {
                     throw new IOException(e.getMessage());
                 }
             }
-            return json;
+            return clone(json);
         }
     }
 

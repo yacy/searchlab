@@ -54,6 +54,7 @@ public class HomeService  extends AbstractService implements Service {
         // In case that the temporary ID can be used to retrieve a authentication record with the permanent ID
         // that is identical to the path-ID, then the user is not only authenticated but also authorized.
         final Authorization authorization = serviceRequest.getAuthorization();
+        serviceRequest.isAuthorized();
         // If the authorization object exists, then the user is authorized;
         // We can use that object to get the user credentials
         final Authentication authentication = authorization == null ? null : Searchlab.userDB.getAuthentiationByID(authorization.getUserID());

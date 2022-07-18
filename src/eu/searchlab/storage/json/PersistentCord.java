@@ -36,12 +36,11 @@ public class PersistentCord extends AbstractCord implements Cord {
         super(io, iop);
     }
 
-
     @Override
     public Cord append(final JSONObject value) throws IOException {
         synchronized (this.mutex) {
             this.ensureLoaded();
-            this.array.put(value);
+            this.array.put(AbstractTray.clone(value));
             this.commitInternal();
             return this;
         }
@@ -52,7 +51,7 @@ public class PersistentCord extends AbstractCord implements Cord {
         synchronized (this.mutex) {
             this.ensureLoaded();
             try {
-                this.array.put(0, value);
+                this.array.put(0, AbstractTray.clone(value));
             } catch (final JSONException e) {
                 throw new IOException(e.getMessage());
             }
@@ -66,7 +65,7 @@ public class PersistentCord extends AbstractCord implements Cord {
         synchronized (this.mutex) {
             this.ensureLoaded();
             try {
-                this.array.put(p, value);
+                this.array.put(p, AbstractTray.clone(value));
             } catch (final JSONException e) {
                 throw new IOException(e.getMessage());
             }
@@ -82,7 +81,7 @@ public class PersistentCord extends AbstractCord implements Cord {
             final Object o = this.array.remove(p);
             assert o instanceof JSONObject;
             this.commitInternal();
-            return (JSONObject) o;
+            return AbstractTray.clone((JSONObject) o);
         }
     }
 
@@ -98,7 +97,7 @@ public class PersistentCord extends AbstractCord implements Cord {
             final Object o = this.array.remove(this.array.length() - 1);
             this.commitInternal();
             assert o instanceof JSONObject;
-            return (JSONObject) o;
+            return AbstractTray.clone((JSONObject) o);
         }
     }
 
@@ -115,7 +114,7 @@ public class PersistentCord extends AbstractCord implements Cord {
                 final Object v = ((JSONObject) o).opt(key);
                 if (!(v instanceof String)) continue;
                 if (((String) v).equals(value)) {
-                    list.add((JSONObject) o);
+                    list.add(AbstractTray.clone((JSONObject) o));
                     i.remove();
                     changed = true;
                 }
@@ -138,7 +137,7 @@ public class PersistentCord extends AbstractCord implements Cord {
                 final Object v = ((JSONObject) o).opt(key);
                 if (!(v instanceof Long) && !(v instanceof Integer)) continue;
                 if (((Long) v).longValue() == value) {
-                    list.add((JSONObject) o);
+                    list.add(AbstractTray.clone((JSONObject) o));
                     i.remove();
                     changed = true;
                 }
@@ -161,7 +160,7 @@ public class PersistentCord extends AbstractCord implements Cord {
                 if (((String) v).equals(value)) {
                     i.remove();
                     this.commitInternal();
-                    return (JSONObject) o;
+                    return AbstractTray.clone((JSONObject) o);
                 }
             }
             return null;
@@ -181,7 +180,7 @@ public class PersistentCord extends AbstractCord implements Cord {
                 if (((Long) v).longValue() == value) {
                     i.remove();
                     this.commitInternal();
-                    return (JSONObject) o;
+                    return AbstractTray.clone((JSONObject) o);
                 }
             }
             return null;
