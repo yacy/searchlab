@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.storage.io.ConcurrentIO;
@@ -52,10 +51,10 @@ public class ImmutableTray extends AbstractTray implements Tray {
         assert key != null;
         synchronized (this.mutex) {
             if (this.deleted.containsKey(key)) return null;
-            final JSONObject json = this.object.optJSONObject(key);
+            final JSONObject json = (JSONObject) this.object.get(key);
             if (json != null) return json;
             ensureLoaded();
-            return this.object.optJSONObject(key);
+            return (JSONObject) this.object.get(key);
         }
     }
 
@@ -64,10 +63,10 @@ public class ImmutableTray extends AbstractTray implements Tray {
         assert key != null;
         synchronized (this.mutex) {
             if (this.deleted.containsKey(key)) return null;
-            final JSONArray json = this.object.optJSONArray(key);
+            final JSONArray json = (JSONArray) this.object.get(key);
             if (json != null) return json;
             ensureLoaded();
-            return this.object.optJSONArray(key);
+            return (JSONArray) this.object.get(key);
         }
     }
 
@@ -76,11 +75,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
         assert key != null;
         synchronized (this.mutex) {
             ensureLoaded();
-            try {
-                this.object.put(key, value);
-            } catch (final JSONException e) {
-                throw new IOException(e.getMessage());
-            }
+            this.object.put(key, value);
             this.commitInternal();
             return this;
         }
@@ -91,11 +86,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
         assert key != null;
         synchronized (this.mutex) {
             ensureLoaded();
-            try {
-                this.object.put(key, value);
-            } catch (final JSONException e) {
-                throw new IOException(e.getMessage());
-            }
+            this.object.put(key, value);
             this.commitInternal();
             return this;
         }
@@ -108,7 +99,7 @@ public class ImmutableTray extends AbstractTray implements Tray {
             if (this.deleted.contains(key)) return this;
             this.deleted.put(key, new Object());
             ensureLoaded();
-            if (!this.object.has(key)) return this;
+            if (!this.object.contains(key)) return this;
             this.object.remove(key);
             this.commitInternal();
             return this;

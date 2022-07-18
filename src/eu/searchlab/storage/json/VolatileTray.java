@@ -22,7 +22,6 @@ package eu.searchlab.storage.json;
 import java.io.IOException;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.storage.io.ConcurrentIO;
@@ -41,7 +40,7 @@ public class VolatileTray extends AbstractTray implements Tray {
     public JSONObject getObject(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            return this.object.optJSONObject(key);
+            return (JSONObject) this.object.get(key);
         }
     }
 
@@ -49,7 +48,7 @@ public class VolatileTray extends AbstractTray implements Tray {
     public JSONArray getArray(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            return this.object.optJSONArray(key);
+            return (JSONArray) this.object.get(key);
         }
     }
 
@@ -57,11 +56,7 @@ public class VolatileTray extends AbstractTray implements Tray {
     public Tray put(final String key, final JSONObject value) throws IOException  {
         synchronized (this.mutex) {
             ensureLoaded();
-            try {
-                this.object.put(key, value);
-            } catch (final JSONException e) {
-                throw new IOException(e.getMessage());
-            }
+            this.object.put(key, value);
             this.unwrittenChanges = true;
             return this;
         }
@@ -71,11 +66,7 @@ public class VolatileTray extends AbstractTray implements Tray {
     public Tray put(final String key, final JSONArray value) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            try {
-                this.object.put(key, value);
-            } catch (final JSONException e) {
-                throw new IOException(e.getMessage());
-            }
+            this.object.put(key, value);
             this.unwrittenChanges = true;
             return this;
         }
@@ -85,7 +76,7 @@ public class VolatileTray extends AbstractTray implements Tray {
     public Tray remove(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            if (!this.object.has(key)) return this;
+            if (!this.object.contains(key)) return this;
             this.object.remove(key);
             this.unwrittenChanges = true;
             return this;

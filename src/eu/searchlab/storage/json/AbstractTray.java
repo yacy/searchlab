@@ -24,7 +24,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.storage.io.ConcurrentIO;
@@ -37,7 +39,7 @@ public abstract class AbstractTray implements Tray {
     protected final Object mutex; // Object on which to synchronize
     protected final ConcurrentIO io;
     protected final IOPath iop;
-    protected JSONObject object;
+    protected ConcurrentHashMap<String, Object> object;
 
     /**
      * AbstractTray
@@ -99,10 +101,10 @@ public abstract class AbstractTray implements Tray {
         }
     }
 
-    private JSONObject load() throws IOException {
+    private ConcurrentHashMap<String, Object> load() throws IOException {
         final IOObject[] o = this.io.readForced(this.iop);
-        final JSONObject json = o[0].getJSONObject();
-        return json;
+        final ConcurrentHashMap<String, Object> map = o[0].getMap();
+        return map;
     }
 
     @Override
@@ -118,7 +120,7 @@ public abstract class AbstractTray implements Tray {
             } catch (final IOException e) {
                 return 0;
             }
-            return this.object.length();
+            return this.object.size();
         }
     }
 
@@ -139,7 +141,15 @@ public abstract class AbstractTray implements Tray {
     public JSONObject toJSON() throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            return this.object;
+            final JSONObject json = new JSONObject();
+            for (final String key: this.object.keySet()) {
+                try {
+                    json.put(key, this.object.get(key));
+                } catch (final JSONException e) {
+                    throw new IOException(e.getMessage());
+                }
+            }
+            return json;
         }
     }
 

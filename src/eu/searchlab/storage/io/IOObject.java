@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -101,6 +102,21 @@ public final class IOObject {
     }
 
     /**
+     * Write a Map into a IOObject using a specialized json pretty printer
+     * which enables efficient merging.
+     * @param path
+     * @param json
+     * @throws IOException
+     */
+    public IOObject(final IOPath path, final Map<String, Object> map) throws IOException {
+        this.path = path;
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        writeMap(baos, map);
+        this.object = baos.toByteArray();
+        baos.close();
+    }
+
+    /**
      * Write a JSONArray into a IOObject using a specialized json pretty printer
      * which enables efficient merging.
      * @param path
@@ -139,6 +155,14 @@ public final class IOObject {
         return new String(this.object, StandardCharsets.UTF_8);
     }
 
+    public final ConcurrentHashMap<String, Object> getMap() throws IOException {
+        assert this.object != null;
+        assert this.object.length > 0;
+        assert this.object[0] == '{';
+        final ConcurrentHashMap<String, Object> map = readMap(this.object);
+        return map;
+    }
+
     public final JSONObject getJSONObject() throws IOException {
         assert this.object != null;
         assert this.object.length > 0;
@@ -153,6 +177,39 @@ public final class IOObject {
         assert this.object[0] == '[';
         final JSONArray json = readJSONArray(this.object);
         return json;
+    }
+
+    public static void writeMap(final OutputStream os, final Map<String, Object> map) throws IOException {
+        if (map == null) throw new IOException("map must not be null");
+        final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+        writer.write('{');
+        writer.write(LF);
+        final String[] keys = new String[map.size()];
+        int p = 0;
+        for (final String key: map.keySet()) keys[p++] = key; // we do this only to get a hint which key is the last one
+        for (int i = 0; i < keys.length; i++) {
+            final String key = keys[i];
+            final Object obj = map.get(key);
+            if (obj == null) continue;
+            writer.write('"'); writer.write(key); writer.write('"'); writer.write(':');
+            if (obj instanceof JSONObject) {
+                writer.write(((JSONObject) obj).toString());
+            } else if (obj instanceof Map) {
+                writer.write(new JSONObject((Map<?,?>) obj).toString());
+            } else if (obj instanceof JSONArray) {
+                writer.write(((JSONArray) obj).toString());
+            } else if (obj instanceof Collection) {
+                writer.write(new JSONArray((Collection<?>) obj).toString());
+            } else if (obj instanceof String) {
+                writer.write('"'); writer.write(((String) obj)); writer.write('"');
+            } else {
+                writer.write(obj.toString());
+            }
+            if (i < keys.length - 1) writer.write(',');
+            writer.write(LF);
+        }
+        writer.write('}');
+        writer.close();
     }
 
     public static void writeJSONObject(final OutputStream os, final JSONObject json) throws IOException {
@@ -219,6 +276,64 @@ public final class IOObject {
         }
         writer.write(']');
         writer.close();
+    }
+
+    @SuppressWarnings("deprecation")
+    public static ConcurrentHashMap<String, Object> readMap(final byte[] b) throws IOException {
+        final ConcurrentHashMap<String, Object> map = new ConcurrentHashMap<>();
+        if (b.length == 0) return map;
+        final boolean lineByLine = (b.length == 3 && b[0] == '{' && b[1] == LF && b[2] == '}') || (b[1] < ' ' && b[2] != ' ' && b[3] != ' ');
+        final ByteArrayInputStream bais = new ByteArrayInputStream(b);
+        if (lineByLine) {
+            final int a = bais.read();
+            assert (a == '{');
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(bais, "UTF-8"));
+            String line;
+            try {
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.equals("}")) break;
+                    if (line.length() == 0) continue;
+                    final int p = line.indexOf("\":");
+                    if (p < 0) continue;
+                    final String key = line.substring(1, p).trim();
+                    String value = line.substring(p + 2).trim();
+                    if (value.endsWith(",")) value = value.substring(0, value.length() - 1);
+                    if (value.charAt(0) == '{') {
+                        map.put(key, new JSONObject(new JSONTokener(value)));
+                    } else if (value.charAt(0) == '[') {
+                        map.put(key, new JSONArray(new JSONTokener(value)));
+                    } else if (value.charAt(0) == '"') {
+                        map.put(key, value.substring(1, value.length() - 1));
+                    } else if (value.indexOf('.') > 0) {
+                        try {
+                            map.put(key, Double.parseDouble(value));
+                        } catch (final NumberFormatException e) {
+                            map.put(key, value);
+                        }
+                    } else {
+                        try {
+                            map.put(key, Long.parseLong(value));
+                        } catch (final NumberFormatException e) {
+                            map.put(key, value);
+                        }
+                    }
+                }
+            } catch (final JSONException e) {
+                throw new IOException(e);
+            }
+        } else {
+            try {
+                final JSONObject json = new JSONObject(new JSONTokener(new InputStreamReader(bais, StandardCharsets.UTF_8)));
+                for (final String key: json.keySet()) {
+                    map.put(key, json.get(key));
+                }
+            } catch (final JSONException e) {
+                // could be a double key problem. In that case we should repeat the process with another approach
+                throw new IOException(e);
+            }
+        }
+        return map;
     }
 
     public static JSONObject readJSONObject(final byte[] b) throws IOException {
