@@ -28,6 +28,7 @@ import java.util.zip.GZIPOutputStream;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import eu.searchlab.tools.Domains;
 import eu.searchlab.tools.Logger;
 
 /**
@@ -88,7 +89,7 @@ public final class ConcurrentIO {
         for (int i = 0; i < lockFiles.length; i++) {
             final IOPath lockFile = lockFiles[i];
             assert !this.io.exists(lockFile);
-            final InetAddress localhost = InetAddress.getLocalHost();
+            final InetAddress localhost = Domains.myLocalhostIP();
             final long time = System.currentTimeMillis();
             try {
                 final JSONObject json = new JSONObject(true)
