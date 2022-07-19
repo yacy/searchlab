@@ -44,11 +44,11 @@ public abstract class AbstractTray implements Tray {
 
 
     protected final static JSONObject clone(final JSONObject json) {
-        return new JSONObject(json, json.keySet().toArray(new String[json.length()]));
+        return json == null ? null : new JSONObject(json, json.keySet().toArray(new String[json.length()]));
     }
 
     protected final static JSONArray clone(final JSONArray json) {
-        return new JSONArray(json.toList());
+        return json == null ? null : new JSONArray(json.toList());
     }
 
     /**
@@ -65,7 +65,7 @@ public abstract class AbstractTray implements Tray {
 
         // check if file exists and create it if not
         try {
-        	ensureLoaded();
+            ensureLoaded();
         } catch (final IOException e) {
             if (this.io.exists(iop)) {
                 Logger.error(e);
@@ -78,7 +78,6 @@ public abstract class AbstractTray implements Tray {
                 }
             }
         }
-
     }
 
     public static JSONObject read(final File f) throws IOException {
