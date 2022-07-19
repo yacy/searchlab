@@ -9,7 +9,8 @@ User Accounts in the Searchlab are used to personalize search indexes:
 
 ## Authorized Accounts
 
-You can currently only sign-up using an existing GitHub account:
+You can currently only sign-up using an existing GitHub or Patreon account.
+When you log with one of these accounts you must agree with the GDPR Compliance as declared in the footer below:
 
 <form action="/en/aaaaa/github_get_auth/" class="navbar-form navbar-left">
   <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #000000; border-radius:8px; font-size:18px; width:300px;"><img src="/img/login_with_github.png" width="32" height="32">&nbsp;&nbsp;Login with Github</button>
