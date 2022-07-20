@@ -22,13 +22,9 @@ package eu.searchlab.http.services.aaaaa;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.stream.Collectors;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClients;
 import org.json.JSONObject;
 
 import eu.searchlab.http.AbstractService;
@@ -36,7 +32,8 @@ import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Logger;
-import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
+import oauth.signpost.OAuthConsumer;
+import oauth.signpost.basic.DefaultOAuthConsumer;
 import oauth.signpost.exception.OAuthCommunicationException;
 import oauth.signpost.exception.OAuthExpectationFailedException;
 import oauth.signpost.exception.OAuthMessageSignerException;
@@ -110,29 +107,32 @@ public class OAuthTwitterGetAuth  extends AbstractService implements Service {
          */
         public RequestToken(final String consumerKey, final String consumerSecret) throws IOException {
             this.time = System.currentTimeMillis();
-            final HttpClient httpclient = HttpClients.createDefault();
-            final HttpGet httpget = new HttpGet("https://api.twitter.com/oauth/request_token");
-
+            final URL url = new URL("https://api.twitter.com/oauth/request_token");
+            final HttpURLConnection request = (HttpURLConnection) url.openConnection();
             try {
-                final CommonsHttpOAuthConsumer consumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
+                final OAuthConsumer consumer = new DefaultOAuthConsumer(consumerKey, consumerSecret);
 
                 // sign the request (consumer is a Signpost DefaultOAuthConsumer)
-                consumer.sign(httpget);
+                consumer.sign(request);
 
                 // send the request
-                final HttpResponse response = httpclient.execute(httpget);
-                final HttpEntity entity = response.getEntity();
-                final BufferedReader br = null;
-                if (entity != null && response.getStatusLine().getStatusCode() == 200) {
-                    final String s = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
+                request.connect();
+                //System.out.println(request.getResponseCode());
+                //System.out.println(request.getResponseMessage());
+                BufferedReader br = null;
+                if (request.getResponseCode() == 200) {
+                    br = new BufferedReader(new InputStreamReader(request.getInputStream()));
+                    final String s = br.readLine();
                     final String[] t = s.split("&");
                     this.oauth_token = t[0].substring(12);
                     this.oauth_token_secret = t[1].substring(19);
                 } else {
-                    throw new IOException("Response Code: " + response.getStatusLine().getStatusCode());
+                    throw new IOException("Response Code: " + request.getResponseCode());
                 }
             } catch (OAuthMessageSignerException | OAuthExpectationFailedException | OAuthCommunicationException e) {
                 Logger.warn(e);
+                Logger.warn("Response Code: " + request.getResponseCode());
+                Logger.warn("Response Message: " + request.getResponseMessage());
                 throw new IOException(e.getMessage());
             }
         }
