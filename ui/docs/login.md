@@ -22,13 +22,14 @@ When you log with one of these accounts you must agree with the GDPR Compliance 
 </form>
 </br></br>
 
+<form action="/en/aaaaa/twitter_get_auth/" class="navbar-form navbar-left">
+  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #1DA1F2; border-radius:8px; font-size:18px; width:300px;"><img src="/img/login_with_twitter.png" width="32" height="32">&nbsp;&nbsp;Sign-in with Twitter</button>
+</form>
+</br></br>
+
 We are also preparing sign-up with the following OAuth providers:
 
 
-<form action="/en/aaaaa/twitter_get_auth/" class="navbar-form navbar-left">
-  <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #1DA1F2; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_twitter.png" width="32" height="32">&nbsp;&nbsp;Login with Twitter</button>
-</form>
-</br></br>
 
 <form action="/en/aaaaa/twitch_get_auth/" class="navbar-form navbar-left">
   <button type="submit" id="login_with_github" class="btn btn-default btn-sm" style="background-color: #9147FF; border-radius:8px; font-size:18px; width:300px;" disabled="disabled"><img src="/img/login_with_twitch.png" width="32" height="32">&nbsp;&nbsp;Login with Twitch</button>

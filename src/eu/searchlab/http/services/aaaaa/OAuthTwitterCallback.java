@@ -22,8 +22,6 @@ package eu.searchlab.http.services.aaaaa;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,20 +34,19 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 
+import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authentication;
+import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
+import eu.searchlab.http.WebServer;
 import eu.searchlab.tools.Logger;
-import oauth.signpost.OAuthConsumer;
-import oauth.signpost.basic.DefaultOAuthConsumer;
-import oauth.signpost.exception.OAuthCommunicationException;
-import oauth.signpost.exception.OAuthExpectationFailedException;
-import oauth.signpost.exception.OAuthMessageSignerException;
+import eu.searchlab.tools.TwitterAPI;
+import twitter4j.TwitterException;
 
 /**
  * OAuthTwitterCallback
@@ -121,25 +118,69 @@ public class OAuthTwitterCallback  extends AbstractService implements Service {
                 // now we have permanent Access Token credentials
 
                 // read the user information
-                //final URL url = new URL("https://api.twitter.com/1.1/account/verify_credentials.json");
-                final URL url = new URL("https://api.twitter.com/1.1/users/show.json?user_id=" + user_id);
-                final HttpURLConnection request = (HttpURLConnection) url.openConnection();
-                final OAuthConsumer consumer = new DefaultOAuthConsumer(consumerKey, consumerSecret);
-                consumer.setTokenWithSecret(access_token, access_token_secret);
-                consumer.sign(request);
-                request.connect();
+                /*
+                final JSONObject json = TwitterAPI.getUserByScreenName(
+                        consumerKey, consumerSecret,
+                        access_token, access_token_secret,
+                        screen_name);
+                 */
+                final JSONObject credentialsj = TwitterAPI.verifyCredentials(
+                        consumerKey, consumerSecret,
+                        access_token, access_token_secret);
+                //Logger.info("TWITTER CREDENTIALS: " + credentialsj.toString(2));
+                /*
+                final JSONObject resourcej = TwitterAPI.getUsersResourcesByID(
+                        consumerKey, consumerSecret,
+                        access_token, access_token_secret,
+                        Long.parseLong(user_id));
+                Logger.info("TWITTER RESOURCES: " + resourcej.toString(2));
+                final JSONObject userj = TwitterAPI.getUserByID(
+                        consumerKey, consumerSecret,
+                        access_token, access_token_secret,
+                        Long.parseLong(user_id));
+                Logger.info("TWITTER USER: " + userj.toString(2));
+                 */
+                final String userName = credentialsj.optString("name");
+                final String userEmail = credentialsj.optString("email");
 
-                if (request.getResponseCode() == 200) {
-                    final String u = new BufferedReader(new InputStreamReader(request.getInputStream())).lines().collect(Collectors.joining("\n"));
-                    final JSONObject json = new JSONObject(new JSONTokener(u));
 
-                } else {
-                    Logger.warn("Response Code: " + request.getResponseCode());
-                    Logger.warn("Response Message: " + request.getResponseMessage());
-                    throw new IOException("Response Code: " + request.getResponseCode());
+                // Decide if the credentials are sufficient for authentication
+                // We redirect again to a page where we tell the user that the log-in actually happened.
+                final ServiceResponse serviceResponse = new ServiceResponse(new JSONObject(true));
+                if (userEmail != null && userEmail.length() > 0 && userEmail.indexOf('@') > 1) {
+
+                    Logger.info("User Login: " + userEmail);
+
+                    // get userid for user to authenticate the user
+                    // - search email address in authentication database
+                    Authentication authentication = Searchlab.userDB.getAuthentiationByEmail(userEmail);
+                    // - if not present, generate new entry
+                    if (authentication == null) {
+                        authentication = new Authentication();
+                        authentication.setEmail(userEmail);
+                    }
+                    authentication.setTwitterLogin(screen_name);
+                    authentication.setName(userName);
+
+                    // create an authorization cookie
+                    final String id = authentication.getID();
+                    final Authorization authorization = new Authorization(id);
+                    final String cookie = authorization.toString();
+                    serviceResponse.addSessionCookie(WebServer.COOKIE_USER_ID_NAME, cookie);
+
+                    // create an enry in two databases:
+                    // - authentication to store the user credentials
+                    Searchlab.userDB.setAuthentication(authentication);
+                    // - authorization with cookie entry to give user access and operation right when accessing further webpages
+                    Searchlab.userDB.setAuthorization(authorization);
+
+                    // successfully logged in
+                    serviceResponse.setFoundRedirect("/" + authentication.getID() + "/home/");
+
+                    return serviceResponse;
                 }
             }
-        } catch (final IOException | JSONException | OAuthMessageSignerException | OAuthExpectationFailedException | OAuthCommunicationException e) {
+        } catch (final IOException | TwitterException e) {
             Logger.warn(e);
         }
 

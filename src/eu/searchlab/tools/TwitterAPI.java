@@ -6,12 +6,12 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *  Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program in the file lgpl21.txt
  *  If not, see <http://www.gnu.org/licenses/>.
@@ -20,44 +20,26 @@
 
 package eu.searchlab.tools;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
-import org.joda.time.DateTime;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-
-import twitter4j.IDs;
+import twitter4j.AccountSettings;
 import twitter4j.RateLimitStatus;
-import twitter4j.ResponseList;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.TwitterObjectFactory;
 import twitter4j.User;
+import twitter4j.api.UsersResources;
 import twitter4j.conf.ConfigurationBuilder;
 
 @SuppressWarnings("unused")
 public class TwitterAPI {
-    
+
     private final static String RATE_ACCOUNT_LOGIN_VERIFICATION_ENROLLMENT = "/account/login_verification_enrollment"; // limit = 15
     private final static String RATE_ACCOUNT_SETTINGS = "/account/settings"; // limit = 15
     private final static String RATE_ACCOUNT_UPDATE_PROFILE = "/account/update_profile"; // limit = 15
@@ -140,7 +122,7 @@ public class TwitterAPI {
 
     private static TwitterFactory appFactory = null;
     private static Map<String, TwitterFactory> userFactory = new HashMap<>();
-    
+
     public static TwitterFactory getAppTwitterFactory(
             String twitterConsumerKey, String twitterConsumerSecret,
             String twitterAccessToken, String twitterAccessTokenSecret) {
@@ -163,17 +145,18 @@ public class TwitterAPI {
         if (uf != null) userFactory.put(screen_name, uf);
         return uf;
     }
-    
+
     private static TwitterFactory getUserTwitterFactory(
             String twitterConsumerKey, String twitterConsumerSecret,
             String twitterAccessToken, String twitterAccessTokenSecret) {
-        ConfigurationBuilder cb = new ConfigurationBuilder();
+        final ConfigurationBuilder cb = new ConfigurationBuilder();
         cb
-            .setOAuthConsumerKey(twitterConsumerKey)
-            .setOAuthConsumerSecret(twitterConsumerSecret)
-            .setOAuthAccessToken(twitterAccessToken)
-            .setOAuthAccessTokenSecret(twitterAccessTokenSecret);
+        .setOAuthConsumerKey(twitterConsumerKey)
+        .setOAuthConsumerSecret(twitterConsumerSecret)
+        .setOAuthAccessToken(twitterAccessToken)
+        .setOAuthAccessTokenSecret(twitterAccessTokenSecret);
         cb.setJSONStoreEnabled(true);
+        cb.setIncludeEmailEnabled(true);
         return new TwitterFactory(cb.build());
     }
 
@@ -182,34 +165,106 @@ public class TwitterAPI {
             String twitterAccessToken, String twitterAccessTokenSecret,
             final String rate_type) throws TwitterException {
         return getAppTwitterFactory(
-            twitterConsumerKey, twitterConsumerSecret,
-            twitterAccessToken, twitterAccessTokenSecret
-        ).getInstance().getRateLimitStatus().get(rate_type);
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret
+                ).getInstance().getRateLimitStatus().get(rate_type);
     }
 
-    public static JSONObject getUser(
+    public static JSONObject verifyCredentials(
+            String twitterConsumerKey, String twitterConsumerSecret,
+            String twitterAccessToken, String twitterAccessTokenSecret) throws TwitterException, IOException {
+
+        TwitterFactory tf = getUserTwitterFactory(
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret
+                );
+        if (tf == null) tf = getAppTwitterFactory(
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret);
+        if (tf == null) return new JSONObject();
+        final Twitter twitter = tf.getInstance();
+        final User user = twitter.verifyCredentials();
+        final RateLimitStatus rateLimitStatus = user.getRateLimitStatus();
+        final String jsonstring = TwitterObjectFactory.getRawJSON(user);
+        try {
+            final JSONObject json = new JSONObject(jsonstring);
+            return json;
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
+    public static JSONObject getUserByScreenName(
             String twitterConsumerKey, String twitterConsumerSecret,
             String twitterAccessToken, String twitterAccessTokenSecret,
             String screen_name) throws TwitterException, IOException {
 
         TwitterFactory tf = getUserTwitterFactory(
-            twitterConsumerKey, twitterConsumerSecret,
-            twitterAccessToken, twitterAccessTokenSecret,
-            screen_name);
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret,
+                screen_name);
         if (tf == null) tf = getAppTwitterFactory(
                 twitterConsumerKey, twitterConsumerSecret,
                 twitterAccessToken, twitterAccessTokenSecret);
         if (tf == null) return new JSONObject();
-        Twitter twitter = tf.getInstance();
-        User user = twitter.showUser(screen_name);
-        RateLimitStatus rateLimitStatus = user.getRateLimitStatus();
-        String jsonstring = TwitterObjectFactory.getRawJSON(user);
+        final Twitter twitter = tf.getInstance();
+        final User user = twitter.showUser(screen_name);
+        final RateLimitStatus rateLimitStatus = user.getRateLimitStatus();
+        final String jsonstring = TwitterObjectFactory.getRawJSON(user);
         try {
-            JSONObject json = new JSONObject(jsonstring);
+            final JSONObject json = new JSONObject(jsonstring);
             return json;
-        } catch (JSONException e) {
+        } catch (final JSONException e) {
             throw new IOException(e.getMessage());
         }
     }
-    
+
+    public static JSONObject getUserByID(
+            String twitterConsumerKey, String twitterConsumerSecret,
+            String twitterAccessToken, String twitterAccessTokenSecret,
+            long userid) throws TwitterException, IOException {
+
+        TwitterFactory tf = getUserTwitterFactory(
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret);
+        if (tf == null) tf = getAppTwitterFactory(
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret);
+        if (tf == null) return new JSONObject();
+        final Twitter twitter = tf.getInstance();
+        final User user = twitter.showUser(userid);
+        final RateLimitStatus rateLimitStatus = user.getRateLimitStatus();
+        final String jsonstring = TwitterObjectFactory.getRawJSON(user);
+        try {
+            final JSONObject json = new JSONObject(jsonstring);
+            return json;
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
+    public static JSONObject getUsersResourcesByID(
+            String twitterConsumerKey, String twitterConsumerSecret,
+            String twitterAccessToken, String twitterAccessTokenSecret,
+            long userid) throws TwitterException, IOException {
+
+        TwitterFactory tf = getUserTwitterFactory(
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret);
+        if (tf == null) tf = getAppTwitterFactory(
+                twitterConsumerKey, twitterConsumerSecret,
+                twitterAccessToken, twitterAccessTokenSecret);
+        if (tf == null) return new JSONObject();
+        final Twitter twitter = tf.getInstance();
+        final UsersResources user = twitter.users();
+        final AccountSettings as = user.getAccountSettings();
+        final String jsonstring = TwitterObjectFactory.getRawJSON(as);
+        try {
+            final JSONObject json = new JSONObject(jsonstring);
+            return json;
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
 }
