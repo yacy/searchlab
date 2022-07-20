@@ -68,6 +68,30 @@ Start a Web crawl:
 <script>
 grade_level={{grade_level}};
 
+// L00_Everyone
+// L01_Anonymous
+
+// L02_Authenticated
+if (grade_level == 2) {
+    document.getElementById("loginhint").classList.remove("alert-warning");
+    document.getElementById("loginhint").classList.add("alert-success");
+    document.getElementById("loginhint").textContent = "You are an authenticated, free-service grade user";
+    document.getElementById("crawlingDepth").disabled = false;
+    document.getElementById("crawlingDepth").value = 1;
+    document.getElementById("crawlingDepth_badge").textContent = "";
+    document.getElementById("archiveIndex_input").disabled = false;
+    document.getElementById("archiveIndex_badge").textContent = "";
+}
+
+// L03_Primary
+// L04_Level_One
+// L05_Level_Five
+// L06_Level_Twentyfive
+// L07_Level_Fifty
+// L08_Level_Twohundred
+
+
+// L09_Maintainer
 if (grade_level == 9) {
     document.getElementById("loginhint").classList.remove("alert-warning");
     document.getElementById("loginhint").classList.add("alert-success");
