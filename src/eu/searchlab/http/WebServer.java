@@ -311,9 +311,9 @@ public class WebServer {
                     exchange.getResponseSender().send(ByteBuffer.wrap(b));
                 }
                 log(ip, client, user, method,
-                    "GET".equals(method) ? path + (exchange.getQueryString().length() > 0 ? ("?" + exchange.getQueryString()) : "") : path,
-                    exchange.getStatusCode(), b == null ? 0 : b.length,
-                    referer, userAgent);
+                        "GET".equals(method) ? path + (exchange.getQueryString().length() > 0 ? ("?" + exchange.getQueryString()) : "") : path,
+                                exchange.getStatusCode(), b == null ? 0 : b.length,
+                                        referer, userAgent);
             } catch (final IOException e) {
                 // to support the migration of the community forum from searchlab.eu to community.searchlab.eu we send of all unknown pages a redirect
                 if (e instanceof FileNotFoundException) {
@@ -357,37 +357,36 @@ public class WebServer {
                 serviceResponse = new ServiceResponse(b);
             } else {
                 serviceResponse = service.serve(serviceRequest);
-                if (b != null && serviceResponse.getType() == Service.Type.OBJECT) {
-                    final JSONObject json = serviceResponse.getObject();
-                    final Handlebars handlebars = new Handlebars();
-                    final Context context = Context
-                            .newBuilder(json)
-                            .resolver(JSONObjectValueResolver.INSTANCE)
-                            .build();
-                    try {
-                        final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
-                        serviceResponse.setValue(template.apply(context));
-                    } catch (final HandlebarsException e) {
-                        Logger.error("Handlebars Error", e);
-                        throw new IOException(e.getMessage());
+                if (b != null) {
+                    if (serviceResponse.getType() == Service.Type.OBJECT) {
+                        final JSONObject json = serviceResponse.getObject();
+                        final Handlebars handlebars = new Handlebars();
+                        final Context context = Context
+                                .newBuilder(json)
+                                .resolver(JSONObjectValueResolver.INSTANCE)
+                                .build();
+                        try {
+                            final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
+                            serviceResponse.setValue(template.apply(context));
+                        } catch (final HandlebarsException e) {
+                            Logger.error("Handlebars Error", e);
+                            throw new IOException(e.getMessage());
+                        }
+                    } else if (serviceResponse.getType() == Service.Type.ARRAY) {
+                        final JSONArray json = serviceResponse.getArray();
+                        final Handlebars handlebars = new Handlebars();
+                        final Context context = Context
+                                .newBuilder(json)
+                                .resolver(JSONObjectValueResolver.INSTANCE)
+                                .build();
+                        try {
+                            final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
+                            serviceResponse.setValue(template.apply(context));
+                        } catch (final HandlebarsException e) {
+                            Logger.error("Handlebars Error", e);
+                            throw new IOException(e.getMessage());
+                        }
                     }
-                } else if (b != null && serviceResponse.getType() == Service.Type.ARRAY) {
-                    final JSONArray json = serviceResponse.getArray();
-                    final Handlebars handlebars = new Handlebars();
-                    final Context context = Context
-                            .newBuilder(json)
-                            .resolver(JSONObjectValueResolver.INSTANCE)
-                            .build();
-                    try {
-                        final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
-                        serviceResponse.setValue(template.apply(context));
-                    } catch (final HandlebarsException e) {
-                        Logger.error("Handlebars Error", e);
-                        throw new IOException(e.getMessage());
-                    }
-                } else {
-                    // the response is defined only by the service, we ignore b[]
-                    serviceResponse = ServiceMap.serviceDispatcher(service, path, serviceRequest);
                 }
             }
 
