@@ -67,6 +67,8 @@ public class HomeService  extends AbstractService implements Service {
             return serviceResponse;
         }
 
+        //Searchlab.ec.count(null, null);
+
         // all good, we respond with user credentials
         final JSONObject json = new JSONObject(true);
         try {

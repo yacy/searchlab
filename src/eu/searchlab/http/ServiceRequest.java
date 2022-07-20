@@ -41,14 +41,26 @@ public class ServiceRequest {
     private final String user; // the user_id
     private final String path; // this looks like "/js/jquery.min.js", a root path looks like "/"
     private final String query; // the part after "?"
+    private final String ip_id;
+    private final String ip_pseudonym;
     private final Cookie cookie;
     private final HeaderMap requestHeaders;
 
-    public ServiceRequest(final JSONObject post, final String user, final String path, final String query, final Cookie cookie, final HeaderMap requestHeaders) {
+    public ServiceRequest(
+            final JSONObject post,
+            final String user,
+            final String path,
+            final String query,
+            final String ip_id,
+            final String ip_pseudonym,
+            final Cookie cookie,
+            final HeaderMap requestHeaders) {
         this.post = post == null ? new JSONObject() : post;
         this.user = user;
         this.path = path == null ? "" : path;
         this.query = query == null ? "" : query;
+        this.ip_id = ip_id;
+        this.ip_pseudonym = ip_pseudonym;
         this.cookie = cookie;
         this.requestHeaders = requestHeaders;
     }
@@ -63,6 +75,14 @@ public class ServiceRequest {
 
     public String getQuery() {
         return this.query;
+    }
+
+    public String getIPID() {
+        return this.ip_id;
+    }
+
+    public String getIP00() {
+        return this.ip_pseudonym;
     }
 
     public JSONObject getPost() {

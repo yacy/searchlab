@@ -185,22 +185,6 @@ public class WebServer {
             final HeaderValues userAgentValues = requestHeaders.get(Headers.USER_AGENT_STRING);
             final String userAgent = userAgentValues == null ? "" : userAgentValues.getFirst();
 
-            // read client address
-            final SocketAddress address = exchange.getConnection().getPeerAddress();
-            String ip = address.toString();
-            if (address instanceof InetSocketAddress) {
-                ip = ((InetSocketAddress) address).getAddress().getHostAddress();
-            }
-            int p = ip.indexOf("/");
-            if (p > 0) ip = ip.substring(p + 1);
-
-            final HeaderMap requestHeader = exchange.getRequestHeaders();
-            if (requestHeader.contains("X-Real-IP")) ip = requestHeader.getFirst("X-Real-IP"); // X-Forwarded-For ??
-
-            // pseudonymization: de-identification of the ip, implements article 4(5) of the GDPR
-            p = ip.lastIndexOf('.');
-            if (p >= 0) ip = ip.substring(0, p) + ".1"; // we use a "1" here to make this a proper ip
-
             // process header
             final HeaderMap responseHeader = exchange.getResponseHeaders();
             responseHeader.put(new HttpString("Access-Control-Allow-Origin"), "*");
@@ -238,12 +222,12 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, "/" + user_id + path + (query.length() > 0 ? "?" + query : ""));
                     exchange.getResponseSender().send("");
-                    log(ip, client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0, referer, userAgent);
+                    log(serviceRequest.getIP00(), client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0, referer, userAgent);
                     return;
                 }
             }
 
-            WebServer.this.audit.event(user, ip);
+            WebServer.this.audit.event(user, serviceRequest.getIP00());
 
             if (user.length() != 2) {
                 // add a canonical and noindex tag to the response header
@@ -255,7 +239,7 @@ public class WebServer {
 
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
             final File f = findFile(path);
-            p = path.lastIndexOf('.');
+            final int p = path.lastIndexOf('.');
             final String ext = p < 0 ? "html" : path.substring(p + 1);
             final String mime = mimeTable.getProperty(ext, "application/octet-stream");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
@@ -269,11 +253,11 @@ public class WebServer {
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
                     exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
                     exchange.getResponseSender().send(bb);
-                    log(ip, client, user, method, path, StatusCodes.OK, f.length(), referer, userAgent);
+                    log(serviceRequest.getIP00(), client, user, method, path, StatusCodes.OK, f.length(), referer, userAgent);
                 } catch (final IOException e) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found");
                     exchange.getResponseSender().send("");
-                    log(ip, client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
+                    log(serviceRequest.getIP00(), client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
                 }
                 return;
             }
@@ -310,7 +294,7 @@ public class WebServer {
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
                     exchange.getResponseSender().send(ByteBuffer.wrap(b));
                 }
-                log(ip, client, user, method,
+                log(serviceRequest.getIP00(), client, user, method,
                         "GET".equals(method) ? path + (exchange.getQueryString().length() > 0 ? ("?" + exchange.getQueryString()) : "") : path,
                                 exchange.getStatusCode(), b == null ? 0 : b.length,
                                         referer, userAgent);
@@ -325,7 +309,7 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE).setReasonPhrase(e.getMessage());
                     exchange.getResponseSender().send("");
                 }
-                log(ip, client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
+                log(serviceRequest.getIP00(), client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
             }
         }
 
@@ -420,7 +404,7 @@ public class WebServer {
                 final int rightquote = html.indexOf("\"", ssip + 23);
                 if (rightquote <= 0 || rightquote >= end) break;
                 final String virtual = html.substring(ssip + 22, rightquote);
-                final ServiceRequest serviceRequest0 = getQueryParams(serviceRequest.getUser(), virtual);
+                final ServiceRequest serviceRequest0 = getQueryParams(serviceRequest.getUser(), serviceRequest.getIPID(), serviceRequest.getIP00(), virtual);
                 final ServiceResponse ibbr = processPost(serviceRequest0);
                 final byte[] ibb = ibbr.toByteArray(false);
                 final String include = ibb == null ? null : new String(ibb, StandardCharsets.UTF_8);
@@ -504,6 +488,23 @@ public class WebServer {
         }
 
         private ServiceRequest getQueryParams(final HttpServerExchange exchange) throws IOException {
+
+            // read client address
+            final SocketAddress address = exchange.getConnection().getPeerAddress();
+            String ip_id = address.toString();
+            if (address instanceof InetSocketAddress) {
+                ip_id = ((InetSocketAddress) address).getAddress().getHostAddress();
+            }
+            int p = ip_id.indexOf("/");
+            if (p > 0) ip_id = ip_id.substring(p + 1);
+
+            final HeaderMap requestHeader = exchange.getRequestHeaders();
+            if (requestHeader.contains("X-Real-IP")) ip_id = requestHeader.getFirst("X-Real-IP"); // X-Forwarded-For ??
+
+            // pseudonymization: de-identification of the ip, implements article 4(5) of the GDPR
+            p = ip_id.lastIndexOf('.');
+            final String ip_pseudonym = p < 0 ? ip_id : ip_id.substring(0, p) + ".1"; // we use a "1" here to make this a proper ip
+
             // read query parameters
             String post_message = "";
             if (exchange.getRequestMethod().equals(Methods.POST) || exchange.getRequestMethod().equals(Methods.PUT)) {
@@ -525,15 +526,19 @@ public class WebServer {
             final String user = getUserPrefix(path);
             if (user != null) path = path.substring(user.length() + 1);
             final String query = exchange.getQueryString();
-            try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
-            try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
-            try {json.put("QUERY", query);} catch (final JSONException e) {} // TODO: delete
+            try {
+                json.put("IPID", ip_id);
+                json.put("IP00", ip_pseudonym);
+                json.put("USER", user);
+                json.put("PATH", path);
+                json.put("QUERY", query);
+            } catch (final JSONException e) {}
             final Cookie cookie = exchange.getRequestCookie(COOKIE_USER_ID_NAME);
             final HeaderMap requestHeaders = exchange.getRequestHeaders();
-            return new ServiceRequest(json, user, path, query, cookie, requestHeaders);
+            return new ServiceRequest(json, user, path, query, ip_id, ip_pseudonym, cookie, requestHeaders);
         }
 
-        private ServiceRequest getQueryParams(final String knownuser, String path)  {
+        private ServiceRequest getQueryParams(final String knownuser, final String ip_id, final String ip_pseudonym, String path)  {
             // parse query parameters
             final JSONObject json = new JSONObject(true);
             final int q = path.indexOf('?');
@@ -557,7 +562,7 @@ public class WebServer {
             try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
             try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
             try {json.put("QUERY", "");} catch (final JSONException e) {} // TODO: delete
-            return new ServiceRequest(json, user, path, "", null, null);
+            return new ServiceRequest(json, user, path, "", ip_id, ip_pseudonym, null, null);
         }
 
         /**
