@@ -66,6 +66,9 @@ import net.yacy.grid.io.index.YaCyQuery;
  */
 public class YaCySearchService extends AbstractService implements Service {
 
+    private final static long[] frequency_time  = {60000, 300000, 3600000}; // 1 minute, 5 minutes, 1 hour
+    private final static  int[] frequency_count = {10, 20, 30};
+
     @Override
     public String[] getPaths() {
         return new String[] {"/api/yacysearch.json", "/search/"};
@@ -76,16 +79,13 @@ public class YaCySearchService extends AbstractService implements Service {
 
         // check request frequency
         Searchlab.searchRequestCount.event(request.getIPID());
-        final int[] eventcount = Searchlab.searchRequestCount.count(request.getIPID(), 60000, 300000);
-        if (eventcount[0] > 10) {
-            final long retryAfter = Searchlab.searchRequestCount.retryAfter(eventcount[0], 10, 60000);
-            Logger.info("Sending TOO MANY REQUESTS to " + request.getIP00() + " with retryAfter = " + retryAfter);
-            return new ServiceResponse(new JSONObject()).setTooManyRequests(retryAfter);
-        }
-        if (eventcount[1] > 20) {
-            final long retryAfter = Searchlab.searchRequestCount.retryAfter(eventcount[1], 20, 300000);
-            Logger.info("Sending TOO MANY REQUESTS to " + request.getIP00() + " with retryAfter = " + retryAfter);
-            return new ServiceResponse(new JSONObject()).setTooManyRequests(retryAfter);
+        final int[] eventcount = Searchlab.searchRequestCount.count(request.getIPID(), frequency_time);
+        for (int i = 0; i < eventcount.length; i++) {
+            if (eventcount[i] > frequency_count[i]) {
+                final long retryAfter = Searchlab.searchRequestCount.retryAfter(eventcount[i], frequency_count[i], frequency_time[i]);
+                Logger.info("Sending TOO MANY REQUESTS to " + request.getIP00() + " with retryAfter = " + retryAfter);
+                return new ServiceResponse(new JSONObject()).setTooManyRequests(retryAfter);
+            }
         }
 
         final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
