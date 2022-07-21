@@ -1279,7 +1279,7 @@ output {
 }
 .form-control[disabled], .form-control[readonly], fieldset[disabled] .form-control {
     cursor: not-allowed;
-    background-color: #eee;
+    background-color: #222;
 }
 textarea.form-control {
     height: auto;
@@ -1412,7 +1412,7 @@ textarea.input-lg {
     display: block;
     margin-top: 5px;
     margin-bottom: 10px;
-    color: #626262;
+    color: #DE6724;
 }
 @media(min-width:768px) {
     .form-inline .form-group {
