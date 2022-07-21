@@ -100,6 +100,8 @@ public class YaCySearchService extends AbstractService implements Service {
         final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
         final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
         final int startRecord = request.get("startRecord", request.get("start", 0));
+        if (startRecord >= 9990) return new ServiceResponse().setBadRequest();
+
         //int meanCount = call.opt("meanCount", 5);
         final int timezoneOffset = request.get("timezoneOffset", -1);
         //String nav = call.opt("nav", "");
@@ -139,6 +141,10 @@ public class YaCySearchService extends AbstractService implements Service {
 
             // create result list
             final List<Map<String, Object>> result = query.results;
+            if (result.size() == 0 && startRecord > 0) {
+                // if we done everything right, this was probably produced by a bot missing boundaries
+                return new ServiceResponse().setBadRequest();
+            }
             final List<String> explanations = query.explanations;
             for (int hitc = 0; hitc < result.size(); hitc++) {
                 final WebDocument doc = new WebDocument(result.get(hitc));

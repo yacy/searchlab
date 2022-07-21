@@ -194,6 +194,12 @@ public class ServiceResponse {
         return setSpecial(StatusCodes.TOO_MANY_REQUESTS, Headers.RETRY_AFTER_STRING, Long.toString(retryAfter));
     }
 
+    public ServiceResponse setBadRequest() {
+        // see https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1
+        this.statusCode = StatusCodes.BAD_REQUEST;
+        return this;
+    }
+
     public Type getType() {
         return this.type;
     }
