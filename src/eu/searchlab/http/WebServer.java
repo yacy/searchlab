@@ -269,7 +269,8 @@ public class WebServer {
                 final Set<Cookie> cookies = serviceResponse.getCookies();
                 for (final Cookie cookie: cookies) exchange.setResponseCookie(cookie);
                 exchange.setStatusCode(serviceResponse.getStatusCode());
-                serviceResponse.getXtraHeaders().forEach((k, v) -> exchange.getResponseHeaders().put(new HttpString(k), v));
+                final Map<String, String> xheaders = serviceResponse.getXtraHeaders();
+                if (xheaders != null) xheaders.forEach((k, v) -> exchange.getResponseHeaders().put(new HttpString(k), v));
 
                 // send html to client
                 if (b == null) {

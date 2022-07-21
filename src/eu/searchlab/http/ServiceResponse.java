@@ -42,18 +42,22 @@ import io.undertow.util.StatusCodes;
 
 public class ServiceResponse {
 
+    private final static String empty_response = "";
+
     private Object object;
     private Type type;
     private boolean setCORS;
     private final Set<Cookie> cookies;
     private int statusCode;
-    private final Map<String, String> xtraHeaders;
+    private Map<String, String> xtraHeaders;
 
-    private ServiceResponse() {
+    public ServiceResponse() {
         this.setCORS = false;
         this.cookies = new HashSet<>();
         this.statusCode = StatusCodes.OK;
-        this.xtraHeaders = new LinkedHashMap<>();
+        this.xtraHeaders = null;
+        this.object = empty_response;
+        this.type = Type.STRING;
     }
 
     public ServiceResponse(final JSONObject json) {
@@ -173,18 +177,21 @@ public class ServiceResponse {
         return this.cookies;
     }
 
-    public ServiceResponse setFoundRedirect(final String url) {
-        // used for oauth, see https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.3
-        this.statusCode = StatusCodes.FOUND;
-        this.xtraHeaders.put(Headers.LOCATION_STRING, url);
+    private ServiceResponse setSpecial(final int statusCode, final String hkey, final String hval) {
+        this.statusCode = statusCode;
+        if (this.xtraHeaders == null) this.xtraHeaders = new LinkedHashMap<>();
+        this.xtraHeaders.put(hkey, hval);
         return this;
     }
 
-    public ServiceResponse setTooManyRequests(final long retryAfter) {
+    public ServiceResponse setFoundRedirect(final String url) {
         // used for oauth, see https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.3
-        this.statusCode = StatusCodes.TOO_MANY_REQUESTS;
-        this.xtraHeaders.put(Headers.RETRY_AFTER_STRING, Long.toString(retryAfter));
-        return this;
+        return setSpecial(StatusCodes.FOUND, Headers.LOCATION_STRING, url);
+    }
+
+    public ServiceResponse setTooManyRequests(final long retryAfter) {
+        // see https://www.rfc-editor.org/rfc/rfc6585#section-4
+        return setSpecial(StatusCodes.TOO_MANY_REQUESTS, Headers.RETRY_AFTER_STRING, Long.toString(retryAfter));
     }
 
     public Type getType() {

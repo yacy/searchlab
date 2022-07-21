@@ -84,7 +84,7 @@ public class YaCySearchService extends AbstractService implements Service {
             if (eventcount[i] > frequency_count[i]) {
                 final long retryAfter = Searchlab.searchRequestCount.retryAfter(eventcount[i], frequency_count[i], frequency_time[i]);
                 Logger.info("Sending TOO MANY REQUESTS to " + request.getIP00() + " with retryAfter = " + retryAfter);
-                return new ServiceResponse(new JSONObject()).setTooManyRequests(retryAfter);
+                return new ServiceResponse().setTooManyRequests(retryAfter);
             }
         }
 
