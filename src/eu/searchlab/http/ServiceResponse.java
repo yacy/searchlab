@@ -87,11 +87,11 @@ public class ServiceResponse {
     }
 
     public int getStatusCode() {
-    	return this.statusCode;
+        return this.statusCode;
     }
 
     public Map<String, String> getXtraHeaders() {
-    	return this.xtraHeaders;
+        return this.xtraHeaders;
     }
 
     public ServiceResponse setValue(final JSONObject json) {
@@ -173,10 +173,18 @@ public class ServiceResponse {
         return this.cookies;
     }
 
-    public void setFoundRedirect(final String url) {
-    	// used for oauth, see https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.3
-    	this.statusCode = StatusCodes.FOUND;
-    	this.xtraHeaders.put(Headers.LOCATION_STRING, url);
+    public ServiceResponse setFoundRedirect(final String url) {
+        // used for oauth, see https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.3
+        this.statusCode = StatusCodes.FOUND;
+        this.xtraHeaders.put(Headers.LOCATION_STRING, url);
+        return this;
+    }
+
+    public ServiceResponse setTooManyRequests(final long retryAfter) {
+        // used for oauth, see https://datatracker.ietf.org/doc/html/rfc7231#section-6.4.3
+        this.statusCode = StatusCodes.TOO_MANY_REQUESTS;
+        this.xtraHeaders.put(Headers.RETRY_AFTER_STRING, Long.toString(retryAfter));
+        return this;
     }
 
     public Type getType() {

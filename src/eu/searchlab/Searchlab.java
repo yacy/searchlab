@@ -35,6 +35,7 @@ import eu.searchlab.aaaaa.AuthorizationTS;
 import eu.searchlab.aaaaa.UserDB;
 import eu.searchlab.audit.AuditScheduler;
 import eu.searchlab.audit.UserAudit;
+import eu.searchlab.http.EventCount;
 import eu.searchlab.http.WebServer;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
@@ -66,6 +67,7 @@ public class Searchlab {
     // Audit
     public static UserAudit userAudit;
     public static AuditScheduler auditScheduler;
+    public static EventCount searchRequestCount;
 
     // AAAAA
     public static UserDB userDB;
@@ -246,6 +248,7 @@ public class Searchlab {
             userAudit = new UserAudit(io, auditUserRequestsIOp, auditUserVisitorsIOp);
             accounting = new AccountingTS(io, aaaaaIOp);
             authorization = new AuthorizationTS(io, aaaaaIOp);
+            searchRequestCount = new EventCount(60000 * 60); // 1h audit trail per IP to count number of requests
         } catch (final IOException e) {
             Logger.error("could not load data from IO", e);
             System.exit(-1);

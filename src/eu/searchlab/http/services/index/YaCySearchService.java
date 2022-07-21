@@ -74,6 +74,15 @@ public class YaCySearchService extends AbstractService implements Service {
     @Override
     public ServiceResponse serve(final ServiceRequest request) {
 
+        // check request frequency
+        Searchlab.searchRequestCount.event(request.getIPID());
+        final int[] eventcount = Searchlab.searchRequestCount.count(request.getIPID(), 60000, 300000);
+        if (eventcount[0] > 20) {
+            final long retryAfter = Searchlab.searchRequestCount.retryAfter(eventcount[0], 20, 60000);
+            Logger.info("Sending TOO MANY REQUESTS to " + request.getIP00() + " with retryAfter = " + retryAfter);
+            return new ServiceResponse(new JSONObject()).setTooManyRequests(retryAfter);
+        }
+
         final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
 
         // evaluate request parameter
