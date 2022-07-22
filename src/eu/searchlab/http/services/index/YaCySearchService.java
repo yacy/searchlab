@@ -101,6 +101,7 @@ public class YaCySearchService extends AbstractService implements Service {
         final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
         final int startRecord = request.get("startRecord", request.get("start", 0));
         if (startRecord >= 9990) return new ServiceResponse().setBadRequest();
+        if (startRecord != 0 && !request.hasReferer()) return new ServiceResponse().setBadRequest();
 
         //int meanCount = call.opt("meanCount", 5);
         final int timezoneOffset = request.get("timezoneOffset", -1);

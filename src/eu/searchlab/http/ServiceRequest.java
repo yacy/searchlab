@@ -141,6 +141,11 @@ public class ServiceRequest {
         return referer.length() > 0;
     }
 
+    public String getReferer() {
+        final String referer = getHeader(Headers.REFERER_STRING, null);
+        return referer == null ? "" : referer;
+    }
+
     public boolean isAuthorized() {
         return getAuthorization() != null;
     }

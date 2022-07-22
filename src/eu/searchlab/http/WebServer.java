@@ -203,11 +203,10 @@ public class WebServer {
 
             // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
             final HeaderMap requestHeaders = exchange.getRequestHeaders();
-            final HeaderValues refererValues = requestHeaders.get(Headers.REFERER_STRING);
-            final String referer = refererValues == null ? "" : refererValues.getFirst();
             final HeaderValues userAgentValues = requestHeaders.get(Headers.USER_AGENT_STRING);
             final String userAgent = userAgentValues == null ? "" : userAgentValues.getFirst();
             final ServiceRequest serviceRequest = getQueryParams(exchange);
+            final String referer = serviceRequest.getReferer();
             final String user = serviceRequest.getUser();
             final String path = serviceRequest.getPath();
             final String query = serviceRequest.getQuery();
