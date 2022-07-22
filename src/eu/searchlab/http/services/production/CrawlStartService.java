@@ -53,8 +53,8 @@ import eu.searchlab.tools.Logger;
 import eu.searchlab.tools.MultiProtocolURL;
 import net.yacy.grid.io.index.CrawlstartDocument;
 import net.yacy.grid.io.index.CrawlstartMapping;
+import net.yacy.grid.io.index.ElasticsearchClient;
 import net.yacy.grid.io.index.FulltextIndex;
-import net.yacy.grid.io.index.GridIndex;
 import net.yacy.grid.io.index.Sort;
 import net.yacy.grid.io.index.WebMapping;
 
@@ -224,10 +224,10 @@ public class CrawlStartService  extends AbstractService implements Service {
 
                 // find all user_ids which have participated in the same crawl
                 final Map<String, Long> agg_host_s = Searchlab.ec.aggregation(
-                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
+                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB),
                         WebMapping.host_s.name(), url.getHost(), WebMapping.user_id_s.name());
                 final Map<String, Long> agg_host_sxt = Searchlab.ec.aggregation(
-                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
+                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB),
                         WebMapping.host_s.name(), url.getHost(), WebMapping.user_id_sxt.name());
                 for (final String s: agg_host_s.keySet()) {
                     if (!agg_host_sxt.containsKey(s)) agg_host_sxt.put(s, agg_host_s.get(s));

@@ -44,7 +44,6 @@ import eu.searchlab.storage.queues.QueueFactory;
 import eu.searchlab.storage.queues.RabbitQueueFactory;
 import eu.searchlab.tools.Logger;
 import net.yacy.grid.io.index.ElasticsearchClient;
-import net.yacy.grid.io.index.GridIndex;
 import net.yacy.grid.io.index.WebMapping;
 
 public class Searchlab {
@@ -190,9 +189,9 @@ public class Searchlab {
                 // get connection to elasticsearch
                 final String[] elasticsearchAddress = System.getProperty("grid.elasticsearch.address", "127.0.0.1:9300").split(",");
                 final String elasticsearchClusterName = System.getProperty("grid.elasticsearch.clusterName", "elasticsearch"); // default is elasticsearch but "" will ignore it
-                crawlerIndexName = System.getProperty("grid.elasticsearch.indexName.crawler", GridIndex.DEFAULT_INDEXNAME_CRAWLER);
-                crawlstartIndexName = System.getProperty("grid.elasticsearch.indexName.crawlstart", GridIndex.DEFAULT_INDEXNAME_CRAWLSTART);
-                crawlstartTypeName = System.getProperty("grid.elasticsearch.typeName", GridIndex.DEFAULT_TYPENAME);
+                crawlerIndexName = System.getProperty("grid.elasticsearch.indexName.crawler", ElasticsearchClient.DEFAULT_INDEXNAME_CRAWLER);
+                crawlstartIndexName = System.getProperty("grid.elasticsearch.indexName.crawlstart", ElasticsearchClient.DEFAULT_INDEXNAME_CRAWLSTART);
+                crawlstartTypeName = System.getProperty("grid.elasticsearch.typeName", ElasticsearchClient.DEFAULT_TYPENAME);
                 try {
                     ec = new ElasticsearchClient(elasticsearchAddress, elasticsearchClusterName);
                     Logger.info("Connected elasticsearch at " + elasticsearchAddress[0]);

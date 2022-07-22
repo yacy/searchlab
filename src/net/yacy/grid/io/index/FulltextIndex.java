@@ -78,7 +78,7 @@ public interface FulltextIndex {
      *            the query
      * @return the count of all documents in the index which matches with the query
      */
-    public long count(final String indexName, final YaCyQuery yq);
+    public long count(final String indexName, final String user_id, final YaCyQuery yq);
 
 
     /**
@@ -115,7 +115,7 @@ public interface FulltextIndex {
      * @param q
      * @return delete document count
      */
-    public int deleteByQuery(String indexName, final YaCyQuery yq);
+    public int deleteByQuery(String indexName, final String user_id, final YaCyQuery yq);
 
 
     /**
@@ -198,7 +198,7 @@ public interface FulltextIndex {
         }
     }
 
-    public Query query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields);
+    public Query query(final String indexName, final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields);
 
     public static class Query {
         public int hitCount;
@@ -209,9 +209,9 @@ public interface FulltextIndex {
 
         public Query() {
             this.hitCount = 0;
-            this.results = new ArrayList<Map<String, Object>>(this.hitCount);
-            this.explanations = new ArrayList<String>(this.hitCount);
-            this.highlights = new ArrayList<Map<String, HighlightField>>(this.hitCount);
+            this.results = new ArrayList<>(this.hitCount);
+            this.explanations = new ArrayList<>(this.hitCount);
+            this.highlights = new ArrayList<>(this.hitCount);
             this.aggregations = new HashMap<>();
         }
     }

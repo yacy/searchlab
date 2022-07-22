@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.json.JSONArray;
 
+import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
@@ -65,9 +66,13 @@ public class SuggestService extends AbstractService implements Service {
         final int timeout = serviceRequest.get("timeout", 300);
         final int count = Math.min(30, serviceRequest.get("count", 20));
 
+        final Authentication authentication = serviceRequest.getAuthentication();
+        final boolean self = authentication == null ? false : authentication.getSelf();
+        final String user_id = self ? authentication.getID() : null;
+
         // find answer
         final Typeahead typeahead = new Typeahead(querystring);
-        final Collection<String> suggestions = typeahead.getTypeahead(timeout, count);
+        final Collection<String> suggestions = typeahead.getTypeahead(timeout, count, user_id);
 
         final JSONArray json = new JSONArray();
         json.put(originalquerystring);

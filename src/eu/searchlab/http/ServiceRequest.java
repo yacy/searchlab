@@ -45,6 +45,8 @@ public class ServiceRequest {
     private final String ip_pseudonym;
     private final Cookie cookie;
     private final HeaderMap requestHeaders;
+    private Authorization authorization = null;
+    private Authentication authentication = null;
 
     public ServiceRequest(
             final JSONObject post,
@@ -114,6 +116,12 @@ public class ServiceRequest {
     }
 
     public Authorization getAuthorization() {
+        if (this.authorization != null) return this.authorization;
+        this.authorization = getAuthorizationInternal();
+        return getAuthorizationInternal();
+    }
+
+    private Authorization getAuthorizationInternal() {
         final String cookie = this.getCookieValue();
         try {
             final JSONObject json = new JSONObject(new JSONTokener(cookie));
@@ -127,6 +135,18 @@ public class ServiceRequest {
         } catch (JSONException | IOException e) {
             return null; // no authorization
         }
+    }
+
+    public Authentication getAuthentication() {
+        if (this.authentication != null) return this.authentication;
+        this.authentication = getAuthenticationInternal();
+        return this.authentication;
+    }
+
+    private Authentication getAuthenticationInternal() {
+        final Authorization authorization = getAuthorization();
+        final Authentication authentication = authorization == null ? null : Searchlab.userDB.getAuthentiationByID(authorization.getUserID());
+        return authentication;
     }
 
     public String getHeader(final String name, final String dflt) {

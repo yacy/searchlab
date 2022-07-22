@@ -27,6 +27,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
@@ -34,7 +35,6 @@ import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.JSONList;
 import net.yacy.grid.io.index.ElasticsearchClient;
-import net.yacy.grid.io.index.GridIndex;
 import net.yacy.grid.io.index.Sort;
 import net.yacy.grid.io.index.WebDocument;
 import net.yacy.grid.io.index.WebMapping;
@@ -59,7 +59,7 @@ public class IndexService extends AbstractService implements Service {
         final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
 
         // evaluate request parameter
-        final String indexName = request.get("index", GridIndex.DEFAULT_INDEXNAME_WEB);
+        final String indexName = request.get("index", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final String id = request.get("id", "");
         final String q = request.get("query", request.get("q", "")).trim();
         final JSONObject json = new JSONObject(true);
@@ -97,9 +97,13 @@ public class IndexService extends AbstractService implements Service {
                 final Sort sort = new Sort(request.get("sort", ""));
                 final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
 
+                final Authentication authentication = request.getAuthentication();
+                final boolean self = authentication == null ? false : authentication.getSelf();
+                final String user_id = self ? authentication.getID() : null;
+
                 final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
                 final ElasticsearchClient.Query query = Searchlab.ec.query(
-                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
+                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB), user_id,
                         yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
 
                 final JSONList items = new JSONList();

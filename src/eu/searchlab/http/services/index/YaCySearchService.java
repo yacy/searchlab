@@ -30,6 +30,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.EventCount;
 import eu.searchlab.http.Service;
@@ -40,7 +41,6 @@ import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 import net.yacy.grid.io.index.ElasticsearchClient;
-import net.yacy.grid.io.index.GridIndex;
 import net.yacy.grid.io.index.Sort;
 import net.yacy.grid.io.index.WebDocument;
 import net.yacy.grid.io.index.WebMapping;
@@ -147,11 +147,15 @@ public class YaCySearchService extends AbstractService implements Service {
             channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
         } catch (final JSONException e) {Logger.error(e);}
 
+        final Authentication authentication = request.getAuthentication();
+        final boolean self = authentication == null ? false : authentication.getSelf();
+        final String user_id = self ? authentication.getID() : null;
+
         // run query against search index
         try {
             final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
             final ElasticsearchClient.Query query = Searchlab.ec.query(
-                System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
+                System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB), user_id,
                 yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 

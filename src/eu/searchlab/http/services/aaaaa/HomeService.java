@@ -22,7 +22,6 @@ package eu.searchlab.http.services.aaaaa;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.http.AbstractService;
@@ -57,7 +56,7 @@ public class HomeService  extends AbstractService implements Service {
         serviceRequest.isAuthorized();
         // If the authorization object exists, then the user is authorized;
         // We can use that object to get the user credentials
-        final Authentication authentication = authorization == null ? null : Searchlab.userDB.getAuthentiationByID(authorization.getUserID());
+        final Authentication authentication = serviceRequest.getAuthentication();
         if (authentication == null) {
             // failed authentication & authorization
             // forward to logout

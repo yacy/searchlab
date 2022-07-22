@@ -73,6 +73,7 @@ import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -94,6 +95,13 @@ import eu.searchlab.tools.Logger;
  *
  */
 public class ElasticsearchClient implements FulltextIndex {
+
+
+    public final static String DEFAULT_INDEXNAME_CRAWLSTART = "crawlstart";
+    public final static String DEFAULT_INDEXNAME_CRAWLER    = "crawler";
+    public final static String DEFAULT_INDEXNAME_QUERY      = "query";
+    public final static String DEFAULT_INDEXNAME_WEB        = "web";
+    public final static String DEFAULT_TYPENAME             = "web";
 
     private static final TimeValue scrollKeepAlive = TimeValue.timeValueSeconds(60);
     private static long throttling_time_threshold = 2000L; // update time high limit
@@ -325,6 +333,12 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
+    private QueryBuilder constraint(final QueryBuilder qb, final WebMapping field, final String value) {
+        if (value == null) return qb;
+        final TermQueryBuilder c = QueryBuilders.termQuery(field.getMapping().name(), value);
+        return QueryBuilders.boolQuery().must(qb).must(c);
+    }
+
     /**
      * Get the number of documents in the search index for a given search query
      *
@@ -333,8 +347,8 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return the count of all documents in the index which matches with the query
      */
     @Override
-    public long count(final String indexName, final YaCyQuery yq) {
-        final QueryBuilder q = yq.getQueryBuilder();
+    public long count(final String indexName, final String user_id, final YaCyQuery yq) {
+        final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
         while (true) try {
             return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -460,8 +474,8 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return delete document count
      */
     @Override
-    public int deleteByQuery(final String indexName, final YaCyQuery yq) {
-        final QueryBuilder q = yq.getQueryBuilder();
+    public int deleteByQuery(final String indexName, final String user_id, final YaCyQuery yq) {
+        final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
         while (true) try {
             return deleteByQuery(indexName, q);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -780,8 +794,9 @@ public class ElasticsearchClient implements FulltextIndex {
      * @param aggregationFields - names of the aggregation fields. If no aggregation is wanted, pass no (zero) field(s)
      */
     @Override
-    public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
-        return query(indexName, yq.getQueryBuilder(), postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
+    public FulltextIndex.Query query(final String indexName, final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
+        final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
+        return query(indexName, q, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
     }
 
     public FulltextIndex.Query query(final String indexName, final QueryBuilder queryBuilder, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {

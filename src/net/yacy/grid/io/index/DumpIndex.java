@@ -70,22 +70,22 @@ public class DumpIndex implements FulltextIndex {
         this.dirSearchers = new ConcurrentHashMap<>();
     }
 
-    private void initIndex(String indexName) throws IOException {
-        if (directories.containsKey(indexName)) return;
-        Directory dir  = new ByteBuffersDirectory();
-        DirectoryReader reader = DirectoryReader.open(dir);
-        IndexSearcher searcher = new IndexSearcher(reader);
-        directories.put(indexName, dir);
-        indexReaders.put(indexName, reader);
-        dirSearchers.put(indexName, searcher);
+    private void initIndex(final String indexName) throws IOException {
+        if (this.directories.containsKey(indexName)) return;
+        final Directory dir  = new ByteBuffersDirectory();
+        final DirectoryReader reader = DirectoryReader.open(dir);
+        final IndexSearcher searcher = new IndexSearcher(reader);
+        this.directories.put(indexName, dir);
+        this.indexReaders.put(indexName, reader);
+        this.dirSearchers.put(indexName, searcher);
     }
 
-    private Directory getDirectory(String indexName) throws IOException {
+    private Directory getDirectory(final String indexName) throws IOException {
         initIndex(indexName);
         return this.directories.get(indexName);
     }
 
-    private IndexSearcher getDirSearcher(String indexName) throws IOException {
+    private IndexSearcher getDirSearcher(final String indexName) throws IOException {
         initIndex(indexName);
         return this.dirSearchers.get(indexName);
     }
@@ -95,51 +95,51 @@ public class DumpIndex implements FulltextIndex {
      * @param indexName
      * @param jsonlist
      */
-    private void load(String indexName, File jsonlist) throws IOException {
+    private void load(final String indexName, final File jsonlist) throws IOException {
         InputStream is = new FileInputStream(jsonlist);
         if (jsonlist.getName().endsWith(".gz")) is = new GZIPInputStream(is);
-        BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        final BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 
-        List<Document> documents = new ArrayList<>();
+        final List<Document> documents = new ArrayList<>();
         String line;
         while ((line = br.readLine()) != null) {
             try {
-                JSONObject json = new JSONObject(new JSONTokener(line));
-                String title = json.optString("title");
+                final JSONObject json = new JSONObject(new JSONTokener(line));
+                final String title = json.optString("title");
                 if (title == null) continue;
-                String url = json.optString("sku");
+                final String url = json.optString("sku");
                 if (url == null) continue;
-                String text = json.optString("text_t", "");
+                final String text = json.optString("text_t", "");
 
-                Document document = new Document();
+                final Document document = new Document();
                 document.add(new StringField("sku", url , Store.YES));
                 document.add(new TextField("text_t", text , Store.YES));
                 document.add(new TextField("title", title , Store.YES));
                 documents.add(document);
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 e.printStackTrace();
             }
         }
         br.close();
         is.close();
-        Directory dir = getDirectory(indexName);
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new StandardAnalyzer()));
+        final Directory dir = getDirectory(indexName);
+        final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new StandardAnalyzer()));
         writer.addDocuments(documents);
         writer.close();
     }
 
     @Override
-    public void refresh(String indexName) {
+    public void refresh(final String indexName) {
         // do nothing, no refresh required
     }
 
     @Override
-    public void createIndexIfNotExists(String indexName, int shards, int replicas) {
+    public void createIndexIfNotExists(final String indexName, final int shards, final int replicas) {
         // do nothing, new indexes cannot be created, this is read-only
     }
 
     @Override
-    public void setMapping(String indexName, String mapping) {
+    public void setMapping(final String indexName, final String mapping) {
         // do nothing
     }
 
@@ -149,7 +149,7 @@ public class DumpIndex implements FulltextIndex {
     }
 
     @Override
-    public long count(String indexName, YaCyQuery yq) {
+    public long count(final String indexName, final String user_id, final YaCyQuery yq) {
         /*
         Directory d = getDirectory(indexName);
         try {
@@ -171,85 +171,85 @@ public class DumpIndex implements FulltextIndex {
     }
 
     @Override
-    public boolean exist(String indexName, String id) {
+    public boolean exist(final String indexName, final String id) {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public Set<String> existBulk(String indexName, Collection<String> ids) {
+    public Set<String> existBulk(final String indexName, final Collection<String> ids) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public boolean delete(String indexName, String typeName, String id) {
+    public boolean delete(final String indexName, final String typeName, final String id) {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public int deleteByQuery(String indexName, YaCyQuery yq) {
+    public int deleteByQuery(final String indexName, final String user_id, final YaCyQuery yq) {
         // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
-    public Map<String, Object> readMap(String indexName, String id) {
+    public Map<String, Object> readMap(final String indexName, final String id) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public Map<String, Map<String, Object>> readMapBulk(String indexName, Collection<String> ids) {
+    public Map<String, Map<String, Object>> readMapBulk(final String indexName, final Collection<String> ids) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public boolean writeMap(String indexName, String typeName, String id, Map<String, Object> jsonMap) {
+    public boolean writeMap(final String indexName, final String typeName, final String id, final Map<String, Object> jsonMap) {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public BulkWriteResult writeMapBulk(String indexName, List<BulkEntry> jsonMapList) {
+    public BulkWriteResult writeMapBulk(final String indexName, final List<BulkEntry> jsonMapList) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Query query(
-            String indexName, YaCyQuery yq, YaCyQuery postFilter, Sort sort,
-            WebMapping highlightField, int timezoneOffset,
-            int from, int resultCount, int aggregationLimit, boolean explain,
-            WebMapping... aggregationFields) {
-        QueryParser parser = new QueryParser("text_t", new StandardAnalyzer());
+            final String indexName, final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort,
+            final WebMapping highlightField, final int timezoneOffset,
+            final int from, final int resultCount, final int aggregationLimit, final boolean explain,
+            final WebMapping... aggregationFields) {
+        final QueryParser parser = new QueryParser("text_t", new StandardAnalyzer());
         org.apache.lucene.search.Query query = null;
         try {
             query = parser.parse("hello");
-        } catch (ParseException e) {}
+        } catch (final ParseException e) {}
         try {
-            IndexSearcher searcher = getDirSearcher(indexName);
-            TopDocs topDocs = searcher.search(query, 10);
-            for (ScoreDoc scoreDoc: topDocs.scoreDocs) {
-                Document document = searcher.doc(scoreDoc.doc);
-                String url = document.get("sku");
-                String text = document.get("text_t");
+            final IndexSearcher searcher = getDirSearcher(indexName);
+            final TopDocs topDocs = searcher.search(query, 10);
+            for (final ScoreDoc scoreDoc: topDocs.scoreDocs) {
+                final Document document = searcher.doc(scoreDoc.doc);
+                final String url = document.get("sku");
+                final String text = document.get("text_t");
                 System.out.println("url:  " + url + "\ntext: " + text + "\n\n");
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public static void main(String[] args) {
-        File f = new File(args[0]);
+    public static void main(final String[] args) {
+        final File f = new File(args[0]);
         try {
-            DumpIndex di = new DumpIndex();
+            final DumpIndex di = new DumpIndex();
             di.load("test", f);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
 

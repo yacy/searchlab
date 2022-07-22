@@ -61,15 +61,15 @@ public class Typeahead {
      * @param preSortSelection the number of words that participate in the IO-intensive sort
      * @return
      */
-    public Collection<String> getTypeahead(final long timeout, final int preSortSelection) {
+    public Collection<String> getTypeahead(final long timeout, final int preSortSelection, final String user_id) {
         if (this.word.length() < MinimumInputWordLength) {
-            return new ArrayList<String>(0); // return nothing if input is too short
+            return new ArrayList<>(0); // return nothing if input is too short
         }
 
         /* Allocate only a part of the total allowed time to the first processing step, so that some time remains to process results in case of timeout */
         final long preSortTimeout = timeout >= 0 ? ((long)(timeout * 0.8)) : timeout;
-        final Collection<String> preSorted = getTypeahead(this.head, this.tail, preSortTimeout, preSortSelection);
-        final LinkedHashSet<String> countSorted = new LinkedHashSet<String>();
+        final Collection<String> preSorted = getTypeahead(this.head, this.tail, preSortTimeout, preSortSelection, user_id);
+        final LinkedHashSet<String> countSorted = new LinkedHashSet<>();
         try {
             for (final String s: preSorted) {
                 if (StringBuilderComparator.CASE_INSENSITIVE_ORDER.startsWith(new StringBuilder(s), new StringBuilder(this.word)) ||
@@ -92,10 +92,10 @@ public class Typeahead {
      * @param preSortSelection - number of suggestions to be computed
      * @return
      */
-    private Collection<String> getTypeahead(final String head, final String tail, final long timeout, final int preSortSelection) {
+    private Collection<String> getTypeahead(final String head, final String tail, final long timeout, final int preSortSelection, final String user_id) {
         final long startTime = System.currentTimeMillis();
         final long totalTimeLimit = timeout >= 0 ? startTime + timeout : Long.MAX_VALUE;
-        final SortedSet<String> result = new TreeSet<String>();
+        final SortedSet<String> result = new TreeSet<>();
         int count = 30;
         final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser("all");
 
@@ -103,10 +103,10 @@ public class Typeahead {
         // run query against search index
         final YaCyQuery yq = new YaCyQuery((head + " " + tail).trim(), new String[0], contentdom, 0);
         final ElasticsearchClient.Query query = Searchlab.ec.query(
-                System.getProperties().getProperty("grid.elasticsearch.indexName.web", GridIndex.DEFAULT_INDEXNAME_WEB),
-                yq, null, new Sort(""), WebMapping.text_t, 0, 0, 100, 0, false);
+                System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB),
+                user_id, yq, null, new Sort(""), WebMapping.text_t, 0, 0, 100, 0, false);
 
-        final OrderedScoreMap<String> snippets = new OrderedScoreMap<String>(null);
+        final OrderedScoreMap<String> snippets = new OrderedScoreMap<>(null);
         final List<Map<String, Object>> qr = query.results;
         for (int hitc = 0; hitc < qr.size(); hitc++) {
             final WebDocument doc = new WebDocument(qr.get(hitc));
