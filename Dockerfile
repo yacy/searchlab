@@ -23,7 +23,7 @@ RUN \
     mkdocs build
 
 # prepare server
-FROM eclipse-temurin:8-jdk-alpine AS appbuilder
+FROM eclipse-temurin:11-jdk-alpine AS appbuilder
 ADD searchlab/src /app/src/
 ADD searchlab/build.gradle /app/
 ADD searchlab/.gradle /app/
@@ -34,7 +34,7 @@ WORKDIR /app
 RUN ./gradlew clean shadowDistTar
 
 # prepare distribution image
-FROM eclipse-temurin:8-jre-alpine
+FROM eclipse-temurin:11-jre-alpine
 LABEL maintainer="Michael Peter Christen <mc@yacy.net>"
 ENV DEBIAN_FRONTEND noninteractive
 ARG default_branch=master
