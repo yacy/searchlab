@@ -37,6 +37,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
@@ -99,6 +100,8 @@ import io.undertow.util.StatusCodes;
 
 public class WebServer {
 
+    public final static Set<String> ipBanned = ConcurrentHashMap.newKeySet();
+
     private static final Properties mimeTable = new Properties();
     public final static String COOKIE_USER_ID_NAME = "searchlab-user";
 
@@ -107,6 +110,8 @@ public class WebServer {
     public static File UI_PATH, APPS_PATH, HTDOCS_PATH;
 
     static {
+        final String ipBannedStr = System.getProperty("ip.banned", "");
+        for (final String s: ipBannedStr.split(",")) ipBanned.add(s.trim());
         try {
             mimeTable.load(new FileInputStream("conf/httpd.mime"));
             UI_PATH = new File(new File("ui"), "site");
@@ -177,25 +182,6 @@ public class WebServer {
         @Override
         public void handleRequest(final HttpServerExchange exchange) throws Exception {
 
-            final String client = "-";
-            final String method = exchange.getRequestMethod().toString();
-            final HeaderMap requestHeaders = exchange.getRequestHeaders();
-            final HeaderValues refererValues = requestHeaders.get(Headers.REFERER_STRING);
-            final String referer = refererValues == null ? "" : refererValues.getFirst();
-            final HeaderValues userAgentValues = requestHeaders.get(Headers.USER_AGENT_STRING);
-            final String userAgent = userAgentValues == null ? "" : userAgentValues.getFirst();
-
-            // process header
-            final HeaderMap responseHeader = exchange.getResponseHeaders();
-            responseHeader.put(new HttpString("Access-Control-Allow-Origin"), "*");
-            responseHeader.put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
-            responseHeader.put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Methods, Access-Control-Request-Headers");
-
-            if (method.toLowerCase().equals("options")) {
-                exchange.getResponseSender().send("");
-                return;
-            }
-
             if (exchange.isInIoThread()) {
                 // dispatch to a worker thread, see
                 // https://undertow.io/undertow-docs/undertow-docs-2.0.0/undertow-handler-guide.html#dispatch-code
@@ -203,12 +189,37 @@ public class WebServer {
                 return;
             }
 
-            // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
-            final ServiceRequest serviceRequest = getQueryParams(exchange);
+            // process header
+            final HeaderMap responseHeader = exchange.getResponseHeaders();
+            responseHeader.put(new HttpString("Access-Control-Allow-Origin"), "*");
+            responseHeader.put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
+            responseHeader.put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Methods, Access-Control-Request-Headers");
 
+            final String method = exchange.getRequestMethod().toString();
+            if (method.toLowerCase().equals("options")) {
+                exchange.getResponseSender().send("");
+                return;
+            }
+
+            // read query parameters; this must be done first because it produces the 'cleaned' requestPath without get attributes (after '?')
+            final HeaderMap requestHeaders = exchange.getRequestHeaders();
+            final HeaderValues refererValues = requestHeaders.get(Headers.REFERER_STRING);
+            final String referer = refererValues == null ? "" : refererValues.getFirst();
+            final HeaderValues userAgentValues = requestHeaders.get(Headers.USER_AGENT_STRING);
+            final String userAgent = userAgentValues == null ? "" : userAgentValues.getFirst();
+            final ServiceRequest serviceRequest = getQueryParams(exchange);
             final String user = serviceRequest.getUser();
             final String path = serviceRequest.getPath();
             final String query = serviceRequest.getQuery();
+            final String client = "-";
+
+            if (ipBanned.contains(serviceRequest.getIPID()) || ipBanned.contains(serviceRequest.getIP00())) {
+                // send 503 see https://datatracker.ietf.org/doc/html/rfc7231#section-6.6.4
+                exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE);
+                exchange.getResponseSender().send("");
+                log(serviceRequest.getIP00(), client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
+                return;
+            }
 
             // we force using of a user/language path
             if (user == null || user.length() == 0 || user.equals("en")) {

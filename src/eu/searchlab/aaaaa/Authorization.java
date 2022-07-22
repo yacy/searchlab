@@ -20,15 +20,15 @@
 package eu.searchlab.aaaaa;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Authorization {
 
-    public final static Set<String> maintainers = new HashSet<>();
+    public final static Set<String> maintainers = ConcurrentHashMap.newKeySet();
 
     static {
         final String authorizationMaintainer = System.getProperty("authorization.maintainer", "");
