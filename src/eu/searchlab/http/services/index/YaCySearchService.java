@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.AbstractService;
+import eu.searchlab.http.EventCount;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
@@ -70,6 +71,8 @@ public class YaCySearchService extends AbstractService implements Service {
     private final static long[] frequency_time  = {60000, 300000, 3600000}; // 1 minute, 5 minutes, 1 hour
     private final static  int[] frequency_count = {10, 20, 30};
 
+    private final static EventCount badRequests = new EventCount(300000);
+
     @Override
     public String[] getPaths() {
         return new String[] {"/api/yacysearch.json", "/search/"};
@@ -101,9 +104,12 @@ public class YaCySearchService extends AbstractService implements Service {
         final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
         final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
         final int startRecord = request.get("startRecord", request.get("start", 0));
-        if (startRecord >= 9990) return new ServiceResponse().setBadRequest();
-        if (startRecord != 0 && !request.hasReferer()) {
-            WebServer.ipBanned.add(request.getIP00());
+        if (startRecord >= 9990 || (startRecord != 0 && !request.hasReferer())) {
+            badRequests.event(request.getIP00());
+            if (badRequests.count(request.getIP00(), 300000)[0] >= 10) {
+                Logger.info("BAN for IP " + request.getIP00());
+                WebServer.ipBanned.add(request.getIP00());
+            }
             return new ServiceResponse().setBadRequest();
         }
 
@@ -148,6 +154,7 @@ public class YaCySearchService extends AbstractService implements Service {
             final List<Map<String, Object>> result = query.results;
             if (result.size() == 0 && startRecord > 0) {
                 // if we done everything right, this was probably produced by a bot missing boundaries
+                badRequests.event(request.getIP00());
                 return new ServiceResponse().setBadRequest();
             }
             final List<String> explanations = query.explanations;
