@@ -77,8 +77,8 @@ public class EventCount {
         final long expectedtimeperevent = timespanmillis / maxcount;
         assert count * timespanmillis / maxcount - timespanmillis > 0;
         long retryAfter = 2 * (count * expectedtimeperevent - timespanmillis + this.random.nextInt(5000));
-        retryAfter = retryAfter / 1000;
-        return retryAfter * 1000;
+        retryAfter = retryAfter / 10000;
+        return 1 + retryAfter * 10;
     }
 
     public static void main(final String[] args) {

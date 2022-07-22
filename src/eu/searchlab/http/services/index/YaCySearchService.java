@@ -97,6 +97,10 @@ public class YaCySearchService extends AbstractService implements Service {
         // evaluate request parameter
         final String q = request.get("query", request.get("q", "")).trim();
         if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
+        final int qlen = q.split(" ").length;
+        if (qlen >= 5 && !request.hasReferer()) {
+            badRequests.event(request.getIP00()); // sus
+        }
         final boolean explain = request.get("explain", false);
         final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
         String collection = request.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
@@ -105,11 +109,12 @@ public class YaCySearchService extends AbstractService implements Service {
         final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
         final int startRecord = request.get("startRecord", request.get("start", 0));
         if (startRecord >= 9990 || (startRecord != 0 && !request.hasReferer())) {
-            badRequests.event(request.getIP00());
-            if (badRequests.count(request.getIP00(), 300000)[0] >= 10) {
-                Logger.info("BAN for IP " + request.getIP00());
-                WebServer.ipBanned.add(request.getIP00());
-            }
+            badRequests.event(request.getIP00()); // sus
+            return new ServiceResponse().setBadRequest();
+        }
+        if (badRequests.count(request.getIP00(), 300000)[0] >= 10) {
+            Logger.info("BAN for IP " + request.getIP00());
+            WebServer.ipBanned.add(request.getIP00());
             return new ServiceResponse().setBadRequest();
         }
 
