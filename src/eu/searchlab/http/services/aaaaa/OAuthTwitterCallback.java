@@ -79,12 +79,14 @@ public class OAuthTwitterCallback  extends AbstractService implements Service {
         final boolean callbackForward = "true".equals(System.getProperty("callback.forward", "false"));
         Logger.info("Catched callback from twitter; callbackForward = " + callbackForward + "; requestTokenIsFresh = " + OAuthTwitterGetAuth.requestTokenIsFresh());
         // to prevent that in development environments the call is executed forever, we must check the forward flag here as well
+        /*
         if (!callbackForward && !OAuthTwitterGetAuth.requestTokenIsFresh()) {
             Logger.info("catched callback for development, forwarding to localhost");
             final ServiceResponse serviceResponse = new ServiceResponse(new JSONObject(true));
             serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/twitter_callback/index.html?oauth_token=" + oauth_token + "&oauth_verifier=" + oauth_verifier);
             return serviceResponse;
         }
+        */
 
         final String consumerKey = System.getProperty("twitter.client.id", "");
         final String consumerSecret = System.getProperty("twitter.client.secret", "");
