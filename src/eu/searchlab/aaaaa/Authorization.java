@@ -19,12 +19,20 @@
 
 package eu.searchlab.aaaaa;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.file.FileSystems;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
+
+import eu.searchlab.tools.Logger;
 
 public class Authorization {
 
@@ -56,6 +64,24 @@ public class Authorization {
 
         private Grade(final int level) {
             this.level = level;
+        }
+    }
+
+    private static JSONObject acl = null;
+
+    public static JSONObject getACL() {
+        if (acl != null) return acl;
+
+        // load acl
+        final File conf_dir = FileSystems.getDefault().getPath("conf").toFile();
+        final File f = new File(conf_dir, "config.properties");
+        try {
+            final Reader reader = new InputStreamReader(new FileInputStream(f));
+            acl = new JSONObject(new JSONTokener(reader));
+            return acl;
+        } catch (IOException | JSONException e) {
+            Logger.error(e);
+            return new JSONObject();
         }
     }
 
