@@ -232,7 +232,7 @@ public class WebServer {
                     exchange.setStatusCode(StatusCodes.TEMPORARY_REDIRECT).setReasonPhrase("page moved");
                     exchange.getResponseHeaders().put(Headers.LOCATION, "/" + user_id + path + (query.length() > 0 ? "?" + query : ""));
                     exchange.getResponseSender().send("");
-                    log(serviceRequest.getIP00(), client, user, method, path, StatusCodes.TEMPORARY_REDIRECT, 0, referer, userAgent);
+                    log(serviceRequest.getIP00(), client, user, method, path, exchange.getStatusCode(), 0, referer, userAgent);
                     return;
                 }
             }

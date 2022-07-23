@@ -36,6 +36,7 @@ import eu.searchlab.http.EventCount;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
+import eu.searchlab.http.UsageCount;
 import eu.searchlab.http.WebServer;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.DateParser;
@@ -69,9 +70,10 @@ import net.yacy.grid.io.index.YaCyQuery;
 public class YaCySearchService extends AbstractService implements Service {
 
     private final static long[] frequency_time  = {60000, 300000, 3600000}; // 1 minute, 5 minutes, 1 hour
-    private final static  int[] frequency_count = {10, 20, 30};
+    private final static  int[] frequency_count = {30, 60, 120};
 
     private final static EventCount badRequests = new EventCount(300000);
+    private final static UsageCount badQueries = new UsageCount(5, 300000);
 
     @Override
     public String[] getPaths() {
@@ -86,7 +88,7 @@ public class YaCySearchService extends AbstractService implements Service {
         final int[] eventcount = Searchlab.searchRequestCount.count(request.getIPID(), frequency_time);
         for (int i = 0; i < eventcount.length; i++) {
             if (eventcount[i] > frequency_count[i]) {
-                final long retryAfter = Searchlab.searchRequestCount.retryAfter(eventcount[i], frequency_count[i], frequency_time[i]);
+                final long retryAfter = EventCount.retryAfter(eventcount[i], frequency_count[i], frequency_time[i]);
                 Logger.info("Sending TOO MANY REQUESTS to " + request.getIP00() + " with retryAfter = " + retryAfter);
                 return new ServiceResponse().setTooManyRequests(retryAfter);
             }
@@ -94,13 +96,28 @@ public class YaCySearchService extends AbstractService implements Service {
 
         final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
 
-        // evaluate request parameter
+        // evaluate query
         final String q = request.get("query", request.get("q", "")).trim();
         if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
         final int qlen = q.split(" ").length;
         if (qlen >= 5 && !request.hasReferer()) {
             badRequests.event(request.getIP00()); // sus
         }
+        if (qlen >= 5) {
+            final boolean approved = badQueries.approve(q, request.getIP00());
+            if (!approved) {
+                // looks like DDos. Ban all IPs that made that request
+                WebServer.ipBanned.add(request.getIP00());
+                Logger.info("BAN/queries for IP " + request.getIP00());
+                badQueries.getClients(q).forEach(client -> {
+                    WebServer.ipBanned.add(client);
+                    Logger.info("BAN/queries for IP " + client);
+                });
+                return new ServiceResponse().setBadRequest();
+            }
+        }
+
+        // evaluate remaining request parameters
         final boolean explain = request.get("explain", false);
         final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
         String collection = request.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
@@ -113,7 +130,7 @@ public class YaCySearchService extends AbstractService implements Service {
             return new ServiceResponse().setBadRequest();
         }
         if (badRequests.count(request.getIP00(), 300000)[0] >= 10) {
-            Logger.info("BAN for IP " + request.getIP00());
+            Logger.info("BAN/requests for IP " + request.getIP00());
             WebServer.ipBanned.add(request.getIP00());
             return new ServiceResponse().setBadRequest();
         }

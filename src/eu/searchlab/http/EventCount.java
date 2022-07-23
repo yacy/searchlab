@@ -24,14 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * Timeline structure to store sequences of events with the purpose to measure the number of events
+ * Event counting structure to store sequences of events with the purpose to measure the number of events
  * that happened in a specific timespan in the past.
  */
 public class EventCount {
 
-    private final Random random = new Random(System.currentTimeMillis());
-    private final ConcurrentHashMap<String, ConcurrentSkipListSet<Long>> history;
-    private final long maxtime;
+    protected final static Random random = new Random(System.currentTimeMillis());
+
+    private final ConcurrentHashMap<String, ConcurrentSkipListSet<Long>> history; // key will contain addresses, the values are a sequence of timestamps
+    private final long maxtime; // the maximum storage time of events, therefore limiting the length of sequences in history
 
     public EventCount(final long maxtimemillis) {
         this.history = new ConcurrentHashMap<>();
@@ -72,11 +73,11 @@ public class EventCount {
         return tl.size();
     }
 
-    public final long retryAfter(final int count, final int maxcount, final long timespanmillis) {
+    public final static long retryAfter(final int count, final int maxcount, final long timespanmillis) {
         assert count >= maxcount;
         final long expectedtimeperevent = timespanmillis / maxcount;
         assert count * timespanmillis / maxcount - timespanmillis > 0;
-        long retryAfter = 2 * (count * expectedtimeperevent - timespanmillis + this.random.nextInt(5000));
+        long retryAfter = 2 * (count * expectedtimeperevent - timespanmillis + random.nextInt(5000));
         retryAfter = retryAfter / 10000;
         return 1 + retryAfter * 10;
     }
@@ -85,7 +86,7 @@ public class EventCount {
         final EventCount tl = new EventCount(60000);
         while (true) {
             try {
-                Thread.sleep(tl.random.nextInt(4000));
+                Thread.sleep(random.nextInt(4000));
                 tl.event("test");
                 System.out.println("events in last 20 seconds: " + tl.count("test", 20000)[0] + ", tl size: " + tl.size("test"));
             } catch (final InterruptedException e) {
