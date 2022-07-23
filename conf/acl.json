@@ -1,0 +1,188 @@
+{
+    "levels": [
+        {
+            "id": 0,
+            "show": true,
+            "level": "L00_Everyone",
+            "description": "every user without account",
+            "action": "get an anonymous free account to level up",
+            "price": "free",
+            "free": true,
+            "crawler": {
+                "message": "",
+                "crawlingURL"    : {"message": ""},
+                "crawlingDepth"  : {"value": 0, "max": 0, "enabled": false},
+                "collection"     : {"value": "user",      "enabled": false},
+                "range"          : {"value": "domain",    "enabled": false},
+                "priority"       : {"value": false,       "enabled": false},
+                "loaderHeadless" : {"value": false,       "enabled": false},
+                "archiveWARC"    : {"value": false,       "enabled": false},
+                "archiveIndex"   : {"value": false,       "enabled": false},
+                "archiveGraph"   : {"value": false,       "enabled": false}
+            },
+            "index": {
+                "documents"      : {"max": 100},
+                "warc_mb"        : {"max": 0},
+                "index_mb"       : {"max": 0},
+                "graph_mb"       : {"max": 0}
+            },
+            "queries": {
+                "search": {
+                    "frequency_time"  : [60000, 300000, 3600000],
+                    "frequency_count" : [30, 60, 120]
+                }
+            }
+        }, {
+            "id": 1,
+            "show": true,
+            "level": "L01_Anonymous",
+            "description": "users with their own account id",
+            "action": "log in with github, twitter or patreon to level up to a free, authenticated account",
+            "price": "free",
+            "free": true,
+            "crawler": {
+                "message": "",
+                "crawlingURL"    : {"message": ""},
+                "crawlingDepth"  : {"value": 0, "max": 0, "enabled": false},
+                "collection"     : {"value": "user",      "enabled": false},
+                "range"          : {"value": "domain",    "enabled": false},
+                "priority"       : {"value": false,       "enabled": false},
+                "loaderHeadless" : {"value": false,       "enabled": false},
+                "archiveWARC"    : {"value": false,       "enabled": false},
+                "archiveIndex"   : {"value": false,       "enabled": true},
+                "archiveGraph"   : {"value": false,       "enabled": false}
+            },
+            "index": {
+                "documents"      : {"max": 100},
+                "warc_mb"        : {"max": 0},
+                "index_mb"       : {"max": 1},
+                "graph_mb"       : {"max": 0}
+            },
+            "queries": {
+                "search": {
+                    "frequency_time"  : [60000, 300000, 3600000],
+                    "frequency_count" : [30, 60, 120]
+                }
+            }
+        }, {
+            "id": 2,
+            "show": true,
+            "level": "L02_Authenticated",
+            "description": "authenticated users",
+            "action": "support searchlab with a patreon or github sponsoring to level up to more access options",
+            "price": "free",
+            "free": true,
+            "crawler": {
+                "message": "",
+                "crawlingURL"    : {"message": ""},
+                "crawlingDepth"  : {"value": 0, "max": 1, "enabled": true},
+                "collection"     : {"value": "user",      "enabled": false},
+                "range"          : {"value": "domain",    "enabled": false},
+                "priority"       : {"value": false,       "enabled": false},
+                "loaderHeadless" : {"value": false,       "enabled": false},
+                "archiveWARC"    : {"value": false,       "enabled": true},
+                "archiveIndex"   : {"value": false,       "enabled": true},
+                "archiveGraph"   : {"value": false,       "enabled": true}
+            },
+            "index": {
+                "documents"      : {"max": 1000},
+                "warc_mb"        : {"max": 100},
+                "index_mb"       : {"max": 100},
+                "graph_mb"       : {"max": 100}
+            },
+            "queries": {
+                "search": {
+                    "frequency_time"  : [60000, 300000, 3600000],
+                    "frequency_count" : [60, 120, 240]
+                }
+            }
+        }, {
+            "id": 3,
+            "show": true,
+            "level": "L03_Level_One",
+            "description": "authenticated users with assigned patreon or github account subscrption and a level one supprt donation",
+            "action": "top up your donation to get more access options",
+            "price": "1$",
+            "free": false,
+            "crawler": {
+                "message": "",
+                "crawlingURL"    : {"message": ""},
+                "crawlingDepth"  : {"value": 3, "max": 3, "enabled": true},
+                "collection"     : {"value": "user",      "enabled": false},
+                "range"          : {"value": "domain",    "enabled": true},
+                "priority"       : {"value": false,       "enabled": false},
+                "loaderHeadless" : {"value": false,       "enabled": false},
+                "archiveWARC"    : {"value": false,       "enabled": true},
+                "archiveIndex"   : {"value": false,       "enabled": true},
+                "archiveGraph"   : {"value": false,       "enabled": true}
+            },
+            "index": {
+                "documents"      : {"max": 10000},
+                "warc_mb"        : {"max": 1000},
+                "index_mb"       : {"max": 1000},
+                "graph_mb"       : {"max": 1000}
+            },
+            "queries": {
+                "search": {
+                    "frequency_time"  : [60000, 300000, 3600000],
+                    "frequency_count" : [100, 250, 500]
+                }
+            }
+        }, {
+            "id": 4,
+            "show": true,
+            "level": "L04_Level_Five",
+            "description": "authenticated users with assigned patreon or github account subscrption and a level five supprt donation",
+            "action": "top up your donation to get more access options",
+            "price": "5$",
+            "free": false,
+            "crawler": {
+                "message": "",
+                "crawlingURL"    : {"message": ""},
+                "crawlingDepth"  : {"value": 3, "max": 5, "enabled": true},
+                "collection"     : {"value": "user",      "enabled": true},
+                "range"          : {"value": "domain",    "enabled": true},
+                "priority"       : {"value": false,       "enabled": false},
+                "loaderHeadless" : {"value": false,       "enabled": false},
+                "archiveWARC"    : {"value": false,       "enabled": true},
+                "archiveIndex"   : {"value": false,       "enabled": true},
+                "archiveGraph"   : {"value": false,       "enabled": true}
+            },
+            "index": {
+                "documents"      : {"max": 100000},
+                "warc_mb"        : {"max": 10000},
+                "index_mb"       : {"max": 10000},
+                "graph_mb"       : {"max": 10000}
+            },
+            "queries": {
+                "search": {
+                    "frequency_time"  : [60000, 300000, 3600000],
+                    "frequency_count" : [100, 500, 1000]
+                }
+            }
+        }, {
+            "id": 5,
+            "show": false,
+            "level": "L05_Level_Twentyfive",
+            "free": false
+        }, {
+            "id": 6,
+            "show": false,
+            "level": "L06_Level_Fifty",
+            "free": false
+        }, {
+            "id": 7,
+            "show": false,
+            "level": "L07_Level_Twohundred",
+            "free": false
+        }, {
+            "id": 8,
+            "show": false,
+            "level": "L08_Maintainer",
+            "description": "searchlab administrator",
+            "action": "with great power comes great responsibility",
+            "price": "free",
+            "free": true
+        }
+    ]
+}

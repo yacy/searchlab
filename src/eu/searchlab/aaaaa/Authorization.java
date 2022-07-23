@@ -52,13 +52,12 @@ public class Authorization {
         L00_Everyone(0),
         L01_Anonymous(1),
         L02_Authenticated(2),
-        L03_Primary(3),
-        L04_Level_One(4),
-        L05_Level_Five(5),
-        L06_Level_Twentyfive(6),
-        L07_Level_Fifty(7),
-        L08_Level_Twohundred(8),
-        L09_Maintainer(9);
+        L03_Level_One(3),
+        L04_Level_Five(4),
+        L05_Level_Twentyfive(5),
+        L06_Level_Fifty(6),
+        L07_Level_Twohundred(7),
+        L08_Maintainer(8);
 
         public int level;
 
@@ -74,7 +73,7 @@ public class Authorization {
 
         // load acl
         final File conf_dir = FileSystems.getDefault().getPath("conf").toFile();
-        final File f = new File(conf_dir, "config.properties");
+        final File f = new File(conf_dir, "acl.json");
         try {
             final Reader reader = new InputStreamReader(new FileInputStream(f));
             acl = new JSONObject(new JSONTokener(reader));

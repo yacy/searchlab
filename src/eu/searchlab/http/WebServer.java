@@ -75,6 +75,7 @@ import eu.searchlab.http.services.index.IndexService;
 import eu.searchlab.http.services.index.IndexStatusService;
 import eu.searchlab.http.services.index.SuggestService;
 import eu.searchlab.http.services.index.YaCySearchService;
+import eu.searchlab.http.services.info.ACLService;
 import eu.searchlab.http.services.info.LogService;
 import eu.searchlab.http.services.info.QueueStatusService;
 import eu.searchlab.http.services.info.ReadyService;
@@ -160,6 +161,7 @@ public class WebServer {
         ServiceMap.register(new OAuthPatreonCallback());
         ServiceMap.register(new OAuthTwitterGetAuth());
         ServiceMap.register(new OAuthTwitterCallback());
+        ServiceMap.register(new ACLService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();

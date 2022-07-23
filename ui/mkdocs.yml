@@ -30,6 +30,7 @@ nav:
     - About the Searchlab: access/about.md
     - Searchlab Architecture: access/architecture.md
     - Download and install Searchlab and YaCy Grid: access/download.md
+    - Plattform Services: access/services.md
     - Who made Searchlab - Impressum: access/imprint.md
 # Required for oauth:
 # - Privacy Policy URL

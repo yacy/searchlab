@@ -173,8 +173,14 @@ public class ServiceRequest {
     public Grade getAuthorizationGrade() {
         if (this.user == null || this.user.length() <= 2 || !Authentication.isValid(this.user)) return Grade.L00_Everyone;
         if (!isAuthorized()) return Grade.L01_Anonymous;
-        if (Authorization.maintainers.contains(getUser())) return Grade.L09_Maintainer;
+        if (Authorization.maintainers.contains(getUser())) return Grade.L08_Maintainer;
         return Grade.L02_Authenticated;
     }
 
+    public JSONObject getACL() {
+        JSONObject acl = Authorization.getACL();
+        final Grade grade = getAuthorizationGrade();
+        acl = acl.optJSONObject(grade.name());
+        return acl;
+    }
 }
