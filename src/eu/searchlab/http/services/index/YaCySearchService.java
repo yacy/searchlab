@@ -100,10 +100,10 @@ public class YaCySearchService extends AbstractService implements Service {
         final String q = request.get("query", request.get("q", "")).trim();
         if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
         final int qlen = q.split(" ").length;
-        if (qlen >= 5 && !request.hasReferer()) {
+        if (!request.hasReferer()) {
             badRequests.event(request.getIP00()); // sus
         }
-        if (qlen >= 5) {
+        if (qlen >= 3) {
             final boolean approved = badQueries.approve(q, request.getIP00());
             if (!approved) {
                 // looks like DDos. Ban all IPs that made that request
