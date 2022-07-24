@@ -73,6 +73,7 @@ public class HomeService  extends AbstractService implements Service {
         try {
             json.put("authorization", authorization.getJSON());
             json.put("authentication", authentication.getJSON());
+            json.put("acl", serviceRequest.getACL());
             Logger.info("DEBUG json = " + json.toString(2));
         } catch (final JSONException e) {
             Logger.warn(e);

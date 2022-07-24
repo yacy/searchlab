@@ -21,7 +21,7 @@
                 "archiveGraph"   : {"value": false,       "enabled": false}
             },
             "index": {
-                "documents"      : {"max": 100},
+                "documents"      : {"max": 0},
                 "warc_mb"        : {"max": 0},
                 "index_mb"       : {"max": 0},
                 "graph_mb"       : {"max": 0}
@@ -86,9 +86,9 @@
             },
             "index": {
                 "documents"      : {"max": 1000},
-                "warc_mb"        : {"max": 100},
-                "index_mb"       : {"max": 100},
-                "graph_mb"       : {"max": 100}
+                "warc_mb"        : {"max": 10},
+                "index_mb"       : {"max": 10},
+                "graph_mb"       : {"max": 10}
             },
             "queries": {
                 "search": {
@@ -118,9 +118,9 @@
             },
             "index": {
                 "documents"      : {"max": 10000},
-                "warc_mb"        : {"max": 1000},
-                "index_mb"       : {"max": 1000},
-                "graph_mb"       : {"max": 1000}
+                "warc_mb"        : {"max": 100},
+                "index_mb"       : {"max": 100},
+                "graph_mb"       : {"max": 100}
             },
             "queries": {
                 "search": {
@@ -150,9 +150,9 @@
             },
             "index": {
                 "documents"      : {"max": 100000},
-                "warc_mb"        : {"max": 10000},
-                "index_mb"       : {"max": 10000},
-                "graph_mb"       : {"max": 10000}
+                "warc_mb"        : {"max": 1000},
+                "index_mb"       : {"max": 1000},
+                "graph_mb"       : {"max": 1000}
             },
             "queries": {
                 "search": {

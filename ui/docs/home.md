@@ -1,5 +1,10 @@
 # My Account
 
+
+<div id="loginhint" class="alert alert-warning" role="alert">
+  Account Service Level: {{acl.level}}<br>{{acl.description}}<br>{{acl.action}}
+</div>
+
 <form action=".">
 
 <div class="form-group">

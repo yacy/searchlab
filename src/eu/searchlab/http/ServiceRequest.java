@@ -21,6 +21,7 @@ package eu.searchlab.http;
 
 import java.io.IOException;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -178,9 +179,14 @@ public class ServiceRequest {
     }
 
     public JSONObject getACL() {
-        JSONObject acl = Authorization.getACL();
         final Grade grade = getAuthorizationGrade();
-        acl = acl.optJSONObject(grade.name());
-        return acl;
+        final JSONObject acl = Authorization.getACL();
+        final JSONArray levels = acl.optJSONArray("levels");
+        for (int i = 0; i < levels.length(); i++) {
+            final JSONObject level = levels.optJSONObject(i);
+            final String levelname = level.optString("level");
+            if (levelname.equals(grade.name())) return level;
+        }
+        return levels.optJSONObject(0);
     }
 }

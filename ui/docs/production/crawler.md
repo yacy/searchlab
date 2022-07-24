@@ -92,7 +92,7 @@ if (grade_level == 2) {
 
 
 // L09_Maintainer
-if (grade_level == 9) {
+if (grade_level == 8) {
     document.getElementById("loginhint").classList.remove("alert-warning");
     document.getElementById("loginhint").classList.add("alert-success");
     document.getElementById("loginhint").textContent = "You have full rights for all options!";
