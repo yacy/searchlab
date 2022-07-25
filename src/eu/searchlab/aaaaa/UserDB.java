@@ -104,6 +104,13 @@ public class UserDB {
         return this.asgmtPath;
     }
 
+    /**
+     * store an authentication object.
+     * This is usually only called when a user logs in with an authentication service.
+     * It should not be called with temporary authentications like such with self-assigned user ids
+     * @param authn
+     * @throws IOException
+     */
     public void setAuthentication(final Authentication authn) throws IOException {
         this.authnDB.put(authn.getID(), authn.getJSON());
     }

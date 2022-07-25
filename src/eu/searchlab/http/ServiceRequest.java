@@ -138,6 +138,14 @@ public class ServiceRequest {
         }
     }
 
+    /**
+     * Get a user authentication:
+     * A user is authenticated if the request path has an ID assigned.
+     * The presence of the id does not give the user any other right than to identify the request with a
+     * specific account. The id is a kind of tenant identifier. Everyone is allowed to ise that id,
+     * i.e. if a link is shared.
+     * @return
+     */
     public Authentication getAuthentication() {
         if (this.authentication != null) return this.authentication;
         this.authentication = getAuthenticationInternal();
@@ -146,8 +154,13 @@ public class ServiceRequest {
 
     private Authentication getAuthenticationInternal() {
         final Authorization authorization = getAuthorization();
-        final Authentication authentication = authorization == null ? null : Searchlab.userDB.getAuthentiationByID(authorization.getUserID());
-        return authentication;
+        if (authorization == null) {
+            if (this.user.equals("en")) return null;
+            return new Authentication(this.user);
+        } else {
+            // the user id must be stored already
+            return Searchlab.userDB.getAuthentiationByID(authorization.getUserID());
+        }
     }
 
     public String getHeader(final String name, final String dflt) {

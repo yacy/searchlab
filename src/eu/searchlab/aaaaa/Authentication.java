@@ -39,11 +39,17 @@ public class Authentication {
     public final static String[] GOLDEN_ID = new String[]{"123456789", "123456798",  "123456987",  "123459876",  "123498765",  "123987654",  "129876543", "198765432", "987654321"}; // includes at this time only special ids
 
     private final JSONObject json;
+    private final boolean isAnonymous;
 
     public Authentication(final JSONObject json) {
         this.json = json;
+        this.isAnonymous = false;
     }
 
+    /**
+     * initialize a new authentication object with self-assigned id.
+     * The id is generated in such a way that it is unique and not existent before in the userDB.
+     */
     public Authentication() {
         this.json = new JSONObject();
         while (true) {
@@ -58,6 +64,19 @@ public class Authentication {
                 Logger.error(e);
             }
         }
+        this.isAnonymous = false;
+    }
+
+    /**
+     * create an authentication object with anonymous id
+     * @param id
+     * @throws RuntimeException
+     */
+    public Authentication(final String id) throws RuntimeException {
+        this.json = new JSONObject();
+        if (Searchlab.userDB.getAuthentiationByID(id) != null) throw new RuntimeException("anonymous ids must not appear in userDB");
+        setID(id);
+        this.isAnonymous = true;
     }
 
     /**
@@ -67,6 +86,7 @@ public class Authentication {
      * @throws RuntimeException
      */
     public Authentication setEmail(final String email) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot have email addresses");
         if (email.indexOf('@') < 0) throw new RuntimeException("email address invalid: " + email);
         try {this.json.put("email", email);} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
@@ -98,7 +118,7 @@ public class Authentication {
      * @return
      * @throws RuntimeException
      */
-    public Authentication setID(final String id) throws RuntimeException {
+    private Authentication setID(final String id) throws RuntimeException {
         if (!isValid(id)) throw new RuntimeException("identifier invalid: " + id);
         try {this.json.put("id", id);} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
@@ -113,6 +133,7 @@ public class Authentication {
     }
 
     public Authentication setGithubLogin(final String github_login) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot have authentication providers");
         try {this.json.put("login_github", github_login);} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -120,6 +141,7 @@ public class Authentication {
     }
 
     public Authentication setPatreonLogin(final String patreon_login) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot have authentication providers");
         try {this.json.put("login_patreon", patreon_login);} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -127,6 +149,7 @@ public class Authentication {
     }
 
     public Authentication setTwitterLogin(final String twitter_login) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot have authentication providers");
         try {this.json.put("login_twitter", twitter_login);} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -141,6 +164,7 @@ public class Authentication {
      * @throws RuntimeException
      */
     public Authentication setName(final String name) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot have names");
         try {this.json.put("name", name);} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }

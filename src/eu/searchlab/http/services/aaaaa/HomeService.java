@@ -53,7 +53,6 @@ public class HomeService  extends AbstractService implements Service {
         // In case that the temporary ID can be used to retrieve a authentication record with the permanent ID
         // that is identical to the path-ID, then the user is not only authenticated but also authorized.
         final Authorization authorization = serviceRequest.getAuthorization();
-        serviceRequest.isAuthorized();
         // If the authorization object exists, then the user is authorized;
         // We can use that object to get the user credentials
         final Authentication authentication = serviceRequest.getAuthentication();
@@ -71,7 +70,7 @@ public class HomeService  extends AbstractService implements Service {
         // all good, we respond with user credentials
         final JSONObject json = new JSONObject(true);
         try {
-            json.put("authorization", authorization.getJSON());
+            if (authorization != null) json.put("authorization", authorization.getJSON());
             json.put("authentication", authentication.getJSON());
             json.put("acl", serviceRequest.getACL());
             Logger.info("DEBUG json = " + json.toString(2));
