@@ -19,9 +19,12 @@
 
 package eu.searchlab.http.services.aaaaa;
 
+import java.io.IOException;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.http.AbstractService;
@@ -65,7 +68,26 @@ public class HomeService  extends AbstractService implements Service {
             return serviceResponse;
         }
 
-        //Searchlab.ec.count(null, null);
+        // read new settings
+        final JSONObject post = serviceRequest.getPost();
+        boolean store = false;
+        final String sponsor_github = post.optString("sponsor_github");
+        if (sponsor_github != null) {
+            authentication.setGithubSponsor(sponsor_github);
+            store = true;
+        }
+        final String sponsor_patreon = post.optString("sponsor_patreon");
+        if (sponsor_patreon != null) {
+            authentication.setPatreonSponsor(sponsor_patreon);
+            store = true;
+        }
+        if (store) {
+            try {
+                Searchlab.userDB.setAuthentication(authentication);
+            } catch (final IOException e1) {
+                Logger.error("storing sponsor account", e1);
+            }
+        }
 
         // all good, we respond with user credentials
         final JSONObject json = new JSONObject(true);

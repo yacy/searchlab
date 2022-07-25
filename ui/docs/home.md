@@ -21,8 +21,20 @@
 
 <div class="form-group">
     <label for="email">Contact Name</label>
-    <input class="form-control" name="name" id="name" type="name" size="50" maxlength="256" value="{{authentication.name}}" disabled />
+    <input class="form-control" name="name" id="name" type="text" size="50" maxlength="256" value="{{authentication.name}}" disabled />
     <p class="help-block">Your Contact/Contract Name. This is not shown anywhere to users of this portal.</p>
+</div>
+
+<div class="form-group">
+    <label for="email">Patreon Account</label>
+    <input class="form-control" name="sponsor_patreon" id="sponsor_patreon" type="text" size="50" maxlength="256" value="{{authentication.sponsor_patreon}}" />
+    <p class="help-block">The connected patreon account</p>
+</div>
+
+<div class="form-group">
+    <label for="email">Github Sponsor Account</label>
+    <input class="form-control" name="sponsor_github" id="sponsor_github" type="text" size="50" maxlength="256" value="{{authentication.sponsor_github}}" />
+    <p class="help-block">The connected github sponsor account</p>
 </div>
 
 <button type="submit" name="change" value="Change Setting" class="btn btn-primary"/>Change Setting</button>
