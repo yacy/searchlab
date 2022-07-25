@@ -81,6 +81,11 @@ public class HomeService  extends AbstractService implements Service {
             authentication.setPatreonSponsor(sponsor_patreon);
             store = true;
         }
+        final boolean self = post.optBoolean("self", true);
+        if (self != authentication.getSelf() ) {
+            authentication.setSelf(self);
+            store = true;
+        }
         if (store) {
             try {
                 Searchlab.userDB.setAuthentication(authentication);

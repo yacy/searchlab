@@ -37,5 +37,11 @@
     <p class="help-block">The connected github sponsor account</p>
 </div>
 
+<div class="checkbox">
+  <label>Use self-generated index</label>
+  <input type="checkbox" name="self" id="self">
+  <p class="help-block">Switching this off will cause that search results are made from the complete index. Switching it on will focus on your own index only.</p>
+</div>
+
 <button type="submit" name="change" value="Change Setting" class="btn btn-primary"/>Change Setting</button>
 </form>
