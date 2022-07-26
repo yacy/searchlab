@@ -97,8 +97,8 @@ public final class IOObject {
         this.path = path;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         writeJSONObject(baos, json);
-        this.object = baos.toByteArray();
         baos.close();
+        this.object = baos.toByteArray();
     }
 
     /**
@@ -112,8 +112,8 @@ public final class IOObject {
         this.path = path;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         writeMap(baos, map);
-        this.object = baos.toByteArray();
         baos.close();
+        this.object = baos.toByteArray();
     }
 
     /**
@@ -127,8 +127,8 @@ public final class IOObject {
         this.path = path;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IOObject.writeJSONArray(baos, json);
-        this.object = baos.toByteArray();
         baos.close();
+        this.object = baos.toByteArray();
     }
 
     /**
@@ -401,7 +401,7 @@ public final class IOObject {
     }
 
     public static JSONObject readJSONObject0(final byte[] b) throws IOException {
-       return readJSONObject1(readJSONMap(b));
+        return readJSONObject1(readJSONMap(b));
     }
 
     private static JSONObject readJSONObject1(final LinkedHashMap<String, String> map) throws IOException {
@@ -545,6 +545,6 @@ public final class IOObject {
 
     @Override
     public String toString() {
-    	return "object@" + this.path.toString();
+        return "object@" + this.path.toString();
     }
 }

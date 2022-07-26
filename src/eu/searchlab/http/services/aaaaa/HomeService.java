@@ -49,6 +49,7 @@ public class HomeService  extends AbstractService implements Service {
         return new String[] {"/home/"};
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
         // Read a session cookie which has a temporary ID that identifies the user
@@ -70,23 +71,18 @@ public class HomeService  extends AbstractService implements Service {
 
         // read new settings
         final JSONObject post = serviceRequest.getPost();
-        boolean store = false;
-        final String sponsor_github = post.optString("sponsor_github");
-        if (sponsor_github != null) {
-            authentication.setGithubSponsor(sponsor_github);
-            store = true;
-        }
-        final String sponsor_patreon = post.optString("sponsor_patreon");
-        if (sponsor_patreon != null) {
-            authentication.setPatreonSponsor(sponsor_patreon);
-            store = true;
-        }
-        final boolean self = post.optBoolean("self", true);
-        if (self != authentication.getSelf() ) {
+        if (post.has("change")) {
+            final String sponsor_github = post.optString("sponsor_github", null);
+            if (sponsor_github != null) {
+                authentication.setGithubSponsor(sponsor_github);
+            }
+            final String sponsor_patreon = post.optString("sponsor_patreon", null);
+            if (sponsor_patreon != null) {
+                authentication.setPatreonSponsor(sponsor_patreon);
+            }
+            final boolean self = "on".equals(post.optString("self", "off"));
             authentication.setSelf(self);
-            store = true;
-        }
-        if (store) {
+
             try {
                 Searchlab.userDB.setAuthentication(authentication);
             } catch (final IOException e1) {

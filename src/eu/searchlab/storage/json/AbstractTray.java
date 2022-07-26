@@ -91,7 +91,9 @@ public abstract class AbstractTray implements Tray {
 
     protected Tray commitInternal() throws IOException {
         // now write our data back
+        //Logger.info("*** DEBUG commitInternal write object: " + this.object.toString());
         this.io.writeForced(new IOObject(this.iop, this.object));
+        //Logger.info("*** DEBUG commitInternal read object: " + this.io.read(this.iop)[0].getJSONObject().toString());
         this.lastLoadTime = System.currentTimeMillis();
         return this;
     }
