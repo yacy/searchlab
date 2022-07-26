@@ -23,6 +23,7 @@
             },
             "index": {
                 "documents"      : {"max": 0},
+                "collections"    : {"max": 0},
                 "warc_mb"        : {"max": 0},
                 "index_mb"       : {"max": 0},
                 "graph_mb"       : {"max": 0}
@@ -56,6 +57,7 @@
             },
             "index": {
                 "documents"      : {"max": 100},
+                "collections"    : {"max": 0},
                 "warc_mb"        : {"max": 0},
                 "index_mb"       : {"max": 1},
                 "graph_mb"       : {"max": 0}
@@ -89,6 +91,7 @@
             },
             "index": {
                 "documents"      : {"max": 1000},
+                "collections"    : {"max": 3},
                 "warc_mb"        : {"max": 10},
                 "index_mb"       : {"max": 10},
                 "graph_mb"       : {"max": 10}
@@ -122,6 +125,7 @@
             },
             "index": {
                 "documents"      : {"max": 10000},
+                "collections"    : {"max": 10},
                 "warc_mb"        : {"max": 100},
                 "index_mb"       : {"max": 100},
                 "graph_mb"       : {"max": 100}
@@ -155,6 +159,7 @@
             },
             "index": {
                 "documents"      : {"max": 100000},
+                "collections"    : {"max": 20},
                 "warc_mb"        : {"max": 1000},
                 "index_mb"       : {"max": 1000},
                 "graph_mb"       : {"max": 1000}

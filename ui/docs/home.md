@@ -1,9 +1,16 @@
 # My Account
 
+<ul class="nav nav-pills" role="tablist">
+  <li role="presentation" class="active"><a href="#">Account Service Level <span class="badge">{{acl.level}}: {{acl.description}}</span></a></li>
+  <li role="presentation" class="active"><a href="#">Documents <span class="badge">{{assets.size.documents}}</span></a></li>
+  <li role="presentation" class="active"><a href="#">Collections <span class="badge">{{assets.size.collections}}</span></a></li>
+</ul>
 
-<div id="loginhint" class="alert alert-warning" role="alert">
-  Account Service Level: {{acl.level}}<br>{{acl.description}}<br>{{acl.action}}
+<p>
+<div id="loginhint" class="alert alert-success"" role="alert">
+  {{acl.action}}
 </div>
+</p>
 
 <form action=".">
 
@@ -12,6 +19,8 @@
     <input class="form-control" name="id" id="id" type="text" size="50" maxlength="256" value="{{authentication.id}}" disabled />
     <p class="help-block">This is your searchlab ID. We will provide functions to change this into nickname in the future.</p>
 </div>
+
+{{#if acl.authenticated}}
 
 <div class="form-group">
     <label for="email">Email Address</label>
@@ -44,4 +53,7 @@
 </div>
 
 <button type="submit" name="change" value="Change Setting" class="btn btn-primary"/>Change Setting</button>
+
+{{/if}}
+
 </form>

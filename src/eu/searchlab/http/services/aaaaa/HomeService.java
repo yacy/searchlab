@@ -32,6 +32,8 @@ import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Logger;
+import net.yacy.grid.io.index.ElasticsearchClient;
+import net.yacy.grid.io.index.WebMapping;
 
 /**
  * OAuthGithubLogin
@@ -92,7 +94,18 @@ public class HomeService  extends AbstractService implements Service {
 
         // all good, we respond with user credentials
         final JSONObject json = new JSONObject(true);
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final long documents = Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), authentication.getID());
+        final long collections = Searchlab.ec.aggregationCount(index_name, WebMapping.user_id_sxt.getMapping().name(), authentication.getID(), WebMapping.collection_sxt.getMapping().name());
+
         try {
+            final JSONObject assets = new JSONObject(true);
+            final JSONObject size = new JSONObject(true);
+            assets.put("size", size);
+            size.put("documents", documents);
+            size.put("collections", collections);
+            json.put("assets", assets);
+
             if (authorization != null) json.put("authorization", authorization.getJSON());
             json.put("authentication", authentication.getJSON());
             json.put("acl", serviceRequest.getACL());

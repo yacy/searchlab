@@ -333,19 +333,33 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    private QueryBuilder constraint(final QueryBuilder qb, final WebMapping field, final String value) {
-        if (value == null) return qb;
-        final TermQueryBuilder c = QueryBuilders.termQuery(field.getMapping().name(), value);
-        return QueryBuilders.boolQuery().must(qb).must(c);
+    public long count(final String indexName, final String key, final String value) {
+        final TermQueryBuilder q = QueryBuilders.termQuery(key, value);
+        while (true) try {
+            return countInternal(q, indexName);
+        } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
+            Logger.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
+            try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
+            connect();
+        }
     }
 
-    /**
-     * Get the number of documents in the search index for a given search query
-     *
-     * @param q
-     *            the query
-     * @return the count of all documents in the index which matches with the query
-     */
+    public long count(final String indexName, final String key0, final String value0, final String key1, final String value1) {
+        final TermQueryBuilder q0 = QueryBuilders.termQuery(key0, value0);
+        final TermQueryBuilder q1 = QueryBuilders.termQuery(key1, value1);
+        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+        bFilter.must(QueryBuilders.constantScoreQuery(q0));
+        bFilter.must(QueryBuilders.constantScoreQuery(q1));
+
+        while (true) try {
+            return countInternal(bFilter, indexName);
+        } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
+            Logger.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
+            try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
+            connect();
+        }
+    }
+
     @Override
     public long count(final String indexName, final String user_id, final YaCyQuery yq) {
         final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
@@ -361,6 +375,12 @@ public class ElasticsearchClient implements FulltextIndex {
     private long countInternal(final QueryBuilder q, final String indexName) {
         final SearchResponse response = this.elasticsearchClient.prepareSearch(indexName).setQuery(q).setSize(0).execute().actionGet();
         return response.getHits().getTotalHits();
+    }
+
+    private QueryBuilder constraint(final QueryBuilder qb, final WebMapping field, final String value) {
+        if (value == null) return qb;
+        final TermQueryBuilder c = QueryBuilders.termQuery(field.getMapping().name(), value);
+        return QueryBuilders.boolQuery().must(qb).must(c);
     }
 
     /**
@@ -889,6 +909,10 @@ public class ElasticsearchClient implements FulltextIndex {
             continue;
         }
         return query;
+    }
+
+    public int aggregationCount(final String indexName, final String fieldName, final String fieldValue, final String aggregationField) {
+        return aggregation(indexName, fieldName, fieldValue, aggregationField).size();
     }
 
     public Map<String, Long> aggregation(final String indexName, final String fieldName, final String fieldValue, final String aggregationField) {
