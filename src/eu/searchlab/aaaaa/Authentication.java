@@ -258,7 +258,7 @@ public class Authentication {
      */
     public boolean getSelf() throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot read self");
-        return this.json.optBoolean("name", true);
+        return this.json.optBoolean("self", true);
     }
 
 

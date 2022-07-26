@@ -172,8 +172,9 @@ public class YaCySearchService extends AbstractService implements Service {
         try {
             final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
             final ElasticsearchClient.Query query = Searchlab.ec.query(
-                System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB), user_id,
-                yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, facetLimit, explain,
+                System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB),
+                user_id, yq, null, sort, WebMapping.text_t, timezoneOffset,
+                startRecord, itemsPerPage, facetLimit, explain,
                 facetFieldMapping.toArray(new WebMapping[facetFieldMapping.size()]));
 
             // create result list

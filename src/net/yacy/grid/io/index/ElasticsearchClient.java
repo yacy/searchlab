@@ -795,7 +795,7 @@ public class ElasticsearchClient implements FulltextIndex {
      */
     @Override
     public FulltextIndex.Query query(final String indexName, final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
-        final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
+        final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
         return query(indexName, q, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
     }
 
