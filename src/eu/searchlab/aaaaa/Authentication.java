@@ -81,6 +81,7 @@ public class Authentication {
         this.init();
     }
 
+    @SuppressWarnings("deprecation")
     private void init() {
         try {
             final String sponsor_github = this.json.optString("sponsor_github");
@@ -91,6 +92,8 @@ public class Authentication {
             if (sponsor_patreon == null || sponsor_patreon.length() == 0) {
                 this.json.put("sponsor_patreon", "");
             }
+            if (!this.json.has("self")) this.json.put("self", true);
+            if (!this.json.has("anonymous_production")) this.json.put("anonymous_production", false);
         } catch (final JSONException e) {
             Logger.error(e);
         }
