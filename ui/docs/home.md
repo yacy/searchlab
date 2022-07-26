@@ -37,8 +37,6 @@
     <p class="help-block">The connected github sponsor account</p>
 </div>
 
-<p>authentication.self = {{authentication.self}}</p>
-
 <div class="checkbox">
   <label>Use self-generated index</label>
   <input type="checkbox" name="self" id="self" {{#if authentication.self}}checked="true"{{/if}}>
