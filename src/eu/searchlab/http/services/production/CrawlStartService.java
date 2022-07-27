@@ -159,7 +159,6 @@ public class CrawlStartService  extends AbstractService implements Service {
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
         final JSONObject crawlstart = crawlStartDefaultClone();
-        final int grade_level = serviceRequest.getAuthorizationGrade().level;
 
         // read call attributes using the default crawlstart key names
         final String user_id = serviceRequest.getUser();
@@ -184,7 +183,6 @@ public class CrawlStartService  extends AbstractService implements Service {
         // fix attributes
         final ActionSequence allCrawlstarts = new ActionSequence();
         try {
-            allCrawlstarts.put("grade_level", grade_level);
             final CrawlstartURLSplitter crawlstartURLs = new CrawlstartURLSplitter(crawlstart.getString("crawlingURL"));
             final int crawlingDepth = crawlstart.optInt("crawlingDepth", 3);
             crawlstart.put("crawlingDepth", Math.min(crawlingDepth, 8)); // crawlingDepth shall not exceed 8 - this is used for enhanced balancing to be able to reach crawl leaves
@@ -337,7 +335,15 @@ public class CrawlStartService  extends AbstractService implements Service {
             Logger.warn(this.getClass(), "error when starting crawl", e);
         }
 
+        final JSONObject json = new JSONObject(true);
+        try {
+            json.put("crawl", allCrawlstarts);
+            json.put("acl", serviceRequest.getACL());
+        } catch (final JSONException e) {
+            Logger.error(e);
+        }
+
         // finally add the crawl start on the queue
-        return new ServiceResponse(allCrawlstarts);
+        return new ServiceResponse(json);
     }
 }

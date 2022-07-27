@@ -66,57 +66,29 @@ Start a Web crawl:
 
 
 <script>
-grade_level={{grade_level}};
-
-// L00_Everyone
-// L01_Anonymous
-
-// L02_Authenticated
-if (grade_level == 2) {
-    document.getElementById("loginhint").classList.remove("alert-warning");
-    document.getElementById("loginhint").classList.add("alert-success");
-    document.getElementById("loginhint").textContent = "You are an authenticated, free-service grade user";
-    document.getElementById("crawlingDepth").disabled = false;
-    document.getElementById("crawlingDepth").value = 1;
-    document.getElementById("crawlingDepth_badge").textContent = "";
-    document.getElementById("archiveIndex_input").disabled = false;
-    document.getElementById("archiveIndex_badge").textContent = "";
-}
-
-// L03_Primary
-// L04_Level_One
-// L05_Level_Five
-// L06_Level_Twentyfive
-// L07_Level_Fifty
-// L08_Level_Twohundred
-
-
-// L09_Maintainer
-if (grade_level == 8) {
-    document.getElementById("loginhint").classList.remove("alert-warning");
-    document.getElementById("loginhint").classList.add("alert-success");
-    document.getElementById("loginhint").textContent = "You have full rights for all options!";
-    document.getElementById("crawlingDepth").disabled = false;
-    document.getElementById("crawlingDepth").value = 3;
-    document.getElementById("crawlingDepth_badge").textContent = "";
-    document.getElementById("collection").disabled = false;
-    document.getElementById("collection_badge").textContent = "";
-    document.getElementById("priority_input").disabled = false;
-    document.getElementById("priority_badge").textContent = "";
-    document.getElementById("loaderHeadless_input").disabled = false;
-    document.getElementById("loaderHeadless_badge").textContent = "";
-    document.getElementById("archiveWARC_input").disabled = false;
-    document.getElementById("archiveWARC_badge").textContent = "";
-    document.getElementById("archiveIndex_input").disabled = false;
-    document.getElementById("archiveIndex_badge").textContent = "";
-    document.getElementById("archiveGraph_input").disabled = false;
-    document.getElementById("archiveGraph_badge").textContent = "";
-}
+document.getElementById("loginhint").classList.remove("alert-warning");
+document.getElementById("loginhint").classList.add("alert-success");
+document.getElementById("loginhint").textContent = "{{acl.action}}";
+document.getElementById("crawlingDepth").value = {{acl.crawler.crawlingDepth.value}};
+document.getElementById("crawlingDepth").disabled = {{acl.crawler.crawlingDepth.disabled}};
+document.getElementById("crawlingDepth_badge").textContent = "";
+document.getElementById("collection").disabled = false;
+document.getElementById("collection_badge").textContent = "";
+document.getElementById("priority_input").disabled = false;
+document.getElementById("priority_badge").textContent = "";
+document.getElementById("loaderHeadless_input").disabled = false;
+document.getElementById("loaderHeadless_badge").textContent = "";
+document.getElementById("archiveWARC_input").disabled = false;
+document.getElementById("archiveWARC_badge").textContent = "";
+document.getElementById("archiveIndex_input").disabled = false;
+document.getElementById("archiveIndex_badge").textContent = "";
+document.getElementById("archiveGraph_input").disabled = false;
+document.getElementById("archiveGraph_badge").textContent = "";
 </script>
 
-{{#if actions.[0]}}
+{{#if crawl.actions.[0]}}
   <p>Crawl started!</p>
-  {{#each actions.items}}
+  {{#each crawl.actions.items}}
     Crawl ID: {{this.id}}
   {{/each}}
 {{else}}
