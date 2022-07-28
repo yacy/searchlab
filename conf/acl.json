@@ -12,13 +12,13 @@
             "crawler": {
                 "message": "",
                 "crawlingURL"    : {"message": ""},
-                "crawlingDepth"  : {"value": 0, "max": 0, "disabled": true, "badge": "Anonymous users may only index the start document - with crawl depth 0"},
+                "crawlingDepth"  : {"value": 0, "max": 0, "disabled": true, "badge": "Anonymous users are not allowed to produce index entries"},
                 "collection"     : {"value": "user",      "disabled": true, "badge": "Anonymous users are not allowed to change the collection"},
                 "range"          : {"value": "domain",    "disabled": true, "badge": ""},
                 "priority"       : {"value": false,       "disabled": true, "badge": ""},
                 "loaderHeadless" : {"value": false,       "disabled": true, "badge": ""},
                 "archiveWARC"    : {"value": false,       "disabled": true, "badge": ""},
-                "archiveIndex"   : {"value": false,       "disabled": true, "badge": ""},
+                "archiveIndex"   : {"value": false,       "disabled": true, "badge": "log in to create index entries"},
                 "archiveGraph"   : {"value": false,       "disabled": true, "badge": ""}
             },
             "index": {
@@ -46,13 +46,13 @@
             "crawler": {
                 "message": "",
                 "crawlingURL"    : {"message": ""},
-                "crawlingDepth"  : {"value": 0, "max": 0, "disabled": true, "badge": ""},
-                "collection"     : {"value": "user",      "disabled": true, "badge": ""},
+                "crawlingDepth"  : {"value": 0, "max": 0, "disabled": true, "badge": "Authenticated/Anonymous users may add documents, but not crawl. The crawling depth of 0 is allowed"},
+                "collection"     : {"value": "user",      "disabled": true, "badge": "Authenticated/Anonymous users are not allowed to change the collection"},
                 "range"          : {"value": "domain",    "disabled": true, "badge": ""},
                 "priority"       : {"value": false,       "disabled": true, "badge": ""},
                 "loaderHeadless" : {"value": false,       "disabled": true, "badge": ""},
                 "archiveWARC"    : {"value": false,       "disabled": true, "badge": ""},
-                "archiveIndex"   : {"value": false,       "disabled": false, "badge": ""},
+                "archiveIndex"   : {"value": false,       "disabled": false, "badge": "You can store documents in the assets data warehouse"},
                 "archiveGraph"   : {"value": false,       "disabled": true, "badge": ""}
             },
             "index": {
@@ -80,7 +80,7 @@
             "crawler": {
                 "message": "",
                 "crawlingURL"    : {"message": ""},
-                "crawlingDepth"  : {"value": 0, "max": 1, "disabled": false, "badge": ""},
+                "crawlingDepth"  : {"value": 0, "max": 1, "disabled": false, "badge": "Authenticated users may add documents with a maximum depth of 1 - only linked documents"},
                 "collection"     : {"value": "user",      "disabled": true, "badge": ""},
                 "range"          : {"value": "domain",    "disabled": true, "badge": ""},
                 "priority"       : {"value": false,       "disabled": true, "badge": ""},
@@ -197,7 +197,32 @@
             "description": "searchlab administrator",
             "action": "with great power comes great responsibility",
             "price": "free",
-            "free": true
+            "free": true,
+            "crawler": {
+                "message": "",
+                "crawlingURL"    : {"message": ""},
+                "crawlingDepth"  : {"value": 0, "max": 999, "disabled": false, "badge": "no limit, you should limit yourself to 5"},
+                "collection"     : {"value": "user",      "disabled": false, "badge": "Anonymous users are not allowed to change the collection"},
+                "range"          : {"value": "domain",    "disabled": false, "badge": ""},
+                "priority"       : {"value": false,       "disabled": false, "badge": ""},
+                "loaderHeadless" : {"value": false,       "disabled": false, "badge": ""},
+                "archiveWARC"    : {"value": false,       "disabled": false, "badge": ""},
+                "archiveIndex"   : {"value": false,       "disabled": false, "badge": ""},
+                "archiveGraph"   : {"value": false,       "disabled": false, "badge": ""}
+            },
+            "index": {
+                "documents"      : {"max": 100000000, "badge": ""},
+                "collections"    : {"max":     10000, "badge": ""},
+                "warc_mb"        : {"max":   1000000, "badge": ""},
+                "index_mb"       : {"max":   1000000, "badge": ""},
+                "graph_mb"       : {"max":   1000000, "badge": ""}
+            },
+            "queries": {
+                "search": {
+                    "frequency_time"  : [60000, 300000, 3600000],
+                    "frequency_count" : [1000, 5000, 10000]
+                }
+            }
         }
     ]
 }

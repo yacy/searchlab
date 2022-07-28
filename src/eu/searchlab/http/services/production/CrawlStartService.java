@@ -159,6 +159,7 @@ public class CrawlStartService  extends AbstractService implements Service {
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
         final JSONObject crawlstart = crawlStartDefaultClone();
+        final JSONObject aclLevel = serviceRequest.getACL();
 
         // read call attributes using the default crawlstart key names
         final String user_id = serviceRequest.getUser();
@@ -184,10 +185,12 @@ public class CrawlStartService  extends AbstractService implements Service {
         final ActionSequence allCrawlstarts = new ActionSequence();
         try {
             final CrawlstartURLSplitter crawlstartURLs = new CrawlstartURLSplitter(crawlstart.getString("crawlingURL"));
-            final int crawlingDepth = crawlstart.optInt("crawlingDepth", 3);
+            int crawlingDepth = crawlstart.optInt("crawlingDepth", 3);
+            crawlingDepth = Math.min(crawlingDepth, aclLevel.optJSONObject("crawler").optJSONObject("crawlingDepth").optInt("max"));
             crawlstart.put("crawlingDepth", Math.min(crawlingDepth, 8)); // crawlingDepth shall not exceed 8 - this is used for enhanced balancing to be able to reach crawl leaves
             String mustmatch = crawlstart.optString("mustmatch", CrawlStart.defaultValues.getString("mustmatch")).trim();
-            final String range = crawlstart.optString("range", "wide");
+            String range = crawlstart.optString("range", "wide");
+            if (aclLevel.optJSONObject("crawler").optJSONObject("collection").optBoolean("disabled")) range = aclLevel.optJSONObject("crawler").optJSONObject("collection").optString("value", "domain");
             final boolean fullDomain = "domain".equals(range); // special property in simple crawl start
             final boolean subPath    = "subpath".equals(range); // special property in simple crawl start
             final boolean wide       = "wide".equals(range); // special property in simple crawl start
@@ -338,7 +341,7 @@ public class CrawlStartService  extends AbstractService implements Service {
         final JSONObject json = new JSONObject(true);
         try {
             json.put("crawl", allCrawlstarts);
-            json.put("acl", serviceRequest.getACL());
+            json.put("acl", aclLevel);
         } catch (final JSONException e) {
             Logger.error(e);
         }

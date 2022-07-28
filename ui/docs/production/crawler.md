@@ -71,19 +71,19 @@ document.getElementById("loginhint").classList.add("alert-success");
 document.getElementById("loginhint").textContent = "{{acl.action}}";
 document.getElementById("crawlingDepth").value = {{acl.crawler.crawlingDepth.value}};
 document.getElementById("crawlingDepth").disabled = {{acl.crawler.crawlingDepth.disabled}};
-document.getElementById("crawlingDepth_badge").textContent = "";
-document.getElementById("collection").disabled = false;
-document.getElementById("collection_badge").textContent = "";
-document.getElementById("priority_input").disabled = false;
-document.getElementById("priority_badge").textContent = "";
-document.getElementById("loaderHeadless_input").disabled = false;
-document.getElementById("loaderHeadless_badge").textContent = "";
-document.getElementById("archiveWARC_input").disabled = false;
-document.getElementById("archiveWARC_badge").textContent = "";
-document.getElementById("archiveIndex_input").disabled = false;
-document.getElementById("archiveIndex_badge").textContent = "";
-document.getElementById("archiveGraph_input").disabled = false;
-document.getElementById("archiveGraph_badge").textContent = "";
+document.getElementById("crawlingDepth_badge").textContent = "{{acl.crawler.crawlingDepth.badge}}";
+document.getElementById("collection").disabled = {{acl.crawler.collection.disabled}};
+document.getElementById("collection_badge").textContent = "{{acl.crawler.collection.badge}}";
+document.getElementById("priority_input").disabled = {{acl.crawler.priority.disabled}};
+document.getElementById("priority_badge").textContent = "{{acl.crawler.priority.badge}}";
+document.getElementById("loaderHeadless_input").disabled = {{acl.crawler.loaderHeadless.disabled}};
+document.getElementById("loaderHeadless_badge").textContent = "{{acl.crawler.loaderHeadless.badge}}";
+document.getElementById("archiveWARC_input").disabled = {{acl.crawler.archiveWARC.disabled}};
+document.getElementById("archiveWARC_badge").textContent = "{{acl.crawler.archiveWARC.badge}}";
+document.getElementById("archiveIndex_input").disabled = {{acl.crawler.archiveIndex.disabled}};
+document.getElementById("archiveIndex_badge").textContent = "{{acl.crawler.archiveIndex.badge}}";
+document.getElementById("archiveGraph_input").disabled = {{acl.crawler.archiveGraph.disabled}};
+document.getElementById("archiveGraph_badge").textContent = "{{acl.crawler.archiveGraph.badge}}";
 </script>
 
 {{#if crawl.actions.[0]}}
