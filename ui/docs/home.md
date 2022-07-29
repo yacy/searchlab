@@ -54,6 +54,18 @@
 
 <button type="submit" name="change" value="Change Setting" class="btn btn-primary"/>Change Setting</button>
 
+
+<br/><br/><br/><br/><br/>
+
+<h2>Danger Zone</h2>
+
+<p>
+You can terminate your usage of the Searchlab and delete your personal data here. When you hit the following button, there will be no further check if this is a mistake or not, your account will be deleted permanently without the option to revert this action. Your name and email address as well as all settings visible here will be erased and removed from our database, not just marked as deleted. The crawled data, however, will stay in the search index but will be a candidate for further cleanup later.
+</p>
+
+<button type="submit" name="delete" value="Delete Account" class="btn btn-danger"/>Delete Account</button>
+
+
 {{/if}}
 
 </form>

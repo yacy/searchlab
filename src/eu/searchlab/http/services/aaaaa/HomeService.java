@@ -92,6 +92,20 @@ public class HomeService  extends AbstractService implements Service {
             }
         }
 
+        if (post.has("delete")) {
+            Searchlab.userDB.deleteAuthentication(authentication.getID());
+            Logger.info("deleting userID: " + authorization.getUserID());
+
+            // now do normal logout process to delete the cookie
+            Searchlab.userDB.deleteAuthorization(authorization.getSessionID());
+            // the account is gone forward to logout
+            final JSONObject json = new JSONObject(true);
+            final ServiceResponse serviceResponse = new ServiceResponse(json);
+            // delete the user cookie
+            serviceResponse.deleteUserIDCookie();
+            return serviceResponse;
+        }
+
         // all good, we respond with user credentials
         final JSONObject json = new JSONObject(true);
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);

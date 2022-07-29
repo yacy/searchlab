@@ -161,6 +161,10 @@ public class UserDB {
         }
     }
 
+    /**
+     * delete authorization to log out the user
+     * @param sessionID
+     */
     public void deleteAuthorization(final String sessionID) {
         if (sessionID == null) return;
         try {
@@ -169,6 +173,18 @@ public class UserDB {
             Logger.error(e);
         }
 
+    }
+
+    /**
+     * delete authentication to remove user and delete the account
+     * @param user_id
+     */
+    public void deleteAuthentication(final String user_id) {
+        try {
+            this.authnDB.remove(user_id);
+        } catch (final IOException e) {
+            Logger.error(e);
+        }
     }
 
     public static void main(final String[] args) {
