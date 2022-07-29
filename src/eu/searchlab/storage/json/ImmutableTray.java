@@ -96,10 +96,10 @@ public class ImmutableTray extends AbstractTray implements Tray {
     public Tray remove(final String key) throws IOException {
         assert key != null;
         synchronized (this.mutex) {
-            if (this.deleted.contains(key)) return this;
+            if (this.deleted.containsKey(key)) return this;
             this.deleted.put(key, new Object());
             ensureLoaded();
-            if (!this.object.contains(key)) return this;
+            if (!this.object.containsKey(key)) return this;
             this.object.remove(key);
             this.commitInternal();
             return this;

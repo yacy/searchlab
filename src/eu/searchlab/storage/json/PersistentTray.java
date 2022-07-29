@@ -25,7 +25,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import eu.searchlab.storage.io.ConcurrentIO;
+import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.io.MinioS3IO;
 
 public class PersistentTray extends AbstractTray implements Tray {
 
@@ -75,7 +77,7 @@ public class PersistentTray extends AbstractTray implements Tray {
     public Tray remove(final String key) throws IOException {
         synchronized (this.mutex) {
             ensureLoaded();
-            if (!this.object.contains(key)) return this;
+            if (!this.object.containsKey(key)) return this;
             this.object.remove(key);
             this.commitInternal();
             return this;
@@ -93,6 +95,28 @@ public class PersistentTray extends AbstractTray implements Tray {
         synchronized (this.mutex) {
             this.object = null;
         }
+    }
+
+    public static void main(final String[] args) {
+        final GenericIO io = new MinioS3IO("http://localhost:9000", "admin", "12345678");
+        try {io.makeBucket("test"); } catch (final IOException e) {}
+        final ConcurrentIO cio = new ConcurrentIO(io, 10000);
+        final IOPath iop = new IOPath("test", "test/db.json");
+        final Tray tray = new PersistentTray(cio, iop);
+        final JSONObject json = new JSONObject();
+        try {
+            tray.put("a", json);
+            tray.put("b", json);
+            tray.put("c", json);
+            tray.remove("b");
+            tray.close();
+            System.out.println(new String(io.readAll(iop), "UTF-8"));
+            io.remove(iop);
+            io.removeBucket("test");
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+        System.exit(0);
     }
 
 }
