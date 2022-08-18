@@ -80,11 +80,11 @@
             "crawler": {
                 "message": "",
                 "crawlingURL"    : {"message": ""},
-                "crawlingDepth"  : {"value": 0, "max": 1, "disabled": false, "badge": "Authenticated users may add documents with a maximum depth of 1 - only linked documents"},
-                "collection"     : {"value": "user",      "disabled": true, "badge": ""},
-                "range"          : {"value": "domain",    "disabled": true, "badge": ""},
+                "crawlingDepth"  : {"value": 0, "max": 1, "disabled": false, "badge": "Authenticated users without sponsoring may add documents with a maximum depth of 1 - only linked documents"},
+                "collection"     : {"value": "user",      "disabled": true, "badge": "Authenticated users without sponsoring may only use the 'user' collection"},
+                "range"          : {"value": "domain",    "disabled": true, "badge": "Authenticated users without sponsoring may do domain-only crawls, not wide crawls"},
                 "priority"       : {"value": false,       "disabled": true, "badge": ""},
-                "loaderHeadless" : {"value": false,       "disabled": true, "badge": ""},
+                "loaderHeadless" : {"value": false,       "disabled": true, "badge": "Authenticated users without sponsoring cannot do headless crawling"},
                 "archiveWARC"    : {"value": false,       "disabled": false, "badge": ""},
                 "archiveIndex"   : {"value": false,       "disabled": false, "badge": ""},
                 "archiveGraph"   : {"value": false,       "disabled": false, "badge": ""}
