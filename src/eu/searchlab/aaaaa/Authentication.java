@@ -257,7 +257,7 @@ public class Authentication {
      * @throws RuntimeException
      */
     public boolean getSelf() throws RuntimeException {
-        if (this.isAnonymous) return false;
+        if (this.isAnonymous) return true; // anonymous requests MUST be set to self because that is what a client of a shared accounts sees. It's the purpose that someone else sees only the documents which an authenticated user has generated.
         return this.json.optBoolean("self", true);
     }
 
