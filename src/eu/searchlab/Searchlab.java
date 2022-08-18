@@ -126,12 +126,13 @@ public class Searchlab {
             final String envkey1 = "SEARCHLAB_" + envkey0.toUpperCase();
             final String envval0 = sysenv.get(envkey0);
             final String envval1 = sysenv.get(envkey1);
+            final boolean secret = key.contains("secret") || key.contains("password");
             if (envval0 != null) {
-                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value '" + envval0 + "'");
+                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value" + (secret ? "" : (" '" + envval0 + "'")));
                 value = envval0;
             }
             if (envval1 != null) {
-                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value '" + envval1 + "'");
+                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value" + (secret ? "" : (" '" + envval1 + "'")));
                 value = envval1;
             }
 
