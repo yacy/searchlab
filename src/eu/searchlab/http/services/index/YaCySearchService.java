@@ -95,14 +95,14 @@ public class YaCySearchService extends AbstractService implements Service {
         }
 
         final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
+        final boolean allowPaging = true; // hasReferer
 
         // evaluate query
         final String q = request.get("query", request.get("q", "")).trim();
         if (q.length() == 0) return new ServiceResponse(new JSONObject()); // TODO: fix this. We should return a proper object here
         final int qlen = q.split(" ").length;
-        if (!request.hasReferer()) {
-            badRequests.event(request.getIP00()); // sus
-        }
+        // if (!hasReferer) badRequests.event(request.getIP00()); // sus
+
         if (qlen >= 3) {
             final boolean approved = badQueries.approve(q, request.getIP00());
             if (!approved) {
@@ -125,9 +125,9 @@ public class YaCySearchService extends AbstractService implements Service {
         final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
         final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
         final int startRecord = request.get("startRecord", request.get("start", 0));
-        if (startRecord >= 9990 || (startRecord != 0 && !request.hasReferer())) {
+        if (startRecord >= 9990 || (startRecord != 0 && !hasReferer)) {
             badRequests.event(request.getIP00()); // sus
-            return new ServiceResponse().setBadRequest();
+            //return new ServiceResponse().setBadRequest();
         }
         if (badRequests.count(request.getIP00(), 300000)[0] >= 10) {
             Logger.info("BAN/requests for IP " + request.getIP00());
@@ -217,8 +217,8 @@ public class YaCySearchService extends AbstractService implements Service {
             }
 
             // search metadata
-            channel.put("totalResults", hasReferer ? Integer.toString(query.hitCount) : Integer.toString(items.length()));
-            channel.put("pages", "" + (hasReferer ? (query.hitCount / itemsPerPage) + 1 : 1));
+            channel.put("totalResults", allowPaging ? Integer.toString(query.hitCount) : Integer.toString(items.length()));
+            channel.put("pages", "" + (allowPaging ? (query.hitCount / itemsPerPage) + 1 : 1));
             channel.put("itemsCount", items.length());
             channel.put("items", items);
 
@@ -261,13 +261,13 @@ public class YaCySearchService extends AbstractService implements Service {
 
             // create page navigation
             final JSONArray pagenav = new JSONArray();
-            if (hasReferer) {
+            if (allowPaging) {
                 JSONObject nave = new JSONObject(true);
                 nave.put("startRecord", startRecord < itemsPerPage ? 0 : startRecord - itemsPerPage);
                 nave.put("page", "&lt;");
                 nave.put("same", false);
                 pagenav.put(nave);
-                final int pages = hasReferer ? (query.hitCount / itemsPerPage) + 1 : 1;
+                final int pages = allowPaging ? (query.hitCount / itemsPerPage) + 1 : 1;
                 for (int p = 0; p < Math.min(pages, 20); p++) {
                     nave = new JSONObject(true);
                     nave.put("startRecord", p * itemsPerPage);
