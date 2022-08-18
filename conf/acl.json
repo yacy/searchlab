@@ -11,6 +11,7 @@
             "free": true,
             "crawler": {
                 "message": "",
+                "forUser"        : {"value": "",          "disabled": true},
                 "crawlingURL"    : {"message": ""},
                 "crawlingDepth"  : {"value": 0, "max": 0, "disabled": true, "badge": "Anonymous users are not allowed to produce index entries"},
                 "collection"     : {"value": "user",      "disabled": true, "badge": "Anonymous users are not allowed to change the collection"},
@@ -45,6 +46,7 @@
             "free": true,
             "crawler": {
                 "message": "",
+                "forUser"        : {"value": "",          "disabled": true},
                 "crawlingURL"    : {"message": ""},
                 "crawlingDepth"  : {"value": 0, "max": 1, "disabled": true, "badge": "Authenticated/Anonymous users may add documents, but not crawl. The crawling depth of 1 (only linked documents) is allowed"},
                 "collection"     : {"value": "user",      "disabled": true, "badge": "Authenticated/Anonymous users are not allowed to change the collection"},
@@ -79,6 +81,7 @@
             "free": true,
             "crawler": {
                 "message": "",
+                "forUser"        : {"value": "",          "disabled": true},
                 "crawlingURL"    : {"message": ""},
                 "crawlingDepth"  : {"value": 3, "max": 3, "disabled": false, "badge": "Authenticated users without sponsoring may add documents with a maximum depth of 3"},
                 "collection"     : {"value": "user",      "disabled": true, "badge": "Authenticated users without sponsoring may only use the 'user' collection"},
@@ -113,6 +116,7 @@
             "free": false,
             "crawler": {
                 "message": "",
+                "forUser"        : {"value": "",          "disabled": true},
                 "crawlingURL"    : {"message": ""},
                 "crawlingDepth"  : {"value": 3, "max": 3, "disabled": false, "badge": ""},
                 "collection"     : {"value": "user",      "disabled": false, "badge": ""},
@@ -147,6 +151,7 @@
             "free": false,
             "crawler": {
                 "message": "",
+                "forUser"        : {"value": "",          "disabled": true},
                 "crawlingURL"    : {"message": ""},
                 "crawlingDepth"  : {"value": 3, "max": 5, "disabled": false, "badge": ""},
                 "collection"     : {"value": "user",      "disabled": false, "badge": ""},
@@ -200,9 +205,10 @@
             "free": true,
             "crawler": {
                 "message": "",
+                "forUser"        : {"value": "",          "disabled": false},
                 "crawlingURL"    : {"message": ""},
                 "crawlingDepth"  : {"value": 0, "max": 999, "disabled": false, "badge": "no limit, you should limit yourself to 5"},
-                "collection"     : {"value": "user",      "disabled": false, "badge": "Anonymous users are not allowed to change the collection"},
+                "collection"     : {"value": "user",      "disabled": false, "badge": ""},
                 "range"          : {"value": "domain",    "disabled": false, "badge": ""},
                 "priority"       : {"value": false,       "disabled": false, "badge": ""},
                 "loaderHeadless" : {"value": false,       "disabled": false, "badge": ""},

@@ -9,6 +9,11 @@ Start a Web crawl:
 
 <form action=".">
 
+<div class="form-group" id="forUserDiv">
+    <label for="forUser">For User</label>
+    <input class="form-control" name="forUser" id="forUser" type="text" size="10" maxlength="10" value="" disabled/>
+</div>
+
 <div class="form-group">
     <label for="crawlingURL">Start-URL</label>
     <input class="form-control" name="crawlingURL" id="crawlingURL" type="text" size="50" maxlength="256" value="" placeholder="https://..."/>
@@ -69,6 +74,9 @@ Start a Web crawl:
 document.getElementById("loginhint").classList.remove("alert-warning");
 document.getElementById("loginhint").classList.add("alert-success");
 document.getElementById("loginhint").textContent = "{{acl.action}}";
+document.getElementById("forUser").value = "{{acl.crawler.forUser.value}}";
+document.getElementById("forUser").disabled = {{acl.crawler.forUser.disabled}};
+if ({{acl.crawler.forUser.disabled}}) document.getElementById("forUserDiv").remove();
 document.getElementById("crawlingDepth").value = {{acl.crawler.crawlingDepth.value}};
 document.getElementById("crawlingDepth").disabled = {{acl.crawler.crawlingDepth.disabled}};
 document.getElementById("crawlingDepth_badge").textContent = "{{acl.crawler.crawlingDepth.badge}}";

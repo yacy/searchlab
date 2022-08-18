@@ -39,6 +39,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authorization.Grade;
 import eu.searchlab.corpus.Action;
 import eu.searchlab.corpus.ActionSequence;
 import eu.searchlab.corpus.CrawlStart;
@@ -162,7 +163,13 @@ public class CrawlStartService  extends AbstractService implements Service {
         final JSONObject aclLevel = serviceRequest.getACL();
 
         // read call attributes using the default crawlstart key names
-        final String user_id = serviceRequest.getUser();
+        String user_id = serviceRequest.getUser();
+        if (!"en".equals(user_id)) try {
+            aclLevel.getJSONObject("crawler").getJSONObject("forUser").put("value", user_id);
+        } catch (final JSONException e1) {}
+        final String for_user_id = serviceRequest.get("for_user_id", user_id);
+        if (for_user_id.length() > 0 && serviceRequest.getAuthorizationGrade() == Grade.L08_Maintainer) user_id = for_user_id;
+
         try {
             for (final String key: crawlstart.keySet()) {
                 final Object object = crawlstart.get(key);
