@@ -59,7 +59,7 @@ public class IndexService extends AbstractService implements Service {
         final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
 
         // evaluate request parameter
-        final String indexName = request.get("index", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final String indexName = request.get("index", System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB));
         final String id = request.get("id", "");
         final String q = request.get("query", request.get("q", "")).trim();
         final JSONObject json = new JSONObject(true);
@@ -103,8 +103,7 @@ public class IndexService extends AbstractService implements Service {
 
                 final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
                 final ElasticsearchClient.Query query = Searchlab.ec.query(
-                        System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB), user_id,
-                        yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
+                        indexName, user_id, yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
 
                 final JSONList items = new JSONList();
                 final List<Map<String, Object>> qr = query.results;
