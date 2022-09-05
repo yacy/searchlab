@@ -50,10 +50,11 @@ public class IndexDeletionService  extends AbstractService implements Service {
         final JSONObject context = new JSONObject();
         String user_id = serviceRequest.getUser();
         final boolean maintainer = serviceRequest.getAuthorizationGrade() == Grade.L08_Maintainer;
+        final boolean authorized = serviceRequest.isAuthorized();
         try {
             context.put("forUser", user_id);
             context.put("forUser_disabled", !maintainer);
-            context.put("delete_disabled", !serviceRequest.isAuthorized());
+            context.put("delete_disabled", !authorized);
         } catch (final JSONException e) {
             Logger.error(e);
         }
@@ -64,7 +65,7 @@ public class IndexDeletionService  extends AbstractService implements Service {
         // do the deletion
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final String domainss = serviceRequest.get("domain", "").trim();
-        if (!domainss.isEmpty()) {
+        if (authorized && !domainss.isEmpty()) {
             final String[] domains = domainss.split(",");
             for (final String domain: domains) {
                 final int deleted = Searchlab.ec.delete(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, WebMapping.host_s.getMapping().name(), domain.trim());
