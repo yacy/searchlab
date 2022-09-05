@@ -164,7 +164,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
 
         if (url.startsWith("//")) {
             // patch for urls starting with "//" which can be found in the wild
-            url = "http:" + url;
+            url = "https:" + url;
         }
         if (url.startsWith("\\\\")) {
             url = "smb://" + CommonPattern.BACKSLASH.matcher(url.substring(2)).replaceAll("/");
@@ -185,7 +185,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
             if (url.length() > 7 && url.substring(0,7).equalsIgnoreCase("mailto:")) {
                 p = 6;
             } else {
-                url = "http://" + url;
+                url = "https://" + url;
                 p = 4;
             }
         }
@@ -265,7 +265,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
                         // wrong windows path, after the doublepoint there should be a backslash. Let's add a slash, as it will be slash in the normal form
                         h = h.substring(0, 4) + '/' + h.substring(4);
                     }
-                    int q = h.indexOf('/', 2);
+                    final int q = h.indexOf('/', 2);
                     if (q < 0 || h.length() > 3 && h.charAt(3) == ':') {
                         // Missing root slash such as "path" or "c:/path" accepted, but the path attribute must by after all start with it
                         this.path = "/" + h.substring(2);
@@ -558,7 +558,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
         boolean modified = false;
         final int len = this.path.length();
         for (int i = 0; i < len; i++) {
-            int ch = this.path.charAt(i);
+            final int ch = this.path.charAt(i);
             if (ch <= 0x7F) {
                 if (UNRESERVED_PATH.get(ch)) {
                     ptmp.append((char) ch);
@@ -931,10 +931,10 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
      */
     public String[] getPaths() {
         String s = (this.path == null || this.path.length() < 1) ? "" : this.path.charAt(0) == '/' ? this.path.substring(1) : this.path;
-        int p = s.lastIndexOf('/');
+        final int p = s.lastIndexOf('/');
         if (p < 0) return new String[0];
         s = s.substring(0, p); // the paths do not contain the last part, which is considered as the getFileName() part.
-        String[] paths = CommonPattern.SLASH.split(s);
+        final String[] paths = CommonPattern.SLASH.split(s);
         return paths;
     }
 
@@ -975,7 +975,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
 
     public String getTLD() {
         if (this.host == null) return "";
-        int p = this.host.lastIndexOf('.');
+        final int p = this.host.lastIndexOf('.');
         if (p < 0) return "";
         return this.host.substring(p + 1);
     }
@@ -1013,13 +1013,13 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
 
     public String getUser() {
         if (this.userInfo == null) return "";
-        int p = this.userInfo.indexOf(':');
+        final int p = this.userInfo.indexOf(':');
         return p < 0 ? this.userInfo : this.userInfo.substring(0,  p);
     }
 
     public String getPassword() {
         if (this.userInfo == null) return "";
-        int p = this.userInfo.indexOf(':');
+        final int p = this.userInfo.indexOf(':');
         return p < 0 ? "" : this.userInfo.substring(p + 1);
     }
 
@@ -1038,10 +1038,10 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
     public Map<String, String> getSearchpartMap() {
         if (this.searchpart == null) return null;
         this.searchpart = this.searchpart.replaceAll("&amp;", "&");
-        String[] parts = CommonPattern.AMP.split(this.searchpart);
-        Map<String, String> map = new LinkedHashMap<String, String>();
-        for (String part: parts) {
-            int p = part.indexOf('=');
+        final String[] parts = CommonPattern.AMP.split(this.searchpart);
+        final Map<String, String> map = new LinkedHashMap<String, String>();
+        for (final String part: parts) {
+            final int p = part.indexOf('=');
             if (p > 0) map.put(part.substring(0, p), part.substring(p + 1)); else map.put(part, "");
         }
         return map;
@@ -1122,11 +1122,11 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
      * @return map key=attribue name, value=string after '='
      */
     public Map<String, String> getAttributes() {
-        Map<String, String > map = new LinkedHashMap<>();
+        final Map<String, String > map = new LinkedHashMap<>();
         if (this.searchpart == null) return map;
         final String[] questp = CommonPattern.AMP.split(this.searchpart, -1);
         for (final String element : questp) {
-            int p = element.indexOf('=');
+            final int p = element.indexOf('=');
             if (p != -1) {
                 map.put(unescape(element.substring(0, p)), unescape(element.substring(p + 1)));
             } else {
@@ -1171,7 +1171,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
             defaultPort = true;
         }
         String urlPath = this.getFile(excludeAnchor, removeSessionID);
-        String h = getHost();
+        final String h = getHost();
         final StringBuilder u = new StringBuilder(20 + (urlPath == null ? 0 : urlPath.length()) + ((h == null) ? 0 : h.length()));
         u.append(this.protocol);
         u.append("://");
@@ -1190,7 +1190,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
             urlPath = urlPath.replace('\\', '/');
         }
         u.append(urlPath);
-        String result = u.toString();
+        final String result = u.toString();
 
         return result;
     }
@@ -1222,8 +1222,8 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
         } else if (isFile()) {
             defaultPort = true;
         }
-        String urlPath = this.getFile(excludeAnchor, removeSessionID);
-        String h = getHost();
+        final String urlPath = this.getFile(excludeAnchor, removeSessionID);
+        final String h = getHost();
         final StringBuilder u = new StringBuilder(20 + urlPath.length() + ((h == null) ? 0 : h.length()));
         if (h != null) {
             if (this.userInfo != null && !(this.isFTP() && this.userInfo.startsWith("anonymous"))) {
@@ -1237,7 +1237,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
             u.append(this.port);
         }
         u.append(urlPath);
-        String result = u.toString();
+        final String result = u.toString();
 
         return result;
     }
@@ -1330,12 +1330,12 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
         String language = "en";
         if (this.host == null) return language;
         final int pos = this.host.lastIndexOf('.');
-        String host_tld = this.host.substring(pos + 1).toLowerCase();
+        final String host_tld = this.host.substring(pos + 1).toLowerCase();
         if (pos == 0) return language;
-        int length = this.host.length() - pos - 1;
+        final int length = this.host.length() - pos - 1;
         switch (length) {
             case 2:
-                char firstletter = host_tld.charAt(0);
+                final char firstletter = host_tld.charAt(0);
                 switch (firstletter) {//speed-up
                 case 'a':
                     if (host_tld.equals("au")) {//Australia /91,000,000
@@ -2229,7 +2229,7 @@ public class MultiProtocolURL implements Serializable, Comparable<MultiProtocolU
         return baos.toByteArray();
     }
 
-    public static String getDigest(String url) {
+    public static String getDigest(final String url) {
         return Digest.encodeMD5Hex(url);
     }
 
