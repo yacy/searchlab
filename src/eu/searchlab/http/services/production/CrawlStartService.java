@@ -167,7 +167,7 @@ public class CrawlStartService  extends AbstractService implements Service {
         if (!"en".equals(user_id)) try {
             aclLevel.getJSONObject("crawler").getJSONObject("forUser").put("value", user_id);
         } catch (final JSONException e1) {}
-        final String for_user_id = serviceRequest.get("for_user_id", user_id);
+        final String for_user_id = serviceRequest.get("forUser", user_id);
         if (for_user_id.length() > 0 && serviceRequest.getAuthorizationGrade() == Grade.L08_Maintainer) user_id = for_user_id;
 
         try {
