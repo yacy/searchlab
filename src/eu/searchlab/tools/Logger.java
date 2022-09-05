@@ -194,7 +194,7 @@ public class Logger {
             final StackTraceElement ste = stElements[i];
             final String cn = ste.getClassName();
             if (!cn.equals(loggerClassName) && cn.indexOf("java.lang") < 0) {
-            	final int p = cn.indexOf('$');
+                final int p = cn.indexOf('$');
                 return p < 0 ? cn : cn.substring(0, p);
             }
         }

@@ -454,6 +454,23 @@ public class ElasticsearchClient implements FulltextIndex {
         return getResponse.isExists() ? getResponse.getType() : null;
     }
 
+    public int delete(final String indexName, final String key0, final String value0, final String key1, final String value1) {
+        final TermQueryBuilder q0 = QueryBuilders.termQuery(key0, value0);
+        final TermQueryBuilder q1 = QueryBuilders.termQuery(key1, value1);
+        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+        bFilter.must(QueryBuilders.constantScoreQuery(q0));
+        bFilter.must(QueryBuilders.constantScoreQuery(q1));
+
+        while (true) try {
+            return deleteByQuery(indexName, bFilter);
+        } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
+            Logger.info("ElasticsearchClient deleteByQuery failed with " + e.getMessage() + ", retrying to connect node...");
+            try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
+            connect();
+            continue;
+        }
+    }
+
     /**
      * Delete a document for a given id.
      * ATTENTION: deleted documents cannot be re-inserted again if version number

@@ -81,6 +81,7 @@ import eu.searchlab.http.services.info.QueueStatusService;
 import eu.searchlab.http.services.info.ReadyService;
 import eu.searchlab.http.services.info.ThreaddumpService;
 import eu.searchlab.http.services.production.CrawlStartService;
+import eu.searchlab.http.services.production.IndexDeletionService;
 import eu.searchlab.storage.io.AbstractIO;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
@@ -162,6 +163,7 @@ public class WebServer {
         ServiceMap.register(new OAuthTwitterGetAuth());
         ServiceMap.register(new OAuthTwitterCallback());
         ServiceMap.register(new ACLService());
+        ServiceMap.register(new IndexDeletionService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
