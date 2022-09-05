@@ -64,7 +64,13 @@ You can terminate your usage of the Searchlab and delete your personal data here
 </p>
 
 <button type="submit" name="delete" value="Delete Account" class="btn btn-danger"/>Delete Account</button>
+{{else}}
 
+<div class="checkbox">
+  <label>Use self-generated index</label>
+  <input type="checkbox" name="self" id="self" {{#if authentication.self}}checked="true"{{/if}} disabled>
+  <p class="help-block">Switching this off will cause that search results are made from the complete index. Switching it on will focus on your own index only.</p>
+</div>
 
 {{/if}}
 
