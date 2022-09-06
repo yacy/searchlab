@@ -164,7 +164,7 @@ public class CrawlStartService  extends AbstractService implements Service {
 
         // read call attributes using the default crawlstart key names
         String user_id = serviceRequest.getUser();
-        if (!"en".equals(user_id)) try {
+        if (!serviceRequest.isAnonymous()) try {
             aclLevel.getJSONObject("crawler").getJSONObject("forUser").put("value", user_id);
         } catch (final JSONException e1) {}
         final String for_user_id = serviceRequest.get("forUser", user_id);

@@ -49,6 +49,17 @@ public class ServiceRequest {
     private Authorization authorization = null;
     private Authentication authentication = null;
 
+    /**
+     *
+     * @param post           all post request parameters
+     * @param user           is the prefix of the path after the domain with the user id (without any "/")
+     * @param path           is the non-canonicalised path after the user prefix, starts always with a "/"
+     * @param query          is the string after the "?" in the request URL
+     * @param ip_id          is the actual IP of the request client
+     * @param ip_pseudonym   is the pseudomized IP of ip_id
+     * @param cookie         is a cookie given in the request
+     * @param requestHeaders is a map with the request headers
+     */
     public ServiceRequest(
             final JSONObject post,
             final String user,
@@ -68,26 +79,49 @@ public class ServiceRequest {
         this.requestHeaders = requestHeaders;
     }
 
+    /**
+     * the user id, as given as prefix of the path
+     * @return
+     */
     public String getUser() {
         return this.user;
     }
 
+    /**
+     * the path after the user id which is the original path with the id truncated
+     */
     public String getPath() {
         return this.path;
     }
 
+    /**
+     * query part, everything after a "?"
+     * @return
+     */
     public String getQuery() {
         return this.query;
     }
 
+    /**
+     * the actual IP address of the calling client
+     * @return
+     */
     public String getIPID() {
         return this.ip_id;
     }
 
+    /**
+     * the psydomized IP
+     * @return
+     */
     public String getIP00() {
         return this.ip_pseudonym;
     }
 
+    /**
+     * The post request parameters
+     * @return
+     */
     public JSONObject getPost() {
         return this.post;
     }
@@ -112,21 +146,39 @@ public class ServiceRequest {
         return this.post.optDouble(key, dflt);
     }
 
+    /**
+     * The cookie value is an arbitrary string (normally) but cookies
+     * which are set by searchlab are JSON objects.
+     * @return a String containing a JSON if a cookie exists or the empty String
+     */
     public String getCookieValue() {
         return this.cookie == null ? "" : this.cookie.getValue();
     }
 
+    /**
+     * Anonymous users have a language prefix as user id.
+     * @return true if the user id is a language prefix
+     */
+    public boolean isAnonymous() {
+        return "en".equals(this.user);
+    }
+
+    /**
+     * Get the authorization object. If the user has an account, the object exist.
+     * If the user is anonymous, the returned value can be NULL
+     * @return an authorization object if the user has anauthorization or NULL if not.
+     */
     public Authorization getAuthorization() {
         if (this.authorization != null) return this.authorization;
         this.authorization = getAuthorizationInternal();
-        return getAuthorizationInternal();
+        return this.authorization;
     }
 
     private Authorization getAuthorizationInternal() {
-        final String cookie = this.getCookieValue();
+        final String cookie = this.getCookieValue(); // this is never NULL
         try {
-            final JSONObject json = new JSONObject(new JSONTokener(cookie));
-            final Authorization authorization = new Authorization(json);
+            final JSONObject json = new JSONObject(new JSONTokener(cookie)); // might be an empty json in case that the cookie does not exist
+            final Authorization authorization = new Authorization(json); // authorizations from empty jsons may exist, then getAuthorizationGrade() returns Grade.L00_Everyone
             final String session_id = authorization.getSessionID();
             final Authorization stored_authorization = session_id == null ? null : Searchlab.userDB.getAuthorization(session_id);
             if (stored_authorization != null &&
@@ -155,7 +207,7 @@ public class ServiceRequest {
     private Authentication getAuthenticationInternal() {
         final Authorization authorization = getAuthorization();
         if (authorization == null) {
-            if (this.user.equals("en")) return null;
+            if (isAnonymous()) return null;
             return new Authentication(this.user);
         } else {
             // the user id must be stored already

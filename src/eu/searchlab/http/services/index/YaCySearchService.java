@@ -164,9 +164,19 @@ public class YaCySearchService extends AbstractService implements Service {
             channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
         } catch (final JSONException e) {Logger.error(e);}
 
-        final Authentication authentication = request.getAuthentication();
-        final boolean self = authentication == null ? false : authentication.getSelf();
-        final String user_id = self ? authentication.getID() : null;
+        // define the constraint for the user-id:
+        // - authenticated users will use their own user-id if the self flag is set.
+        // - anonymous users have no constraint at all
+        String user_id = null;
+        if (!request.isAnonymous()) {
+            final Authentication authentication = request.getAuthentication();
+            // we know that this is not anonymous, therefore the authentication exists
+            assert authentication != null;
+            // having an authentication does not mean that there is any authorization as well, but we don't need to know that here.
+            // everything that counts is if the user who created the authentication has set the self attribute or not
+            final boolean self = authentication.getSelf();
+            if (self) user_id = authentication.getID();
+        }
 
         // run query against search index
         try {
