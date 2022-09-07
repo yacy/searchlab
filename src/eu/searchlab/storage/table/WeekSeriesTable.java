@@ -31,7 +31,6 @@ import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
-import tech.tablesaw.plotly.traces.ScatterTrace;
 
 public class WeekSeriesTable {
 
@@ -381,18 +380,7 @@ public class WeekSeriesTable {
      * @return
      */
     public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
-        final TableViewer tv = new TableViewer(filename, title, xscalename);
-        expandGraph(tv, this.table.table, timecolname, yscalecols, y2scalecols);
-        return tv;
-    }
-
-    public static void expandGraph(final TableViewer tv, final Table table, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
-        for (final String col: yscalecols) {
-            tv.timeseries(table, timecolname, 2, ScatterTrace.YAxis.Y, new TableViewer.GraphTypes(col));
-        }
-        for (final String col: y2scalecols) {
-            tv.timeseries(table, timecolname, 1, ScatterTrace.YAxis.Y2, new TableViewer.GraphTypes(col));
-        }
+        return TimeSeriesTable.getGraph(this.table.table(), filename, title, xscalename, timecolname, yscalecols, y2scalecols);
     }
 
 }

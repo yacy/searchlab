@@ -59,7 +59,9 @@ public class GraphGetService extends AbstractService implements Service {
         final long timeout = System.currentTimeMillis() + 600000L; // 10 minutes
         while (System.currentTimeMillis() < timeout) {
             final String graph = Searchlab.htmlPanel.get(graphname);
-            if (graph != null && !graph.isEmpty()) return new ServiceResponse(graph);
+            if (graph != null && !graph.isEmpty()) {
+                return new ServiceResponse(graph);
+            }
             try {Thread.sleep(1000);} catch (final InterruptedException e) {}
         }
 

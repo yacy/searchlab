@@ -86,7 +86,7 @@ public class TableParser {
     }
 
     public static InstantColumn asInstant(final Column<?> column) throws IOException {
-    	if (column instanceof InstantColumn) {
+        if (column instanceof InstantColumn) {
             return (InstantColumn) column;
         } else if (column instanceof DateColumn) {
             final InstantColumn ic = InstantColumn.create(column.name());
@@ -103,7 +103,7 @@ public class TableParser {
         } else {
             final InstantColumn ic = InstantColumn.create(column.name());
             for (final Object o: column.asList()) {
-            	try {
+                try {
                     final Date d = DateParser.iso8601MillisFormat.parse(o.toString());
                     final Instant i = Instant.ofEpochMilli(d.getTime());
                     ic.append(i);
@@ -116,7 +116,7 @@ public class TableParser {
     }
 
     public static StringColumn asString(final Column<?> column) {
-    	if (column instanceof StringColumn) {
+        if (column instanceof StringColumn) {
             return (StringColumn) column;
         } else if (column instanceof DateColumn) {
             final StringColumn sc = StringColumn.create(column.name());
@@ -134,7 +134,7 @@ public class TableParser {
     }
 
     public static DoubleColumn asDouble(final Column<?> column) {
-    	if (column instanceof DoubleColumn) {
+        if (column instanceof DoubleColumn) {
             return (DoubleColumn) column;
         } else {
             final DoubleColumn dc = DoubleColumn.create(column.name());
@@ -146,7 +146,7 @@ public class TableParser {
     }
 
     public static LongColumn asLong(final Column<?> column) {
-    	if (column instanceof LongColumn) {
+        if (column instanceof LongColumn) {
             return (LongColumn) column;
         } else {
             final LongColumn lc = LongColumn.create(column.name());

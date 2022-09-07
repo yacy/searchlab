@@ -115,9 +115,11 @@ public class TimeSeriesTable {
      * @param dataIsDouble
      * @throws IOException
      */
-    public TimeSeriesTable(final Table xtable, final boolean dataIsDouble) throws IOException {
+    public TimeSeriesTable(Table xtable, final boolean dataIsDouble) throws IOException {
         // create appropriate columns from given table
         // If those columes come from a parsed input, the types may be not correct
+
+        xtable = xtable.sortAscendingOn(TS_TIME);
         this.tsTimeCol = TableParser.asInstant(xtable.column(TS_TIME));
         this.tsDateCol = TableParser.asString(xtable.column(TS_DATE));
 
@@ -142,19 +144,29 @@ public class TimeSeriesTable {
 
         // patch old date values to new one
         String lastd = "";
+        long lastt = 0;
         final long now = System.currentTimeMillis();
         for (int i = 0; i < this.tsDateCol.size(); i++) {
             String d = this.tsDateCol.get(i);
+            long t = this.tsTimeCol.get(i).toEpochMilli();
+            if (!d.startsWith("202")) {
+                this.tsTimeCol.set(i, lastt);
+                this.tsDateCol.set(i, lastd);
+                continue;
+            }
+
             if (d.length() == 10) {
-                final long t = this.tsTimeCol.get(i).toEpochMilli();
                 if (t < 0 || t > now) {
                     d = lastd;
+                    t = lastt;
                 } else {
                     d = DateParser.minuteDateFormat.format(new Date(t));
                 }
+                this.tsTimeCol.set(i, Instant.ofEpochMilli(t));
                 this.tsDateCol.set(i, d);
             }
             lastd = d;
+            lastt = this.tsTimeCol.get(i).toEpochMilli();
         }
 
         // create a new table with the columns at the position where we want them
@@ -388,8 +400,16 @@ public class TimeSeriesTable {
      * @return
      */
     public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
+        return getGraph(this.table.table(), filename, title, xscalename, timecolname, yscalecols, y2scalecols);
+    }
+
+    public static TableViewer getGraph(final Table table, final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
         final TableViewer tv = new TableViewer(filename, title, xscalename);
-        final Table table = this.table.table();
+        expandGraph(tv, table, timecolname, yscalecols, y2scalecols);
+        return tv;
+    }
+
+    public static void expandGraph(final TableViewer tv, final Table table, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
         for (final String col: yscalecols) {
             final GraphTypes gt = new TableViewer.GraphTypes(col);
             tv.timeseries(table, timecolname, 2, ScatterTrace.YAxis.Y, gt);
@@ -398,7 +418,5 @@ public class TimeSeriesTable {
             final GraphTypes gt = new TableViewer.GraphTypes(col);
             tv.timeseries(table, timecolname, 1, ScatterTrace.YAxis.Y2, gt);
         }
-        return tv;
     }
-
 }

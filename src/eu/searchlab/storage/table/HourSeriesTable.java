@@ -24,13 +24,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
 
-import eu.searchlab.storage.table.TableViewer.GraphTypes;
 import tech.tablesaw.api.DateTimeColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
-import tech.tablesaw.plotly.traces.ScatterTrace;
 
 public class HourSeriesTable {
 
@@ -342,17 +340,7 @@ public class HourSeriesTable {
      * @return
      */
     public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
-        final TableViewer tv = new TableViewer(filename, title, xscalename);
-        final Table table = this.table.table();
-        for (final String col: yscalecols) {
-            final GraphTypes gt = new TableViewer.GraphTypes(col);
-            tv.timeseries(table, timecolname, 2, ScatterTrace.YAxis.Y, gt);
-        }
-        for (final String col: y2scalecols) {
-            final GraphTypes gt = new TableViewer.GraphTypes(col);
-            tv.timeseries(table, timecolname, 1, ScatterTrace.YAxis.Y2, gt);
-        }
-        return tv;
+        return TimeSeriesTable.getGraph(this.table.table(), filename, title, xscalename, timecolname, yscalecols, y2scalecols);
     }
 
 }
