@@ -1,8 +1,11 @@
-## <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> This is Work-In-Progress
+## System Stats
 
-This is a placeholder page that will migrate into the actual application as soon as it is finished.
-What we want to implemted is described in the [milestones M1-M6](https://github.com/yacy/searchlab/issues).
 
-<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Follow messages from YaCy maitainer [@orbiterlab](https://twitter.com/orbiterlab) and the project updates from [@yacy_search](https://twitter.com/yacy_search) to get news about the project milestones. Please share and <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> like to help building this page!
+### HTTP Requests
 
-<div class="alert alert-warning" role="alert">everything below is work-in-progress</div>
+<iframe src="/en/api/graph/requests.html" width="1440 !important" height="720 !important" style="border:none;" scrolling="no" title="Absatz f&uuml; {{this.materialname}}"></iframe>
+
+
+### Unique Visitors by Psydomized IP
+
+<iframe src="/en/api/graph/visitors.html" width="1440 !important" height="720 !important" style="border:none;" scrolling="no" title="Absatz f&uuml; {{this.materialname}}"></iframe>
