@@ -57,6 +57,7 @@ public class TableParser {
                     .separator(';')
                     .locale(Locale.ENGLISH)
                     .header(true)
+                    .dateFormat(DateParser.minuteDateFormatter)
                     .build();
         final Table table = Table.read().usingOptions(options);
         return table;

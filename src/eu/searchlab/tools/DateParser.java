@@ -22,15 +22,13 @@ package eu.searchlab.tools;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
-
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 
 public class DateParser {
 
@@ -50,10 +48,10 @@ public class DateParser {
     public final static SimpleDateFormat iso8601MillisFormat = new SimpleDateFormat(PATTERN_ISO8601MILLIS, Locale.US);
     public final static DateFormat dayDateFormat = new SimpleDateFormat(PATTERN_MONTHDAY, Locale.US);
     public final static DateFormat minuteDateFormat = new SimpleDateFormat(PATTERN_MONTHDAYHOURMINUTE, Locale.US);
+    public final static DateTimeFormatter minuteDateFormatter = DateTimeFormatter.ofPattern(PATTERN_MONTHDAYHOURMINUTE);
     public final static DateFormat secondDateFormat = new SimpleDateFormat(PATTERN_MONTHDAYHOURMINUTESECOND, Locale.US);
     public final static SimpleDateFormat FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123, Locale.US);
 
-    public final static DateTimeFormatter utcFormatter = ISODateTimeFormat.dateTime().withZoneUTC();
 
     public final static Calendar UTCCalendar = Calendar.getInstance();
     public final static TimeZone UTCtimeZone = TimeZone.getTimeZone("UTC");
