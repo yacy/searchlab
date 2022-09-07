@@ -121,6 +121,7 @@ public class TimeSeriesTable {
         this.tsTimeCol = TableParser.asInstant(xtable.column(TS_TIME));
         this.tsDateCol = TableParser.asString(xtable.column(TS_DATE));
 
+        // sort out the columns in the import to look like our schema
         int viewColCount = 0, metaColCount = 0, dataColCount = 0;
         for (int col = 0; col < xtable.columnCount(); col++) {
             final String name = xtable.columnArray()[col].name();
@@ -139,7 +140,24 @@ public class TimeSeriesTable {
             if (name.startsWith("data.")) this.dataCols[dataColCount++] = dataIsDouble ? TableParser.asDouble(xtable.column(col)) : TableParser.asLong(xtable.column(col));
         }
 
-        // insert columns into table
+        // patch old date values to new one
+        String lastd = "";
+        final long now = System.currentTimeMillis();
+        for (int i = 0; i < this.tsDateCol.size(); i++) {
+            String d = this.tsDateCol.get(i);
+            if (d.length() == 10) {
+                final long t = this.tsTimeCol.get(i).toEpochMilli();
+                if (t < 0 || t > now) {
+                    d = lastd;
+                } else {
+                    d = DateParser.minuteDateFormat.format(new Date(t));
+                }
+                this.tsDateCol.set(i, d);
+            }
+            lastd = d;
+        }
+
+        // create a new table with the columns at the position where we want them
         final Table t = Table.create()
                 .addColumns(this.tsTimeCol, this.tsDateCol)
                 .addColumns(this.viewCols)
