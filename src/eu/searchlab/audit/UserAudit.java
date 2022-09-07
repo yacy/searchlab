@@ -131,7 +131,7 @@ public class UserAudit implements FrequencyTask {
         // paint a graph
         final TableViewer requestsTableViewer = this.requestsTable.getGraph("requests", "Requests per Minute", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.requests SteelBlue"}, new String[] {});
         Searchlab.htmlPanel.add("requests", requestsTableViewer);
-        final TableViewer visitorsTableViewer = this.visitorsTable.getGraph("visitors", "Psydo-Unique Visitors per Minute", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
+        final TableViewer visitorsTableViewer = this.visitorsTable.getGraph("visitors", "Pseudo-Unique Visitors per Minute", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
         Searchlab.htmlPanel.add("visitors", visitorsTableViewer);
     }
 }

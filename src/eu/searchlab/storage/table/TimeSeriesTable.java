@@ -21,6 +21,7 @@
 package eu.searchlab.storage.table;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
 
@@ -178,6 +179,13 @@ public class TimeSeriesTable {
             t.addColumns(this.dataCols[i]);
         }
         this.table = new IndexedTable(t);
+
+        // clean up old rows
+        try {
+            final Date cut = DateParser.minuteDateFormat.parse("2022-05-29 00:00");
+            this.deleteBefore(cut.getTime());
+        } catch (final ParseException e) {
+        }
     }
 
     /**
@@ -206,11 +214,11 @@ public class TimeSeriesTable {
 
     public void deleteBefore(final long time) {
         for (int i = 0; i < this.tsTimeCol.size(); i++) {
-            final long t = this.tsTimeCol.getLongInternal(i);
+            final long t = this.tsTimeCol.get(i).toEpochMilli();
             if (t >= time) {
                 final Table ntable = this.table.table().emptyCopy();
                 for (int k = i; k < this.table.rowCount(); k++) {
-                    ntable.addRow(this.table.row(k));
+                    ntable.append(this.table.row(k));
                 }
                 this.tsTimeCol = ntable.instantColumn(TS_TIME);
                 this.tsDateCol = ntable.stringColumn(TS_DATE);
