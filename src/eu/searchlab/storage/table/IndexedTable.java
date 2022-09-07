@@ -96,7 +96,7 @@ public class IndexedTable implements Iterable<JSONObject> {
      * @param indexColumns
      * @return
      */
-    public IndexedTable(Table table) {
+    public IndexedTable(final Table table) {
         this.table = table;
         this.namedStringIndex = new HashMap<>();
         this.intrfStringIndex = new HashMap<>();
@@ -115,7 +115,7 @@ public class IndexedTable implements Iterable<JSONObject> {
      * @param charset
      * @throws IOException
      */
-    public IndexedTable(GenericIO io, IOPath iop, char separator, Charset charset) throws IOException {
+    public IndexedTable(final GenericIO io, IOPath iop, final char separator, final Charset charset) throws IOException {
         final IOPath iopgz = new IOPath(iop.getBucket(), iop.getPath() + ".gz");
         if (!io.exists(iop) && io.exists(iopgz)) iop = iopgz;
         final InputStream ris = iopgz.getPath().endsWith(".gz") ? new GZIPInputStream(io.read(iopgz)) : io.read(iopgz);
@@ -163,7 +163,7 @@ public class IndexedTable implements Iterable<JSONObject> {
      * @param array
      * @throws IOException
      */
-    public IndexedTable(JSONArray array) throws IOException {
+    public IndexedTable(final JSONArray array) throws IOException {
         if (array == null || array.length() == 0) throw new IOException("Initializing an inexed table with an array works only if at least one data record is present. This is required for a schema generation");
         this.table = Table.create();
         this.namedStringIndex = new HashMap<>();
@@ -240,7 +240,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         return new IndexedTable(e);
     }
 
-    private void addValue(Column<?> column, Object object) throws ParseException {
+    private void addValue(final Column<?> column, final Object object) throws ParseException {
         if (column instanceof LongColumn) {
             if (object instanceof Integer) {((LongColumn) column).append(((Integer) object).longValue()); return;}
             if (object instanceof Long)  {((LongColumn) column).append(((Long) object).longValue()); return;}
@@ -287,7 +287,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         }
     }
 
-    private Column<?> getColumn(String name, Object object) {
+    private Column<?> getColumn(final String name, final Object object) {
         // attribute definitions in time-series data tables
         if (name.startsWith("view.")) return StringColumn.create(name);
         if (name.startsWith("meta.")) return StringColumn.create(name);
@@ -322,7 +322,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         return StringColumn.create(name);
     }
 
-    public JSONArray toJSON(boolean asObjects) {
+    public JSONArray toJSON(final boolean asObjects) {
         final JSONArray array = new JSONArray();
 
         if (asObjects) {
@@ -349,7 +349,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         return array;
     }
 
-    public JSONObject row2JSON(int row) {
+    public JSONObject row2JSON(final int row) {
         final JSONObject json = new JSONObject(true);
         for (int column = 0; column < this.table.columnCount(); column++) {
             final Column<?> c = this.table.column(column);
@@ -392,7 +392,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         return this.table.columnNames();
     }
 
-    public IndexedTable append(IndexedTable i) {
+    public IndexedTable append(final IndexedTable i) {
         clearIndex();
         this.table.append(i.table);
         return this;
@@ -404,7 +404,7 @@ public class IndexedTable implements Iterable<JSONObject> {
      * add rows from other tables which have rows with same name but different order.
      * @param row to add with same name and types as this table
      */
-    public void addRow(Row row) {
+    public void addRow(final Row row) {
         final List<String> names = row.columnNames();
         for (int i = 0; i < row.columnCount(); i++) {
             final Column<?> c = this.table.column(names.get(i));
@@ -412,7 +412,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         }
     }
 
-    public StringIndex addStringIndex(String colName) {
+    public StringIndex addStringIndex(final String colName) {
         final Column<?> col = this.table.column(colName);
         if (col instanceof StringColumn) {
             final StringColumn sc = (StringColumn) col;
@@ -427,7 +427,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         }
     }
 
-    public StringIndex addStringIndex(int colIndex) {
+    public StringIndex addStringIndex(final int colIndex) {
         final Column<?> col = this.table.column(colIndex);
         if (col instanceof StringColumn) {
             final StringColumn sc = (StringColumn) col;
@@ -440,7 +440,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         }
     }
 
-    public LongIndex addLongIndex(String colName) {
+    public LongIndex addLongIndex(final String colName) {
         final Column<?> col = this.table.column(colName);
         if (col instanceof LongColumn) {
             final LongColumn lc = (LongColumn) col;
@@ -514,6 +514,10 @@ public class IndexedTable implements Iterable<JSONObject> {
         return this.table.doubleColumn(columnIndex);
     }
 
+    public Column<?> column(final int columnIndex) {
+        return this.table.column(columnIndex);
+    }
+
     public boolean isEmpty() {
         return this.table.isEmpty();
     }
@@ -526,7 +530,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         return this.table.columnCount();
     }
 
-    public Row row(int i) {
+    public Row row(final int i) {
         return this.table.row(i);
     }
 
@@ -534,7 +538,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         return new IndexedTable(this.table.dropRowsWithMissingValues());
     }
 
-    public IndexedTable addStringColumn(String colname) {
+    public IndexedTable addStringColumn(final String colname) {
         this.table.addColumns(StringColumn.create(colname)); // this works only if table is empty
         return this;
     }
@@ -545,7 +549,7 @@ public class IndexedTable implements Iterable<JSONObject> {
      * @param column
      * @return an index for terms in the column
      */
-    public static Map<String, List<Integer>> createFulltextIndex(StringColumn column) {
+    public static Map<String, List<Integer>> createFulltextIndex(final StringColumn column) {
         final Map<String, List<Integer>> index = new LinkedHashMap<>();
         for (int r = 0; r < column.size(); r++) {
             final String s = column.getString(r);
@@ -573,17 +577,17 @@ public class IndexedTable implements Iterable<JSONObject> {
         return new IndexedTable(t);
     }
 
-    public int aggregateInt(String column) {
-        //Column<?> c = table.column(column);
-        int a = 0;
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            a += row.getInt(column);
+    public long aggregateLong(final String column) {
+        final LongColumn c = this.table.longColumn(column);
+        long a = 0L;
+        for (int r = 0; r < c.size(); r++) {
+            final long l = c.getLong(r);
+            a += l;
         }
         return a;
     }
 
-    public double aggregateDouble(String column) {
+    public double aggregateDouble(final String column) {
         //Column<?> c = table.column(column);
         double a = 0;
         for (int r = 0; r < this.table.rowCount(); r++) {
@@ -601,7 +605,7 @@ public class IndexedTable implements Iterable<JSONObject> {
          * Splitting of a key/value pair as separated by operator symbol ':'
          * @param select
          */
-        public SplitSelect(String select) {
+        public SplitSelect(final String select) {
             final int p = select.indexOf(':');
             if (p < 0) throw new UnsupportedOperationException("no operator found: " + select);
             if (p == 0) throw new UnsupportedOperationException("no column found: " + select);
@@ -703,12 +707,12 @@ public class IndexedTable implements Iterable<JSONObject> {
         return new IndexedTable(select);
     }
 
-    public IndexedTable whereSelects(List<String> selects) {
+    public IndexedTable whereSelects(final List<String> selects) {
         if (selects.size() == 0) return this;
         return whereSelects(selects.toArray(new String[selects.size()]));
     }
 
-    public IndexedTable whereList(String selects) {
+    public IndexedTable whereList(final String selects) {
         return this.whereSelects(selects.split(","));
     }
 
@@ -729,7 +733,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         return this.table.printAll();
     }
 
-    public IndexedTable head(int count) {
+    public IndexedTable head(final int count) {
         final Table t = this.table.emptyCopy();
         for (int r = 0; r < Math.min(count, this.table.rowCount()); r++) {
             t.addRow(this.table.row(r));

@@ -26,6 +26,7 @@ import java.util.Date;
 
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.table.TableViewer.GraphTypes;
 import eu.searchlab.tools.DateParser;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
@@ -39,18 +40,18 @@ public class TimeSeriesTable {
 
     public IndexedTable table;
 
-    public InstantColumn  tshTimeCol;
-    public StringColumn   tshDateCol;
+    public InstantColumn  tsTimeCol;
+    public StringColumn   tsDateCol;
     public StringColumn[] viewCols;
     public StringColumn[] metaCols;
     public Column<?>[] dataCols;
 
     public final static String TS_TIME   = "ts.time";
-    public final static String TS_DATE   = "ts.date"; // ISO8601 format yyyy-MM-dd, no time, no timezone. timezone used is GMT
+    public final static String TS_DATE   = "ts.date"; // ISO8601 format yyyy-MM-dd HH:mm:ss
 
     private TimeSeriesTable() {
-        this.tshTimeCol   = InstantColumn.create(TS_TIME);
-        this.tshDateCol   = StringColumn.create(TS_DATE);
+        this.tsTimeCol   = InstantColumn.create(TS_TIME);
+        this.tsDateCol   = StringColumn.create(TS_DATE);
     }
 
     public TimeSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final Column<?>[] dataCols) throws UnsupportedOperationException {
@@ -72,7 +73,7 @@ public class TimeSeriesTable {
         this.metaCols = metaCols;
         this.dataCols = dataCols;
         final Table t = Table.create()
-                .addColumns(this.tshTimeCol, this.tshDateCol)
+                .addColumns(this.tsTimeCol, this.tsDateCol)
                 .addColumns(this.viewCols)
                 .addColumns(this.metaCols);
         for (int i = 0; i < this.dataCols.length; i++) {
@@ -99,7 +100,7 @@ public class TimeSeriesTable {
             this.dataCols[i] = dataIsDouble ? DoubleColumn.create(dataColNames[i]) : LongColumn.create(dataColNames[i]);
         }
         final Table t = Table.create()
-                .addColumns(this.tshTimeCol, this.tshDateCol)
+                .addColumns(this.tsTimeCol, this.tsDateCol)
                 .addColumns(this.viewCols)
                 .addColumns(this.metaCols);
         for (int i = 0; i < this.dataCols.length; i++) {
@@ -117,8 +118,8 @@ public class TimeSeriesTable {
     public TimeSeriesTable(final Table xtable, final boolean dataIsDouble) throws IOException {
         // create appropriate columns from given table
         // If those columes come from a parsed input, the types may be not correct
-        this.tshTimeCol = TableParser.asInstant(xtable.column(TS_TIME));
-        this.tshDateCol = TableParser.asString(xtable.column(TS_DATE));
+        this.tsTimeCol = TableParser.asInstant(xtable.column(TS_TIME));
+        this.tsDateCol = TableParser.asString(xtable.column(TS_DATE));
 
         int viewColCount = 0, metaColCount = 0, dataColCount = 0;
         for (int col = 0; col < xtable.columnCount(); col++) {
@@ -140,7 +141,7 @@ public class TimeSeriesTable {
 
         // insert columns into table
         final Table t = Table.create()
-                .addColumns(this.tshTimeCol, this.tshDateCol)
+                .addColumns(this.tsTimeCol, this.tsDateCol)
                 .addColumns(this.viewCols)
                 .addColumns(this.metaCols);
         for (int i = 0; i < this.dataCols.length; i++) {
@@ -174,15 +175,15 @@ public class TimeSeriesTable {
     }
 
     public void deleteBefore(final long time) {
-        for (int i = 0; i < this.tshTimeCol.size(); i++) {
-            final long t = this.tshTimeCol.getLongInternal(i);
+        for (int i = 0; i < this.tsTimeCol.size(); i++) {
+            final long t = this.tsTimeCol.getLongInternal(i);
             if (t >= time) {
                 final Table ntable = this.table.table().emptyCopy();
                 for (int k = i; k < this.table.rowCount(); k++) {
                     ntable.addRow(this.table.row(k));
                 }
-                this.tshTimeCol = ntable.instantColumn(TS_TIME);
-                this.tshDateCol = ntable.stringColumn(TS_DATE);
+                this.tsTimeCol = ntable.instantColumn(TS_TIME);
+                this.tsDateCol = ntable.stringColumn(TS_DATE);
                 for (int k = 0; k < this.viewCols.length; k++) this.viewCols[k] = ntable.stringColumn(this.viewCols[k].name());
                 for (int k = 0; k < this.metaCols.length; k++) this.metaCols[k] = ntable.stringColumn(this.metaCols[k].name());
                 for (int k = 0; k < this.dataCols.length; k++) this.dataCols[k] = ntable.column(this.dataCols[k].name());
@@ -208,8 +209,8 @@ public class TimeSeriesTable {
     public void addValues(final long time, final String[] view, final String[] meta, final double[] data) {
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
-        this.tshTimeCol.append(Instant.ofEpochMilli(time));
-        this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
+        this.tsTimeCol.append(Instant.ofEpochMilli(time));
+        this.tsDateCol.append(DateParser.minuteDateFormat.format(new Date(time)));
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
         for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).append(data[i]);
@@ -218,8 +219,8 @@ public class TimeSeriesTable {
     public void addValues(final long time, final String[] view, final String[] meta, final long[] data) {
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
-        this.tshTimeCol.append(Instant.ofEpochMilli(time));
-        this.tshDateCol.append(DateParser.dayDateFormat.format(new Date(time)));
+        this.tsTimeCol.append(Instant.ofEpochMilli(time));
+        this.tsDateCol.append(DateParser.minuteDateFormat.format(new Date(time)));
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
         for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).append(data[i]);
@@ -233,7 +234,7 @@ public class TimeSeriesTable {
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
-            if (this.tshTimeCol.getLongInternal(r) != time) continue;
+            if (this.tsTimeCol.getLongInternal(r) != time) continue;
 
             // try to match with view constraints
             for (int t = 0; t < view.length; t++) {
@@ -251,7 +252,7 @@ public class TimeSeriesTable {
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
-            if (this.tshTimeCol.getLongInternal(r) != time) continue;
+            if (this.tsTimeCol.getLongInternal(r) != time) continue;
 
             // try to match with view constraints
             for (int t = 0; t < view.length; t++) {
@@ -286,7 +287,7 @@ public class TimeSeriesTable {
 
         // execute select
         search: for (int i = 0; i < this.table.size(); i++) {
-            if (this.tshTimeCol.getLongInternal(i) == time) {
+            if (this.tsTimeCol.getLongInternal(i) == time) {
                 if (view != null) for (int j = 0; j < view.length; j++) {
                     if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
                 }
@@ -301,7 +302,7 @@ public class TimeSeriesTable {
 
         // execute select
         search: for (int i = 0; i < this.table.size(); i++) {
-            if (this.tshTimeCol.getLongInternal(i) == time) {
+            if (this.tsTimeCol.getLongInternal(i) == time) {
                 if (view != null) for (int j = 0; j < view.length; j++) {
                     if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
                 }
@@ -312,7 +313,7 @@ public class TimeSeriesTable {
     }
 
     public long getTime(final int row) {
-        return this.tshTimeCol.getLongInternal(row);
+        return this.tsTimeCol.getLongInternal(row);
     }
 
     public long getFirstTime() {
@@ -370,11 +371,14 @@ public class TimeSeriesTable {
      */
     public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
         final TableViewer tv = new TableViewer(filename, title, xscalename);
+        final Table table = this.table.table();
         for (final String col: yscalecols) {
-            tv.timeseries(this.table.table(), timecolname, 2, ScatterTrace.YAxis.Y, new TableViewer.GraphTypes(col));
+            final GraphTypes gt = new TableViewer.GraphTypes(col);
+            tv.timeseries(table, timecolname, 2, ScatterTrace.YAxis.Y, gt);
         }
         for (final String col: y2scalecols) {
-            tv.timeseries(this.table.table(), timecolname, 1, ScatterTrace.YAxis.Y2, new TableViewer.GraphTypes(col));
+            final GraphTypes gt = new TableViewer.GraphTypes(col);
+            tv.timeseries(table, timecolname, 1, ScatterTrace.YAxis.Y2, gt);
         }
         return tv;
     }

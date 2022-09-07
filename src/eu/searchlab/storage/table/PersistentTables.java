@@ -20,11 +20,12 @@
 package eu.searchlab.storage.table;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOObject;
@@ -42,7 +43,7 @@ import tech.tablesaw.io.json.JsonReader;
  */
 public class PersistentTables {
 
-    private final Map<String, IndexedTable> indexes;
+    private final ConcurrentHashMap<String, IndexedTable> indexes;
     private String urlstub;
     private ConcurrentIO io;
     private IOPath iop;
@@ -51,7 +52,7 @@ public class PersistentTables {
      * create an empty TableServer
      */
     public PersistentTables() {
-        this.indexes = new HashMap<>();
+        this.indexes = new ConcurrentHashMap<>();
         this.urlstub = null;
     }
 
@@ -79,10 +80,6 @@ public class PersistentTables {
         this.io = io;
         this.iop = iop;
         return this;
-    }
-
-    public Set<String> getTablenames() {
-        return this.indexes.keySet();
     }
 
     /**
@@ -132,7 +129,11 @@ public class PersistentTables {
         if (this.io == null) throw new IOException("no io defined");
         if (this.iop == null) throw new IOException("no io path defined");
         final IOPath key = this.iop.append(tablename + ".json");
-        this.io.writeForced(new IOObject(key, t.toJSON(true)));
+        try {
+            this.io.writeForced(new IOObject(key, t.toJSON(true).toString(2).getBytes(StandardCharsets.UTF_8)));
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     /**
@@ -141,11 +142,15 @@ public class PersistentTables {
      * If the table is not hosted, altering the table will alter the table for all other requests as well.
      * @param tablename
      * @return
+     * @throws IOException
      */
     public IndexedTable getTable(final String tablename) throws IOException {
         return where(tablename);
     }
 
+    public Set<String> getTablenames() {
+        return this.indexes.keySet();
+    }
 
     public static Table head(final Table table, final int count) {
         final Table t = table.emptyCopy();
@@ -170,10 +175,10 @@ public class PersistentTables {
 
         // try: load from remote server
         if (this.urlstub != null) {
-            try {
-                final StringBuilder sb = new StringBuilder();
-                for (final String u: selects) sb.append(u).append(',');
-                final String url = this.urlstub + tablename + ".json" + ((selects.length == 0) ? "" : "?where=" + sb.substring(0, sb.length() - 1));
+            final StringBuilder sb = new StringBuilder();
+            for (final String u: selects) sb.append(u).append(',');
+            final String url = this.urlstub + tablename + ".json" + ((selects.length == 0) ? "" : "?where=" + sb.substring(0, sb.length() - 1));
+                try {
                 Logger.info("loading: " + url);
                 final Source source = Source.fromUrl(url);
                 final Table t = new JsonReader().read(JsonReadOptions.builder(source).sample(false).build());
@@ -185,7 +190,6 @@ public class PersistentTables {
 
         // try: load from local copy
         IndexedTable table = this.indexes.get(tablename);
-        // in case the table is not inside the index, load it now
         if (table == null) try {
             // in case the table is not inside the index, load it now
             final IOPath key = this.iop.append(tablename + ".json");
@@ -201,6 +205,5 @@ public class PersistentTables {
         if (selects.length == 0) return table;
         return table.whereSelects(selects);
     }
-
 
 }

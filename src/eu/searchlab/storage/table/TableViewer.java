@@ -92,8 +92,9 @@ public class TableViewer {
         for (int x = 0; x < scale.count(); x++) {
             final String yColName = scale.getAxisName(x);
             final Column<?> timecol = table.column(timecolname);
+            final Column<?> valcol = table.column(yColName);
             final ScatterBuilder traceBuilder =
-                    ScatterTrace.builder(timecol, table.doubleColumn(yColName))
+                    ScatterTrace.builder(timecol, valcol)
                     .mode(ScatterTrace.Mode.LINE)
                     .name(yColName)
                     .marker(colorMarker(scale.getGraphColor(x)))
@@ -139,7 +140,7 @@ public class TableViewer {
         return outputFile;
     }
 
-    public String render2html(final int width, final int height, boolean served) {
+    public String render2html(final int width, final int height, final boolean served) {
         final Axis[] a = new Axis[4];
         a[0] = Axis.builder().type(this.axistypes.size() > 0 ? this.axistypes.get(0): Axis.Type.CATEGORY).autoRange(Axis.AutoRange.TRUE).side(Axis.Side.left).build();
         a[1] = Axis.builder().type(this.axistypes.size() > 1 ? this.axistypes.get(1): Axis.Type.CATEGORY).autoRange(Axis.AutoRange.TRUE).side(Axis.Side.right).overlaying(ScatterTrace.YAxis.Y).build();

@@ -19,25 +19,27 @@
 
 package eu.searchlab.http.services.assets;
 
-import org.simpleframework.xml.Path;
-
-import eu.searchlab.HTMLPanel;
+import eu.searchlab.Searchlab;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 
-@Path("/notifications")
+/**
+ * test:
+ * http://localhost:8400/en/api/graph/requests.html
+ * http://localhost:8400/en/api/graph/visitors.html
+ */
 public class GraphGetService extends AbstractService implements Service {
 
     @Override
     public boolean supportsPath(String path) {
-        if (!path.startsWith("api/graph/")) return false;
-        path = path.substring(10);
+        if (!path.startsWith("/api/graph/")) return false;
+        path = path.substring(11);
         final int p = path.indexOf('.');
         if (p < 0) return false;
         final String tablename = path.substring(0, p);
-        if (!HTMLPanel.htmls.containsKey(tablename)) return false;
+        if (!Searchlab.htmlPanel.has(tablename)) return false;
         final String ext = path.substring(p + 1);
         return ext.equals("html");
     }
@@ -50,7 +52,18 @@ public class GraphGetService extends AbstractService implements Service {
         if (p < 0) return new ServiceResponse("");
         final int q = path.indexOf(".", p);
         final String graphname = path.substring(p + 7, q);
-        final String graph = HTMLPanel.htmls.get(graphname);
-        return new ServiceResponse(graph);
+
+        // Graphs may be computed at start-up time concurrently.
+        // Because some graphs may not already exist a the time the server was started,
+        // we do some busy waiting here until the graph is available
+        final long timeout = System.currentTimeMillis() + 600000L; // 10 minutes
+        while (System.currentTimeMillis() < timeout) {
+            final String graph = Searchlab.htmlPanel.get(graphname);
+            if (graph != null && !graph.isEmpty()) return new ServiceResponse(graph);
+            try {Thread.sleep(1000);} catch (final InterruptedException e) {}
+        }
+
+        // timeout
+        return new ServiceResponse("");
     }
 }

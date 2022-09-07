@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
 
+import eu.searchlab.storage.table.TableViewer.GraphTypes;
 import tech.tablesaw.api.DateTimeColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.LongColumn;
@@ -73,6 +74,12 @@ public class HourSeriesTable {
         }
     }
 
+    /**
+     * Time Series for a sequence of hours
+     * @param viewCols facets to reduce the time series to a subset. To get a specific time series, all viewCols must be fixed to a specific facet.
+     * @param metaCols context information to the dataset, not to be used as a facet. It might create a lot of redundancy if used, thats expected.
+     * @param dataCols this is the payload of the time series sequence
+     */
     public HourSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final DoubleColumn[] dataCols) {
         this();
         this.viewCols = viewCols;
@@ -89,6 +96,12 @@ public class HourSeriesTable {
         initZeroes(dataCols.length);
     }
 
+    /**
+     * Time Series for a sequence of hours
+     * @param viewCols facets to reduce the time series to a subset. To get a specific time series, all viewCols must be fixed to a specific facet.
+     * @param metaCols context information to the dataset, not to be used as a facet. It might create a lot of redundancy if used, thats expected.
+     * @param dataCols this is the payload of the time series sequence
+     */
     public HourSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames) {
         this();
         this.viewCols = new StringColumn[viewColNames.length];
@@ -110,6 +123,12 @@ public class HourSeriesTable {
         initZeroes(this.dataCols.length);
     }
 
+    /**
+     * Create a time series table from an indexed table which must have the following properties:
+     * - It must have the long-fields tsh.time, tsh.year, tsh.month, tsh.day, tsh.hour and tsh.cald,
+     * - all other column names must have prefixes "view", "meta", "data" or "unit".
+     * @param table
+     */
     public HourSeriesTable(final IndexedTable table) {
         this.table = table;
         this.tshTimeCol = this.table.table().longColumn(TSH_TIME);
@@ -324,11 +343,14 @@ public class HourSeriesTable {
      */
     public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
         final TableViewer tv = new TableViewer(filename, title, xscalename);
+        final Table table = this.table.table();
         for (final String col: yscalecols) {
-            tv.timeseries(this.table.table(), timecolname, 2, ScatterTrace.YAxis.Y, new TableViewer.GraphTypes(col));
+            final GraphTypes gt = new TableViewer.GraphTypes(col);
+            tv.timeseries(table, timecolname, 2, ScatterTrace.YAxis.Y, gt);
         }
         for (final String col: y2scalecols) {
-            tv.timeseries(this.table.table(), timecolname, 1, ScatterTrace.YAxis.Y2, new TableViewer.GraphTypes(col));
+            final GraphTypes gt = new TableViewer.GraphTypes(col);
+            tv.timeseries(table, timecolname, 1, ScatterTrace.YAxis.Y2, gt);
         }
         return tv;
     }

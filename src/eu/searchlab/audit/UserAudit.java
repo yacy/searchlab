@@ -22,15 +22,18 @@ package eu.searchlab.audit;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import eu.searchlab.Searchlab;
+import eu.searchlab.operation.FrequencyTask;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
+import eu.searchlab.storage.table.TableViewer;
 import eu.searchlab.storage.table.TimeSeriesTable;
 
 /**
  * Class which stores information about the presence and actions of users
  */
-public class UserAudit implements AuditTask {
+public class UserAudit implements FrequencyTask {
 
     private final static String[] requestsViewColNames = new String[] {"view.id"};
     private final static String[] requestsMetaColNames = new String[] {"meta.ip"};
@@ -60,13 +63,13 @@ public class UserAudit implements AuditTask {
         this.visitorsTableModified = System.currentTimeMillis();
     }
 
-    public void event(final String id, final String ip) {
+    public void event(final String id, final String ip00) {
         ConcurrentHashMap<Long, String> u = this.lastSeen.get(id);
         if (u == null) {
             u = new ConcurrentHashMap<>();
             this.lastSeen.put(id, u);
         }
-        u.put(System.currentTimeMillis(), ip);
+        u.put(System.currentTimeMillis(), ip00);
     }
 
     @Override
@@ -125,5 +128,10 @@ public class UserAudit implements AuditTask {
             this.visitorsTableModified = System.currentTimeMillis();
         }
 
+        // paint a graph
+        final TableViewer requestsTableViewer = this.requestsTable.getGraph("requests", "Requests", "time", TimeSeriesTable.TS_DATE, new String[] {"data.requests SteelBlue"}, new String[] {});
+        Searchlab.htmlPanel.add("requests", requestsTableViewer);
+        final TableViewer visitorsTableViewer = this.visitorsTable.getGraph("visitors", "Visitors", "time", TimeSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
+        Searchlab.htmlPanel.add("visitors", visitorsTableViewer);
     }
 }

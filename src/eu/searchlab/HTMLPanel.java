@@ -20,14 +20,43 @@
 
 package eu.searchlab;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import eu.searchlab.storage.table.TableViewer;
 
 public class HTMLPanel {
 
-    public static Map<String, String> htmls;
+    private final Map<String, String> htmls;
+    private final int width, height;
 
-    static {
-        htmls = new HashMap<>();
+    /**
+     * create a HTML Panel with a given rendering size
+     * @param width
+     * @param height
+     */
+    public HTMLPanel(final int width, final int height) {
+        this.htmls = new ConcurrentHashMap<>();
+        this.width = width;
+        this.height = height;
     }
+
+    /**
+     * Add a table viewer to the html panel
+     * The table will be stored in a pre-compiled html version
+     * @param name
+     * @param tv
+     */
+    public void add(final String name, final TableViewer tv) {
+        this.htmls.put(name, tv.render2html(this.width, this.height, true));
+    }
+
+    public boolean has(final String name) {
+        return this.htmls.containsKey(name);
+    }
+
+    public String get(final String name) {
+        return this.htmls.get(name);
+    }
+
 }

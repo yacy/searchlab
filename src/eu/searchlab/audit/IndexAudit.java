@@ -22,12 +22,13 @@ package eu.searchlab.audit;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import eu.searchlab.operation.FrequencyTask;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TimeSeriesTable;
 
-public class IndexAudit implements AuditTask {
+public class IndexAudit implements FrequencyTask {
 
     private final static String[] indexSizeViewColNames = new String[] {"view.index"};
     private final static String[] indexSizeMetaColNames = new String[] {};

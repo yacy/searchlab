@@ -33,10 +33,11 @@ import org.json.JSONObject;
 import eu.searchlab.aaaaa.AccountingTS;
 import eu.searchlab.aaaaa.AuthorizationTS;
 import eu.searchlab.aaaaa.UserDB;
-import eu.searchlab.audit.AuditScheduler;
 import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.EventCount;
 import eu.searchlab.http.WebServer;
+import eu.searchlab.operation.AsynchronousScheduler;
+import eu.searchlab.operation.FrequencyScheduler;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.io.MinioS3IO;
@@ -50,7 +51,7 @@ public class Searchlab {
 
     // hazelcast
     //public static HazelcastInstance hzInstance;
-    public static Map<String, String> hzMap;
+    //public static Map<String, String> hzMap;
 
     // IO and MinIO
     public static GenericIO io;
@@ -63,9 +64,11 @@ public class Searchlab {
     // Messaging client
     public static QueueFactory queues;
 
+    // Persistency
+    public static HTMLPanel htmlPanel;
+
     // Audit
-    public static UserAudit userAudit;
-    public static AuditScheduler auditScheduler;
+    public static FrequencyScheduler AsynchronousScheduler;
     public static EventCount searchRequestCount;
 
     // AAAAA
@@ -73,6 +76,11 @@ public class Searchlab {
     public static AccountingTS accounting;
     public static AuthorizationTS authorization;
     public static String github_client_id, github_client_secret, patreon_client_id, patreon_client_secret;
+
+    // Cron Tooling
+    public static UserAudit userAudit;
+    public static AsynchronousScheduler asynchronousScheduler;
+    public static FrequencyScheduler frequencyScheduler;
 
     // Ready
     private static AtomicInteger readyCounter = new AtomicInteger(0);
@@ -152,6 +160,9 @@ public class Searchlab {
         boolean assertionenabled = false;
         assert (assertionenabled = true) == true; // compare to true to remove warning: "Possible accidental assignement"
         if (assertionenabled) Logger.info("Asserts are enabled");
+
+        // initialize persistency
+        htmlPanel = new HTMLPanel(1440, 720);
 
         // initialize data services (in the background)
         /*
@@ -245,22 +256,25 @@ public class Searchlab {
         // if this fails, we cannot start the searchlab!
         try {
             userDB = new UserDB(io, io, aaaaaIOp);
-            userAudit = new UserAudit(io, auditUserRequestsIOp, auditUserVisitorsIOp);
             accounting = new AccountingTS(io, aaaaaIOp);
             authorization = new AuthorizationTS(io, aaaaaIOp);
             searchRequestCount = new EventCount(60000 * 60); // 1h audit trail per IP to count number of requests
+            userAudit = new UserAudit(io, auditUserRequestsIOp, auditUserVisitorsIOp);
         } catch (final IOException e) {
             Logger.error("could not load data from IO", e);
             System.exit(-1);
         }
         if (readyCounter.incrementAndGet() >= 3) ready = true;
-        final AuditScheduler auditScheduler = new AuditScheduler(60000, userAudit);
-        auditScheduler.start();
+
+        // initialize schedulers
+        frequencyScheduler = new FrequencyScheduler();
+        asynchronousScheduler = new AsynchronousScheduler();
+        frequencyScheduler.addJob(userAudit, 60000);
 
         // Start webserver
         final String port = System.getProperty("port", "8400");
         Logger.info("starting server at port " + port);
-        final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0", userAudit);
+        final WebServer webserver = new WebServer(Integer.parseInt(port), "0.0.0.0");
 
         // give positive feedback
         Logger.info("Searchlab started at port " + port);
@@ -300,18 +314,22 @@ public class Searchlab {
             while (!webserver.server.getWorker().isTerminated() && killfile.exists()) {
                 try {Thread.sleep(1000);} catch (final InterruptedException e) {}
             }
-            webserver.server.stop();
             Logger.info("server kill termination requested");
-            System.exit(1); // not soo nixe because it goes around the CronBox, but that is stateless so just exit here.
+            webserver.server.stop();
+            asynchronousScheduler.shutdown();
+            frequencyScheduler.shutdown();
         } else {
             // something with the pid file creation did not work; fail-over to normal operation waiting for a kill command
             try {
                 webserver.server.getWorker().awaitTermination();
+                asynchronousScheduler.shutdown();
+                frequencyScheduler.shutdown();
             } catch (final InterruptedException e) {
                 Logger.error(e);
             }
         }
         Logger.info("server nominal termination");
+        System.exit(1);
     }
 
 }

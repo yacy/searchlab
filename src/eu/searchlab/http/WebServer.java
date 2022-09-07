@@ -50,9 +50,9 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
 
+import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.aaaaa.Authorization;
-import eu.searchlab.audit.UserAudit;
 import eu.searchlab.http.services.aaaaa.HomeService;
 import eu.searchlab.http.services.aaaaa.IDGeneratorService;
 import eu.searchlab.http.services.aaaaa.IDValidationService;
@@ -65,6 +65,7 @@ import eu.searchlab.http.services.aaaaa.OAuthTwitterCallback;
 import eu.searchlab.http.services.aaaaa.OAuthTwitterGetAuth;
 import eu.searchlab.http.services.assets.AssetDirectoryService;
 import eu.searchlab.http.services.assets.AssetDownloadService;
+import eu.searchlab.http.services.assets.GraphGetService;
 import eu.searchlab.http.services.assets.TableGetService;
 import eu.searchlab.http.services.assets.TablePutService;
 import eu.searchlab.http.services.control.AppsService;
@@ -127,12 +128,10 @@ public class WebServer {
     private final int port;
     private final String bind;
     public final Undertow server;
-    private final UserAudit audit;
 
-    public WebServer(final int port, final String bind, final UserAudit audit) {
+    public WebServer(final int port, final String bind) {
         this.port = port;
         this.bind = bind;
-        this.audit = audit;
 
         // register services
         ServiceMap.register(new MirrorService());
@@ -164,6 +163,7 @@ public class WebServer {
         ServiceMap.register(new OAuthTwitterCallback());
         ServiceMap.register(new ACLService());
         ServiceMap.register(new IndexDeletionService());
+        ServiceMap.register(new GraphGetService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
@@ -241,7 +241,7 @@ public class WebServer {
                 }
             }
 
-            WebServer.this.audit.event(user, serviceRequest.getIP00());
+            Searchlab.userAudit.event(user, serviceRequest.getIP00());
 
             if (user.length() != 2) {
                 // add a canonical and noindex tag to the response header
