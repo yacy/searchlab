@@ -173,11 +173,11 @@ public class TableViewer {
         return html;
     }
 
-    public File render2file(final boolean openBrowser) {
+    public File render2file(final int width, final int height, final boolean openBrowser) {
 
         final File outputFile = new File(outpath, this.filename + ".html");
         outputFile.getParentFile().mkdirs();
-        final String output = render2html(1440, 720, false);
+        final String output = render2html(width, height, false);
 
         // patch template
         //output = output.replace("width: 2160,", "width: 2160, template: 'seaborn',");

@@ -49,6 +49,9 @@ import net.yacy.grid.io.index.WebMapping;
 
 public class Searchlab {
 
+    public static final int GRAPH_WIDTH = 960; //1440;
+    public static final int GRAPH_HEIGHT = 480; //720;
+
     // hazelcast
     //public static HazelcastInstance hzInstance;
     //public static Map<String, String> hzMap;
@@ -162,7 +165,7 @@ public class Searchlab {
         if (assertionenabled) Logger.info("Asserts are enabled");
 
         // initialize persistency
-        htmlPanel = new HTMLPanel(1440, 720);
+        htmlPanel = new HTMLPanel(Searchlab.GRAPH_WIDTH, Searchlab.GRAPH_HEIGHT);
 
         // initialize data services (in the background)
         /*
