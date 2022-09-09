@@ -47,7 +47,7 @@ public class HTMLPanel {
      * @param name
      * @param tv
      */
-    public void add(final String name, final TableViewer tv) {
+    public void put(final String name, final TableViewer tv) {
         this.htmls.put(name, tv.render2html(this.width, this.height, true));
     }
 
