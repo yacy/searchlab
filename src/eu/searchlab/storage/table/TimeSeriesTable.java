@@ -22,6 +22,7 @@ package eu.searchlab.storage.table;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Date;
 
@@ -29,11 +30,13 @@ import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TableViewer.GraphTypes;
 import eu.searchlab.tools.DateParser;
+
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
 import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
+import tech.tablesaw.api.Row;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.plotly.traces.ScatterTrace;
 
@@ -213,12 +216,13 @@ public class TimeSeriesTable {
     }
 
     public void deleteBefore(final long time) {
-        for (int i = 0; i < this.tsTimeCol.size(); i++) {
+        loop: for (int i = 0; i < this.tsTimeCol.size(); i++) try {
             final long t = this.tsTimeCol.get(i).toEpochMilli();
             if (t >= time) {
                 final Table ntable = this.table.table().emptyCopy();
                 for (int k = i; k < this.table.rowCount(); k++) {
-                    ntable.append(this.table.row(k));
+                	Row row = this.table.row(k);
+                	ntable.append(row);
                 }
                 this.tsTimeCol = ntable.instantColumn(TS_TIME);
                 this.tsDateCol = ntable.stringColumn(TS_DATE);
@@ -228,7 +232,9 @@ public class TimeSeriesTable {
                 this.table = new IndexedTable(ntable);
                 return;
             }
-        }
+        } catch (DateTimeException e) {
+    		continue loop;
+    	}
     }
 
     public boolean checkShape(final String[] view, final String[] meta, final long[] data) {
