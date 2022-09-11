@@ -50,6 +50,7 @@ public class ServiceResponse {
     private final Set<Cookie> cookies;
     private int statusCode;
     private Map<String, String> xtraHeaders;
+    private String mime;
 
     public ServiceResponse() {
         this.setCORS = false;
@@ -58,6 +59,7 @@ public class ServiceResponse {
         this.xtraHeaders = null;
         this.object = empty_response;
         this.type = Type.STRING;
+        this.mime = null;
     }
 
     public ServiceResponse(final JSONObject json) {
@@ -130,6 +132,27 @@ public class ServiceResponse {
 
     public ServiceResponse setCORS() {
         this.setCORS = true;
+        return this;
+    }
+
+    /**
+     * Get a mime type string for this content.
+     * ATTENTION: the returned valute might be NULL if no recommended mime type was assigned.
+     * In that case the caller must use a default mime type.
+     * @return a mime type string or NULL if none is known.
+     */
+    public final String getMime() {
+        return this.mime;
+    }
+
+    /**
+     * Assign a special mime type for this content which is different than it would
+     * be expected from the path extension.
+     * @param newMime
+     * @return
+     */
+    public final ServiceResponse setMime(final String newMime) {
+        this.mime = newMime;
         return this;
     }
 

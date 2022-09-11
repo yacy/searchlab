@@ -35,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Deque;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -105,7 +104,6 @@ public class WebServer {
 
     public final static Set<String> ipBanned = ConcurrentHashMap.newKeySet();
 
-    private static final Properties mimeTable = new Properties();
     public final static String COOKIE_USER_ID_NAME = "searchlab-user";
 
     private final static byte[] SSI_MARKER = "<!--#".getBytes();
@@ -116,7 +114,6 @@ public class WebServer {
         final String ipBannedStr = System.getProperty("ip.banned", "");
         for (final String s: ipBannedStr.split(",")) ipBanned.add(s.trim());
         try {
-            mimeTable.load(new FileInputStream("conf/httpd.mime"));
             UI_PATH = new File(new File("ui"), "site");
             APPS_PATH = new File(new File(new File(".").getCanonicalFile().getParentFile(), "searchlab_apps"), "htdocs").getCanonicalFile();
             HTDOCS_PATH = new File("htdocs");
@@ -253,12 +250,9 @@ public class WebServer {
 
             // before we consider a servlet operation, find a requested file in the path because that would be an input for handlebars operation later
             final File f = findFile(path);
-            final int p = path.lastIndexOf('.');
-            final String ext = p < 0 ? "html" : path.substring(p + 1);
-            final String mime = mimeTable.getProperty(ext, "application/octet-stream");
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, serviceRequest.getMime());
 
-            if (!isTemplatingFileType(ext) && f != null) {
+            if (!isTemplatingFileType(serviceRequest.getExt()) && f != null) {
                 // just serve the file
                 try {
                     final ByteBuffer bb = file2bytebuffer(f);
@@ -279,6 +273,9 @@ public class WebServer {
             try {
                 // generate response (handle servlets + handlebars)
                 final ServiceResponse serviceResponse = processPost(serviceRequest);
+                String mime = serviceResponse.getMime();
+                if (mime == null) mime = serviceRequest.getMime();
+
                 final byte[] b = serviceResponse.toByteArray(false);
                 final Set<Cookie> cookies = serviceResponse.getCookies();
                 for (final Cookie cookie: cookies) exchange.setResponseCookie(cookie);
@@ -290,14 +287,14 @@ public class WebServer {
                 if (b == null) {
                     exchange.setStatusCode(StatusCodes.NOT_FOUND).setReasonPhrase("not found").getResponseSender().send("");
                 } else {
-                    if ("application/json".equals(mime) && endsWith(b, "]);".getBytes())) {
+                    if ("application/json".equals(serviceRequest.getMime()) && endsWith(b, "]);".getBytes())) {
                         // JSONP patch
                         exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
-                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/javascript");
+                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
                     }
                     if (query.endsWith(".jsonlist") || query.endsWith(".gz")) {
                         exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
-                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/octet-stream");
+                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
                         int q = 0;
                         q = query.lastIndexOf('/');
                         if (q > 0) {

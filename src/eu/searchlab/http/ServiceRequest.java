@@ -19,7 +19,9 @@
 
 package eu.searchlab.http;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Properties;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,18 +32,35 @@ import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.aaaaa.Authorization;
 import eu.searchlab.aaaaa.Authorization.Grade;
+import eu.searchlab.tools.Logger;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 
 
-public class ServiceRequest {
+public final class ServiceRequest {
+
+    private static final Properties mimeTable = new Properties();
+
+    static {
+        try {
+            mimeTable.load(new FileInputStream("conf/httpd.mime"));
+        } catch (final IOException e) {
+            Logger.error("failed loading defaults/httpd.mime", e);
+        }
+    }
+
+    public final static String getMime(final String ext) {
+        return mimeTable.getProperty(ext, "application/octet-stream");
+    }
 
     private final JSONObject post;
     private final String user; // the user_id
     private final String path; // this looks like "/js/jquery.min.js", a root path looks like "/"
     private final String query; // the part after "?"
+    private final String ext;
+    private String mime;
     private final String ip_id;
     private final String ip_pseudonym;
     private final Cookie cookie;
@@ -77,28 +96,44 @@ public class ServiceRequest {
         this.ip_pseudonym = ip_pseudonym;
         this.cookie = cookie;
         this.requestHeaders = requestHeaders;
+        final int p = this.path.lastIndexOf('.');
+        this.ext = p < 0 ? "html" : this.path.substring(p + 1);
+        this.mime = null;
     }
 
     /**
      * the user id, as given as prefix of the path
      * @return
      */
-    public String getUser() {
+    public final String getUser() {
         return this.user;
     }
 
     /**
      * the path after the user id which is the original path with the id truncated
      */
-    public String getPath() {
+    public final String getPath() {
         return this.path;
+    }
+
+    public final String getExt() {
+        return this.ext;
+    }
+
+    public final String getMime() {
+        if (this.mime == null) this.mime = getMime(this.ext);
+        return this.mime;
+    }
+
+    public final void setMime(final String newMime) {
+        this.mime = newMime;
     }
 
     /**
      * query part, everything after a "?"
      * @return
      */
-    public String getQuery() {
+    public final String getQuery() {
         return this.query;
     }
 
@@ -106,7 +141,7 @@ public class ServiceRequest {
      * the actual IP address of the calling client
      * @return
      */
-    public String getIPID() {
+    public final String getIPID() {
         return this.ip_id;
     }
 
@@ -114,7 +149,7 @@ public class ServiceRequest {
      * the psydomized IP
      * @return
      */
-    public String getIP00() {
+    public final String getIP00() {
         return this.ip_pseudonym;
     }
 
@@ -122,27 +157,27 @@ public class ServiceRequest {
      * The post request parameters
      * @return
      */
-    public JSONObject getPost() {
+    public final JSONObject getPost() {
         return this.post;
     }
 
-    public String get(final String key, final String dflt) {
+    public final String get(final String key, final String dflt) {
         return this.post.optString(key, dflt);
     }
 
-    public boolean get(final String key, final boolean dflt) {
+    public final boolean get(final String key, final boolean dflt) {
         return this.post.optBoolean(key, dflt);
     }
 
-    public int get(final String key, final int dflt) {
+    public final int get(final String key, final int dflt) {
         return this.post.optInt(key, dflt);
     }
 
-    public long get(final String key, final long dflt) {
+    public final long get(final String key, final long dflt) {
         return this.post.optLong(key, dflt);
     }
 
-    public double get(final String key, final double dflt) {
+    public final double get(final String key, final double dflt) {
         return this.post.optDouble(key, dflt);
     }
 
@@ -151,7 +186,7 @@ public class ServiceRequest {
      * which are set by searchlab are JSON objects.
      * @return a String containing a JSON if a cookie exists or the empty String
      */
-    public String getCookieValue() {
+    public final String getCookieValue() {
         return this.cookie == null ? "" : this.cookie.getValue();
     }
 
@@ -159,7 +194,7 @@ public class ServiceRequest {
      * Anonymous users have a language prefix as user id.
      * @return true if the user id is a language prefix
      */
-    public boolean isAnonymous() {
+    public final boolean isAnonymous() {
         return "en".equals(this.user);
     }
 
@@ -168,13 +203,13 @@ public class ServiceRequest {
      * If the user is anonymous, the returned value can be NULL
      * @return an authorization object if the user has anauthorization or NULL if not.
      */
-    public Authorization getAuthorization() {
+    public final Authorization getAuthorization() {
         if (this.authorization != null) return this.authorization;
         this.authorization = getAuthorizationInternal();
         return this.authorization;
     }
 
-    private Authorization getAuthorizationInternal() {
+    private final Authorization getAuthorizationInternal() {
         final String cookie = this.getCookieValue(); // this is never NULL
         try {
             final JSONObject json = new JSONObject(new JSONTokener(cookie)); // might be an empty json in case that the cookie does not exist
@@ -198,13 +233,13 @@ public class ServiceRequest {
      * i.e. if a link is shared.
      * @return
      */
-    public Authentication getAuthentication() {
+    public final Authentication getAuthentication() {
         if (this.authentication != null) return this.authentication;
         this.authentication = getAuthenticationInternal();
         return this.authentication;
     }
 
-    private Authentication getAuthenticationInternal() {
+    private final Authentication getAuthenticationInternal() {
         final Authorization authorization = getAuthorization();
         if (authorization == null) {
             if (isAnonymous()) return null;
@@ -215,35 +250,35 @@ public class ServiceRequest {
         }
     }
 
-    public String getHeader(final String name, final String dflt) {
+    public final String getHeader(final String name, final String dflt) {
         if (this.requestHeaders == null) return dflt;
         final HeaderValues val = this.requestHeaders.get(name);
         return val == null ? dflt : val.getFirst();
     }
 
-    public boolean hasReferer() {
+    public final boolean hasReferer() {
         final String referer = getHeader(Headers.REFERER_STRING, null);
         if (referer == null) return false;
         return referer.length() > 0;
     }
 
-    public String getReferer() {
+    public final String getReferer() {
         final String referer = getHeader(Headers.REFERER_STRING, null);
         return referer == null ? "" : referer;
     }
 
-    public boolean isAuthorized() {
+    public final boolean isAuthorized() {
         return getAuthorization() != null;
     }
 
-    public Grade getAuthorizationGrade() {
+    public final Grade getAuthorizationGrade() {
         if (this.user == null || this.user.length() <= 2 || !Authentication.isValid(this.user)) return Grade.L00_Everyone;
         if (!isAuthorized()) return Grade.L01_Anonymous;
         if (Authorization.maintainers.contains(getUser())) return Grade.L08_Maintainer;
         return Grade.L02_Authenticated;
     }
 
-    public JSONObject getACL() {
+    public final JSONObject getACL() {
         final Grade grade = getAuthorizationGrade();
         final JSONObject acl = Authorization.getACL();
         final JSONArray levels = acl.optJSONArray("levels");
