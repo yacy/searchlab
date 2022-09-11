@@ -189,7 +189,7 @@ public class DumpIndex implements FulltextIndex {
     }
 
     @Override
-    public int deleteByQuery(final String indexName, final String user_id, final YaCyQuery yq) {
+    public long deleteByQuery(final String indexName, final String user_id, final YaCyQuery yq) {
         // TODO Auto-generated method stub
         return 0;
     }

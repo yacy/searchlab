@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -454,7 +455,7 @@ public class ElasticsearchClient implements FulltextIndex {
         return getResponse.isExists() ? getResponse.getType() : null;
     }
 
-    public int delete(final String indexName, final String key0, final String value0, final String key1, final String value1) {
+    public long delete(final String indexName, final String key0, final String value0, final String key1, final String value1) {
         final TermQueryBuilder q0 = QueryBuilders.termQuery(key0, value0);
         final TermQueryBuilder q1 = QueryBuilders.termQuery(key1, value1);
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
@@ -511,7 +512,7 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return delete document count
      */
     @Override
-    public int deleteByQuery(final String indexName, final String user_id, final YaCyQuery yq) {
+    public long deleteByQuery(final String indexName, final String user_id, final YaCyQuery yq) {
         final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
         while (true) try {
             return deleteByQuery(indexName, q);
@@ -523,7 +524,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    public int deleteByQuery(final String indexName, final QueryBuilder q) {
+    public long deleteByQuery(final String indexName, final QueryBuilder q) {
         final Map<String, String> ids = new TreeMap<>();
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName);
         request
@@ -560,7 +561,7 @@ public class ElasticsearchClient implements FulltextIndex {
      *            a map from the unique identifier of a document to the document type
      * @return the number of deleted documents
      */
-    private int deleteBulk(final String indexName, final Map<String, String> ids) {
+    private long deleteBulk(final String indexName, final Map<String, String> ids) {
         // bulk-delete the ids
         if (ids == null || ids.size() == 0) return 0;
         final BulkRequestBuilder bulkRequest = this.elasticsearchClient.prepareBulk();
@@ -974,20 +975,39 @@ public class ElasticsearchClient implements FulltextIndex {
         return a;
     }
 
-    @SuppressWarnings("unused")
-    private List<Map<String, Object>> queryWithConstraints(final String indexName, final String fieldName, final String fieldValue, final Map<String, String> constraints, final boolean latest) throws IOException {
+    public List<Map<String, Object>> queryWithConstraints(final String indexName, final Map<String, String> constraints, final boolean latest) {
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
                 .setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setFrom(0);
 
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(fieldName, fieldValue))));
-        for (final Object o : constraints.entrySet()) {
-            @SuppressWarnings("rawtypes")
-            final
-            Map.Entry entry = (Map.Entry) o;
+        for (final Map.Entry<?,?> entry : constraints.entrySet()) {
             bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery((String) entry.getKey(), ((String) entry.getValue()).toLowerCase())));
         }
+        request.setQuery(bFilter);
+
+        // get response
+        final SearchResponse response = request.execute().actionGet();
+
+        // evaluate search result
+        final ArrayList<Map<String, Object>> result = new ArrayList<>();
+        final SearchHit[] hits = response.getHits().getHits();
+        for (final SearchHit hit: hits) {
+            final Map<String, Object> map = hit.getSourceAsMap();
+            result.add(map);
+        }
+
+        return result;
+    }
+
+    public List<Map<String, Object>> queryWithCompare(final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue) {
+        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setFrom(0);
+
+        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(facetName, facetValue)));
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(compvValue)));
         request.setQuery(bFilter);
 
         // get response

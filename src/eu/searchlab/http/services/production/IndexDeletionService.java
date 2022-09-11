@@ -22,15 +22,13 @@ package eu.searchlab.http.services.production;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authorization.Grade;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Logger;
-import net.yacy.grid.io.index.ElasticsearchClient;
-import net.yacy.grid.io.index.WebMapping;
+import net.yacy.grid.io.index.IndexDAO;
 
 /**
  *
@@ -63,19 +61,18 @@ public class IndexDeletionService  extends AbstractService implements Service {
         if (for_user_id.length() > 0 && maintainer) user_id = for_user_id;
 
         // do the deletion
-        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final String domainss = serviceRequest.get("domain", "").trim();
         if (authorized && !domainss.isEmpty()) {
             final String[] domains = domainss.split(",");
             for (final String domain: domains) {
-                final int deleted = Searchlab.ec.delete(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, WebMapping.host_s.getMapping().name(), domain.trim());
+                final long deleted = IndexDAO.deleteIndexDocumentsByDomainName(user_id, domain.trim());
                 Logger.info("deleted " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
             }
         }
 
         // prepare result
-        final long documents = Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id);
-        final long collections = Searchlab.ec.aggregationCount(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, WebMapping.collection_sxt.getMapping().name());
+        final long documents = IndexDAO.getIndexDocumentCount(user_id);
+        final long collections = IndexDAO.getIndexDocumentCollectionCount(user_id);
         final JSONObject json = new JSONObject(true);
         try {
             final JSONObject assets = new JSONObject(true);

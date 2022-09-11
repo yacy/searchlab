@@ -140,8 +140,8 @@ public abstract class AbstractIO implements GenericIO {
 
     @Override
     public List<IOPathMeta> list(final IOPath path) throws IOException {
-    	final List<IOPathMeta> list = list(path.getBucket(), path.getPath());
-    	return list;
+        final List<IOPathMeta> list = list(path.getBucket(), path.getPath());
+        return list;
     }
 
     private final static ConcurrentHashMap<IOPath, IODirList> dirListCache = new ConcurrentHashMap<>();
@@ -149,15 +149,15 @@ public abstract class AbstractIO implements GenericIO {
     @Override
     public IODirList dirList(final IOPath dirpath) throws IOException {
 
-    	// try to get the list from the cache
-    	IODirList list = dirListCache.get(dirpath);
-    	if (list != null && !list.isStale()) {
-    		Logger.info("Delivering dirList from Cache: " + dirpath.toString());
-    		return list;
-    	}
+        // try to get the list from the cache
+        IODirList list = dirListCache.get(dirpath);
+        if (list != null && !list.isStale()) {
+            Logger.info("Delivering dirList from Cache: " + dirpath.toString());
+            return list;
+        }
 
-    	// load the new list
-    	list = new IODirList();
+        // load the new list
+        list = new IODirList();
         final Set<String> knownDir = new HashSet<>();
         final String dirpaths = dirpath.getPath();
         try {
@@ -190,9 +190,9 @@ public abstract class AbstractIO implements GenericIO {
             Logger.warn("attempt to list " + dirpath.toString(), e);
         }
 
-		Logger.info("Delivering dirList from IO: " + dirpath.toString());
+        Logger.info("Delivering dirList from IO: " + dirpath.toString());
         dirListCache.put(dirpath, list);
-    	return list;
+        return list;
     }
 
 }

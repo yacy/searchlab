@@ -115,7 +115,7 @@ public interface FulltextIndex {
      * @param q
      * @return delete document count
      */
-    public int deleteByQuery(String indexName, final String user_id, final YaCyQuery yq);
+    public long deleteByQuery(String indexName, final String user_id, final YaCyQuery yq);
 
 
     /**
