@@ -30,51 +30,68 @@ import eu.searchlab.storage.table.TimeSeriesTable;
 
 public class IndexDAO {
 
-	
-	public final static class TimeCount {long time; long count; public TimeCount(long time, long count) {this.time = time; this.count = count;}}
-	private final static Map<String, TimeCount> knownDocumentCount = new ConcurrentHashMap<>();
-	
+
+    public final static class TimeCount {long time; long count; public TimeCount(long time, long count) {this.time = time; this.count = count;}}
+    private final static Map<String, TimeCount> knownDocumentCount = new ConcurrentHashMap<>();
+
     public static long getIndexDocumentCount(final String user_id) {
-    	long now = System.currentTimeMillis();
-    	final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final long now = System.currentTimeMillis();
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final long documents = Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id);
         knownDocumentCount.put(user_id, new TimeCount(now, documents));
         return documents;
     }
 
     public static TimeSeriesTable getIndexDocumentCountHistorgramPerMinute(final String user_id) {
-        long now = System.currentTimeMillis();
-        
+        final long now = System.currentTimeMillis();
+
         // get a total index count for user
         TimeCount tc = knownDocumentCount.get(user_id);
-        if (tc == null || tc.time < now - 600000) {
-        	getIndexDocumentCount(user_id);
-        	tc = knownDocumentCount.get(user_id);
+        if (tc == null || tc.time <= now - 600000) {
+            getIndexDocumentCount(user_id);
+            tc = knownDocumentCount.get(user_id);
         }
-        
+        final int indexTimeForDocumentCount = (int) ((now - tc.time) / 60000L);
+        assert indexTimeForDocumentCount >= 0;
+        assert indexTimeForDocumentCount < 600;
+
         // get list of all documents that have been created in the last 10 minutes
-    	final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final Date fromDate = new Date(now - 600000);
-        String dateField = WebMapping.load_date_dt.getMapping().name();
+        final String dateField = WebMapping.load_date_dt.getMapping().name();
         final List<Map<String, Object>> documents = Searchlab.ec.queryWithCompare(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate);
-        
+
         // aggregate the documents to counts per second
-        int[] counts = new int[600]; for (int i = 0; i < 600; i++) counts[i] = 0;
-        long offset = -1;
-        int offsetIndex = (int) ((tc.time - now) / 60000L);
-        for (Map<String, Object> map: documents) {
-        	Date date = (Date) map.get(dateField);
-        	if (date != null) counts[(int) ((now - date.getTime()) / 60000L)]++;
-        	
+        final long[] counts = new long[600]; for (int i = 0; i < 600; i++) counts[i] = 0L;
+        for (final Map<String, Object> map: documents) {
+            final Date date = (Date) map.get(dateField);
+
+            // aggregate statistics about number of indexed documents by one for that indexTime
+            if (date != null) {
+                // the increment time is a number from 0..599 which represents the time 0=now/last minute; 599=oldest/10 minutes in the past
+                final int indexTime = (int) ((now - date.getTime()) / 60000L);
+                // we increment the count at the incrementTime to reflect
+                counts[indexTime]++;
+            }
         }
-        
-        // correct the counts using the time count info
-        
+
+        // find the count offset for the indexTimeForDocumentCount position and correct the counts using the time count info
+        counts[indexTimeForDocumentCount] += tc.count;
+        for (int i = indexTimeForDocumentCount; i >= 0; i--) {
+            // go forward in time -> index increases
+            counts[i] += counts[i + 1];
+        }
+        for (int i = indexTimeForDocumentCount + 1; i <= 599; i++) {
+            // go backward i time -> index decreases
+            counts[i] -= counts[i - 1];
+        }
+
         // make a time series
         final TimeSeriesTable tst = new TimeSeriesTable(new String[] {}, new String[] {}, new String[] {"data.documents"}, false);
+        // go forward in time by counting backwards
         for (int i = 599; i >= 0; i--) {
-        	int c = counts[i];
-        	tst.addValues((now - i) * 60000L, new String[0], new String[0], new long[] {c});
+            final long c = counts[i];
+            tst.addValues(now - i * 60000L, new String[0], new String[0], new long[] {c});
         }
         return tst;
     }

@@ -17,7 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package eu.searchlab.http.services.assets;
+package eu.searchlab.http.services.info;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.AbstractService;

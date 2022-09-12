@@ -64,7 +64,6 @@ import eu.searchlab.http.services.aaaaa.OAuthTwitterCallback;
 import eu.searchlab.http.services.aaaaa.OAuthTwitterGetAuth;
 import eu.searchlab.http.services.assets.AssetDirectoryService;
 import eu.searchlab.http.services.assets.AssetDownloadService;
-import eu.searchlab.http.services.assets.GraphGetService;
 import eu.searchlab.http.services.assets.TableGetService;
 import eu.searchlab.http.services.assets.TablePutService;
 import eu.searchlab.http.services.control.AppsService;
@@ -76,6 +75,8 @@ import eu.searchlab.http.services.index.IndexStatusService;
 import eu.searchlab.http.services.index.SuggestService;
 import eu.searchlab.http.services.index.YaCySearchService;
 import eu.searchlab.http.services.info.ACLService;
+import eu.searchlab.http.services.info.GraphGetService;
+import eu.searchlab.http.services.info.IndexSizeHistogramService;
 import eu.searchlab.http.services.info.LogService;
 import eu.searchlab.http.services.info.QueueStatusService;
 import eu.searchlab.http.services.info.ReadyService;
@@ -161,6 +162,7 @@ public class WebServer {
         ServiceMap.register(new ACLService());
         ServiceMap.register(new IndexDeletionService());
         ServiceMap.register(new GraphGetService());
+        ServiceMap.register(new IndexSizeHistogramService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();
