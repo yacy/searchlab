@@ -169,6 +169,11 @@ public class Authentication {
         return this;
     }
 
+    public String getGithubLogin() throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        return this.json.optString("login_github", "");
+    }
+
     public Authentication setGithubSponsor(final String github_sponsor) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
         try {
@@ -177,6 +182,26 @@ public class Authentication {
             throw new RuntimeException(e.getMessage());
         }
         return this;
+    }
+
+    public String getGithubSponsor() throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        return this.json.optString("sponsor_github", "");
+    }
+
+    public Authentication setGithubSponsorApproved(final boolean approved) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        try {
+            this.json.put("sponsor_github_approved", approved);
+        } catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
+
+    public boolean getGithubSponsorApproved() throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        return this.json.optBoolean("sponsor_github_approved", false);
     }
 
     public Authentication setPatreonLogin(final String patreon_login) throws RuntimeException {
@@ -194,6 +219,11 @@ public class Authentication {
         return this;
     }
 
+    public String getPatreonLogin() throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        return this.json.optString("login_patreon", "");
+    }
+
     public Authentication setPatreonSponsor(final String patreon_sponsor) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
         try {
@@ -202,6 +232,26 @@ public class Authentication {
             throw new RuntimeException(e.getMessage());
         }
         return this;
+    }
+
+    public String getPatreonSponsor() throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        return this.json.optString("sponsor_patreon", "");
+    }
+
+    public Authentication setPatreonSponsorApproved(final boolean approved) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        try {
+            this.json.put("sponsor_patreon_approved", approved);
+        } catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
+
+    public boolean getPatreonSponsorApproved() throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        return this.json.optBoolean("sponsor_patreon_approved", false);
     }
 
     public Authentication setTwitterLogin(final String twitter_login) throws RuntimeException {

@@ -31,6 +31,8 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -104,7 +106,8 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         final String userTwitterUsername = "";
 
         try {
-            final HttpClient httpclient = HttpClients.createDefault();
+            //final HttpClient httpclient = HttpClients.createDefault();
+            final HttpClient httpclient = HttpClients.custom().setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
             final HttpPost httppost = new HttpPost("https://www.patreon.com/api/oauth2/token");
 
             final List<NameValuePair> params = new ArrayList<>(5);
@@ -126,16 +129,16 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 Logger.info("receipt = " + receipt.toString());
                 final String access_token = receipt.optString("access_token");
 
-                Logger.info("Access Token is " + access_token);
+                //Logger.info("Access Token is " + access_token);
 
                 // read the user information
                 // curl --request GET \
                 //      --url https://www.patreon.com/api/oauth2/v2/identity \
                 //      --header 'authorization: Bearer <access_token>'
                 final HttpUriRequest request = RequestBuilder.get()
-                  .setUri("https://www.patreon.com/api/oauth2/api/current_user")
-                  .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + access_token)
-                  .build();
+                        .setUri("https://www.patreon.com/api/oauth2/api/current_user")
+                        .setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + access_token)
+                        .build();
                 response = httpclient.execute(request);
                 entity = response.getEntity();
                 final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));

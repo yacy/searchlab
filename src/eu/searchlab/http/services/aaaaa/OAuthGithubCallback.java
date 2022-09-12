@@ -31,6 +31,8 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -45,6 +47,7 @@ import org.json.JSONTokener;
 import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.aaaaa.Authorization;
+import eu.searchlab.aaaaa.Billing;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
@@ -104,7 +107,8 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
         String userTwitterUsername = "";
 
         try {
-            final HttpClient httpclient = HttpClients.createDefault();
+            //final HttpClient httpclient = HttpClients.createDefault();
+            final HttpClient httpclient = HttpClients.custom().setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
             final HttpPost httppost = new HttpPost("https://github.com/login/oauth/access_token");
 
             final List<NameValuePair> params = new ArrayList<>(3);
@@ -125,17 +129,17 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
                 if (p >= 0) s = s.substring(0, p);
                 // the access_token is now s
 
-                Logger.info("Access Token is " + s);
+                //Logger.info("Access Token is " + s);
 
                 // read the user information
                 // see https://docs.github.com/en/rest/users/users#get-the-authenticated-user
                 // i.e.
                 // curl -H "Authorization: token TOKEN" https://api.github.com/user
                 HttpUriRequest request = RequestBuilder.get()
-                  .setUri("https://api.github.com/user")
-                  .setHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
-                  .setHeader(HttpHeaders.AUTHORIZATION, "token " + s)
-                  .build();
+                        .setUri("https://api.github.com/user")
+                        .setHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
+                        .setHeader(HttpHeaders.AUTHORIZATION, "token " + s)
+                        .build();
                 response = httpclient.execute(request);
                 entity = response.getEntity();
                 String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
@@ -188,8 +192,11 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
                 authentication = new Authentication();
                 authentication.setEmail(userEmail);
             }
-            authentication.setGithubLogin(userGithubLogin);
+            authentication.setGithubLogin(userGithubLogin); // sets also the github sponsor name if that did not yet existed
             authentication.setName(userName);
+
+            // check sponsoring status
+            authentication.setGithubSponsorApproved(Billing.isAGithubSponsor("orbiter", authentication.getGithubSponsor().toLowerCase())); // well only that this is a sponsor, not which level
 
             // create an authorization cookie
             final String id = authentication.getID();

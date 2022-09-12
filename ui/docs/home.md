@@ -40,11 +40,25 @@
     <p class="help-block">The connected patreon account</p>
 </div>
 
+<div class="checkbox">
+  <label>Verified Patreon Account</label>
+  <input type="checkbox" name="sponsor_patreon_verified" id="sponsor_patreon_verified" {{#if authentication.sponsor_patreon_verified}}checked="false"{{/if}} disabled>
+  <p class="help-block">If this is switched on, your patreon account was verified.</p>
+</div>
+
 <div class="form-group">
     <label for="email">Github Sponsor Account</label>
     <input class="form-control" name="sponsor_github" id="sponsor_github" type="text" size="50" maxlength="256" value="{{authentication.sponsor_github}}" />
     <p class="help-block">The connected github sponsor account</p>
 </div>
+
+<div class="checkbox">
+  <label>Verified Github Sponsor Account</label>
+  <input type="checkbox" name="sponsor_github_verified" id="sponsor_github_verified" {{#if authentication.sponsor_github_verified}}checked="false"{{/if}} disabled>
+  <p class="help-block">If this is switched on, your github sponsor account was verified.</p>
+</div>
+
+<br/>
 
 <div class="checkbox">
   <label>Use self-generated index</label>

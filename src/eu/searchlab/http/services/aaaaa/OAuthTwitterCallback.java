@@ -30,6 +30,8 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClients;
@@ -86,12 +88,13 @@ public class OAuthTwitterCallback  extends AbstractService implements Service {
             serviceResponse.setFoundRedirect("http://localhost:8400/en/aaaaa/twitter_callback/index.html?oauth_token=" + oauth_token + "&oauth_verifier=" + oauth_verifier);
             return serviceResponse;
         }
-        */
+         */
 
         final String consumerKey = System.getProperty("twitter.client.id", "");
         final String consumerSecret = System.getProperty("twitter.client.secret", "");
         try {
-            final HttpClient httpclient = HttpClients.createDefault();
+            //final HttpClient httpclient = HttpClients.createDefault();
+            final HttpClient httpclient = HttpClients.custom().setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
             //final HttpPost httppost = new HttpPost("https://api.twitter.com/oauth2/token");
             final HttpPost httppost = new HttpPost("https://api.twitter.com/oauth/access_token");
 
