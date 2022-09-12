@@ -55,7 +55,7 @@
 <div class="checkbox">
   <label>Verified Github Sponsor Account</label>
   <input type="checkbox" name="sponsor_github_verified" id="sponsor_github_verified" {{#if authentication.sponsor_github_verified}}checked="false"{{/if}} disabled>
-  <p class="help-block">If this is switched on, your github sponsor account was verified.</p>
+  <p class="help-block">If this is switched on, your github sponsor account was verified. If this is off and you believe it should be on, try to log out and log in again!</p>
 </div>
 
 <br/>
