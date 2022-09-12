@@ -19,7 +19,9 @@
 
 package eu.searchlab.aaaaa;
 
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -29,11 +31,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 
 public class Authentication {
 
     private final static Random random = new Random(System.currentTimeMillis());
+    private final static long dayms = 1000L * 60L * 60L * 24L;
 
     public final static String ANONYMOUS_ID = "112358132";
     public final static String[] GOLDEN_ID = new String[]{"123456789", "123456798",  "123456987",  "123459876",  "123498765",  "123987654",  "129876543", "198765432", "987654321"}; // includes at this time only special ids
@@ -41,6 +45,21 @@ public class Authentication {
     private final JSONObject json;
     private final boolean isAnonymous;
 
+    /**
+     *  Store the fields:
+     *  "id"
+     *  "email"
+     *  "name"
+     *  "sponsor_github"
+     *  "sponsor_github_approved"
+     *  "sponsor_patreon"
+     *  "sponsor_patreon_approved"
+     *  "anonymous_production"
+     *  "login_github"
+     *  "date_registration"
+     *  "date_visit"
+     * @param json
+     */
     public Authentication(final JSONObject json) {
         this.json = json;
         this.isAnonymous = false;
@@ -94,8 +113,39 @@ public class Authentication {
             }
             if (!this.json.has("self")) this.json.put("self", true);
             if (!this.json.has("anonymous_production")) this.json.put("anonymous_production", false);
+
+            final Date randomPast = new Date(System.currentTimeMillis() - ((Math.abs(random.nextLong())) % (90 * dayms)));
+            final String date_registration = this.json.optString("date_registration");
+            if (date_registration == null || date_registration.length() == 0) {
+                this.json.put("date_registration", DateParser.minuteDateFormat.format(randomPast));
+            }
+            final String date_visit = this.json.optString("date_visit");
+            if (date_visit == null || date_visit.length() == 0) {
+                this.json.put("date_visit", DateParser.minuteDateFormat.format(randomPast));
+            }
         } catch (final JSONException e) {
             Logger.error(e);
+        }
+    }
+
+    public Authentication setVisitDate(Date date) throws RuntimeException {
+        try {this.json.put("date_visit", DateParser.minuteDateFormat.format(date));} catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
+
+    public Date getRegistrationDate() {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts do not have registration dates");
+        try {return DateParser.minuteDateFormat.parse(this.json.getString("date_registration"));} catch (final JSONException | ParseException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public Date getVisitDate() {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts do not have registration dates");
+        try {return DateParser.minuteDateFormat.parse(this.json.getString("date_visit"));} catch (final JSONException | ParseException e) {
+            throw new RuntimeException(e.getMessage());
         }
     }
 

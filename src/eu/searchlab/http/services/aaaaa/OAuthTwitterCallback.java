@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -166,6 +167,7 @@ public class OAuthTwitterCallback  extends AbstractService implements Service {
                     }
                     authentication.setTwitterLogin(screen_name);
                     authentication.setName(userName);
+                    authentication.setVisitDate(new Date());
 
                     // create an authorization cookie
                     final String id = authentication.getID();

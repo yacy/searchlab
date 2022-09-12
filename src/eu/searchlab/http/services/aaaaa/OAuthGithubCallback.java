@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -194,6 +195,7 @@ public class OAuthGithubCallback  extends AbstractService implements Service {
             }
             authentication.setGithubLogin(userGithubLogin); // sets also the github sponsor name if that did not yet existed
             authentication.setName(userName);
+            authentication.setVisitDate(new Date());
 
             // check sponsoring status
             authentication.setGithubSponsorApproved(Billing.isAGithubSponsor("orbiter", authentication.getGithubSponsor().toLowerCase())); // well only that this is a sponsor, not which level
