@@ -8,16 +8,16 @@
 # docker run -d --rm -p 8400:8400 --name searchlab searchlab
 
 # prepare front-end
-FROM python:3.9-alpine AS sitebuilder
+FROM python:3.10-alpine AS sitebuilder
 ADD searchlab/ui /app/ui
 WORKDIR /app
 ENV PYTHONHTTPSVERIFY 0
 RUN \
     apk add --update ca-certificates bash build-base && \
     export PYTHONHTTPSVERIFY=0 && \
+    pip install --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org --upgrade certifi && \
     pip install --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org jinja2==3.0.0 && \
     pip install --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org mkdocs && \
-    pip install --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org --upgrade certifi && \
     rm -rf /tmp/* /var/tmp/* /var/cache/apk/* /var/cache/distfiles/* && \
     cd ui && \
     mkdocs build
