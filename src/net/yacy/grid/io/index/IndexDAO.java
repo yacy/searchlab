@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.tools.DateParser;
 
 public class IndexDAO {
 
@@ -74,13 +75,14 @@ public class IndexDAO {
         // get list of all documents that have been created in the last 10 minutes
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final Date fromDate = new Date(now - timeframe.framelength);
-        final String dateField = WebMapping.load_date_dt.getMapping().name();
+        final String dateField = WebMapping.load_date_dt.getMapping().name(); // like "load_date_dt": "2022-03-30T02:03:03.214Z",
         final List<Map<String, Object>> documents = user_id.equals("en") ? Searchlab.ec.queryWithCompare(index_name, dateField, fromDate) : Searchlab.ec.queryWithCompare(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate);
 
         // aggregate the documents to counts per second
         final long[] counts = new long[timeframe.stepcount]; for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
         for (final Map<String, Object> map: documents) {
-            final Date date = (Date) map.get(dateField);
+            final String dates = (String) map.get(dateField);
+            final Date date = DateParser.iso8601MillisParser(dates);
 
             // aggregate statistics about number of indexed documents by one for that indexTime
             if (date != null) {

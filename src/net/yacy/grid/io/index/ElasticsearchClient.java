@@ -87,6 +87,7 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
+import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 
 /**
@@ -1006,7 +1007,7 @@ public class ElasticsearchClient implements FulltextIndex {
                 .setFrom(0);
 
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(compvValue).includeLower(true)));
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gte(DateParser.iso8601MillisFormat.format(compvValue)).includeLower(true))); // value like "2014-10-21T20:03:12.963" "2022-03-30T02:03:03.214Z"
         request.setQuery(bFilter);
 
         // get response
@@ -1030,7 +1031,7 @@ public class ElasticsearchClient implements FulltextIndex {
 
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(facetName, facetValue)));
-        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(compvValue).includeLower(true)));
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(DateParser.iso8601MillisFormat.format(compvValue)).includeLower(true)));
         request.setQuery(bFilter);
 
         // get response
