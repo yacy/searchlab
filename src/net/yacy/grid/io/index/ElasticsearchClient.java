@@ -1000,6 +1000,29 @@ public class ElasticsearchClient implements FulltextIndex {
         return result;
     }
 
+    public List<Map<String, Object>> queryWithCompare(final String indexName, final String compvName, final Date compvValue) {
+        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setFrom(0);
+
+        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(compvValue).includeLower(true)));
+        request.setQuery(bFilter);
+
+        // get response
+        final SearchResponse response = request.execute().actionGet();
+
+        // evaluate search result
+        final ArrayList<Map<String, Object>> result = new ArrayList<>();
+        final SearchHit[] hits = response.getHits().getHits();
+        for (final SearchHit hit: hits) {
+            final Map<String, Object> map = hit.getSourceAsMap();
+            result.add(map);
+        }
+
+        return result;
+    }
+
     public List<Map<String, Object>> queryWithCompare(final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue) {
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
                 .setSearchType(SearchType.QUERY_THEN_FETCH)
@@ -1007,7 +1030,7 @@ public class ElasticsearchClient implements FulltextIndex {
 
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(facetName, facetValue)));
-        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(compvValue)));
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(compvValue).includeLower(true)));
         request.setQuery(bFilter);
 
         // get response

@@ -29,6 +29,7 @@ import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TableViewer;
 import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.tools.Logger;
 
 /**
  * Class which stores information about the presence and actions of users
@@ -56,9 +57,11 @@ public class UserAudit implements FrequencyTask {
         this.visitorsIOp = visitorsIOp;
         this.lastSeen = new ConcurrentHashMap<>();
         this.requestsTable = new TimeSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
+        Logger.info("loading " + visitorsIOp.toString());
         if (io.exists(requestsIOp)) try {this.requestsTable = new TimeSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
         this.requestsTableModified = System.currentTimeMillis();
         this.visitorsTable = new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
+        Logger.info("loading " + visitorsIOp.toString());
         if (io.exists(visitorsIOp)) try {this.visitorsTable = new TimeSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
         this.visitorsTableModified = System.currentTimeMillis();
     }

@@ -34,42 +34,58 @@ public class IndexDAO {
     public final static class TimeCount {long time; long count; public TimeCount(long time, long count) {this.time = time; this.count = count;}}
     private final static Map<String, TimeCount> knownDocumentCount = new ConcurrentHashMap<>();
 
-    public static long getIndexDocumentCount(final String user_id) {
+    public static long getIndexDocumentCount(String user_id) {
+        if (user_id == null || user_id.length() == 0) user_id = "en";
         final long now = System.currentTimeMillis();
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final long documents = Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id);
+        final long documents = user_id.equals("en") ? Searchlab.ec.count(index_name) : Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id);
         knownDocumentCount.put(user_id, new TimeCount(now, documents));
         return documents;
     }
 
-    public static TimeSeriesTable getIndexDocumentCountHistorgramPerMinute(final String user_id) {
+    public static enum Timeframe {
+        per10minutes(1000L, 600), // 600 seconds / 10 minutes, 1 second per step, 600 steps
+        per10hours(60000L, 600), // 600 minutes / 10 hours, 1 minute per step, 600 steps
+        per10days(24L * 60000L, 600); // 240 hours / 10 days, 24 minutes per step, 600 steps
+        long steplength;
+        int stepcount;
+        long framelength;
+        Timeframe(long steplength, int stepcount) {
+            this.steplength = steplength;
+            this.stepcount = stepcount;
+            this.framelength = this.steplength * this.stepcount;
+        }
+    }
+
+    public static TimeSeriesTable getIndexDocumentCountHistorgramPerTimeframe(String user_id, Timeframe timeframe) {
+        if (user_id == null || user_id.length() == 0) user_id = "en";
         final long now = System.currentTimeMillis();
 
         // get a total index count for user
         TimeCount tc = knownDocumentCount.get(user_id);
-        if (tc == null || tc.time <= now - 600000) {
+        if (tc == null || tc.time <= now - timeframe.framelength) {
             getIndexDocumentCount(user_id);
             tc = knownDocumentCount.get(user_id);
         }
-        final int indexTimeForDocumentCount = (int) ((now - tc.time) / 60000L);
+        final int indexTimeForDocumentCount = (int) ((now - tc.time) / timeframe.steplength);
         assert indexTimeForDocumentCount >= 0;
-        assert indexTimeForDocumentCount < 600;
+        assert indexTimeForDocumentCount < timeframe.stepcount;
 
         // get list of all documents that have been created in the last 10 minutes
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final Date fromDate = new Date(now - 600000);
+        final Date fromDate = new Date(now - timeframe.framelength);
         final String dateField = WebMapping.load_date_dt.getMapping().name();
-        final List<Map<String, Object>> documents = Searchlab.ec.queryWithCompare(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate);
+        final List<Map<String, Object>> documents = user_id.equals("en") ? Searchlab.ec.queryWithCompare(index_name, dateField, fromDate) : Searchlab.ec.queryWithCompare(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate);
 
         // aggregate the documents to counts per second
-        final long[] counts = new long[600]; for (int i = 0; i < 600; i++) counts[i] = 0L;
+        final long[] counts = new long[timeframe.stepcount]; for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
         for (final Map<String, Object> map: documents) {
             final Date date = (Date) map.get(dateField);
 
             // aggregate statistics about number of indexed documents by one for that indexTime
             if (date != null) {
                 // the increment time is a number from 0..599 which represents the time 0=now/last minute; 599=oldest/10 minutes in the past
-                final int indexTime = (int) ((now - date.getTime()) / 60000L);
+                final int indexTime = (int) ((now - date.getTime()) / timeframe.steplength);
                 // we increment the count at the incrementTime to reflect
                 counts[indexTime]++;
             }
@@ -81,7 +97,7 @@ public class IndexDAO {
             // go forward in time -> index increases
             counts[i] += counts[i + 1];
         }
-        for (int i = indexTimeForDocumentCount + 1; i <= 599; i++) {
+        for (int i = indexTimeForDocumentCount + 1; i < timeframe.stepcount; i++) {
             // go backward i time -> index decreases
             counts[i] -= counts[i - 1];
         }
@@ -89,9 +105,9 @@ public class IndexDAO {
         // make a time series
         final TimeSeriesTable tst = new TimeSeriesTable(new String[] {}, new String[] {}, new String[] {"data.documents"}, false);
         // go forward in time by counting backwards
-        for (int i = 599; i >= 0; i--) {
+        for (int i = timeframe.stepcount - 1; i >= 0; i--) {
             final long c = counts[i];
-            tst.addValues(now - i * 60000L, new String[0], new String[0], new long[] {c});
+            tst.addValues(now - i * timeframe.steplength, new String[0], new String[0], new long[] {c});
         }
         return tst;
     }

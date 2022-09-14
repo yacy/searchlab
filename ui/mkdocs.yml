@@ -22,8 +22,8 @@ nav:
     - Assets: data_warehouse/assets.md
   - Monitoring:
     - System: monitoring/system.md
-    - Crawler: monitoring/crawler.md
     - Indexing: monitoring/indexing.md
+    - Crawler: monitoring/crawler.md
 #  - Admin:
 #    - Index: admin/search_index.md
 #    - Crawler: admin/crawler.md
