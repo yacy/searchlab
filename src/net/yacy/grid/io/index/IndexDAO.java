@@ -32,7 +32,7 @@ import eu.searchlab.tools.DateParser;
 public class IndexDAO {
 
 
-    public final static class TimeCount {long time; long count; public TimeCount(long time, long count) {this.time = time; this.count = count;}}
+    public final static class TimeCount {long time; long count; public TimeCount(final long time, final long count) {this.time = time; this.count = count;}}
     private final static Map<String, TimeCount> knownDocumentCount = new ConcurrentHashMap<>();
 
     public static long getIndexDocumentCount(String user_id) {
@@ -51,14 +51,14 @@ public class IndexDAO {
         long steplength;
         int stepcount;
         long framelength;
-        Timeframe(long steplength, int stepcount) {
+        Timeframe(final long steplength, final int stepcount) {
             this.steplength = steplength;
             this.stepcount = stepcount;
             this.framelength = this.steplength * this.stepcount;
         }
     }
 
-    public static TimeSeriesTable getIndexDocumentCountHistorgramPerTimeframe(String user_id, Timeframe timeframe) {
+    public static TimeSeriesTable getIndexDocumentCountHistorgramPerTimeframe(String user_id, final Timeframe timeframe) {
         if (user_id == null || user_id.length() == 0) user_id = "en";
         final long now = System.currentTimeMillis();
 
@@ -87,7 +87,7 @@ public class IndexDAO {
             // aggregate statistics about number of indexed documents by one for that indexTime
             if (date != null) {
                 // the increment time is a number from 0..599 which represents the time 0=now/last minute; 599=oldest/10 minutes in the past
-                final int indexTime = (int) ((now - date.getTime()) / timeframe.steplength);
+                final int indexTime = Math.max(0, (int) ((now - date.getTime()) / timeframe.steplength));
                 // we increment the count at the incrementTime to reflect
                 counts[indexTime]++;
             }
