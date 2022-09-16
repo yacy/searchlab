@@ -1,9 +1,9 @@
 package eu.searchlab.storage.table;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Instant;
@@ -51,9 +51,15 @@ public class TableParser {
         final IOObject[] ioo = io.readForced(iop);
         assert ioo.length == 1;
         final byte[] b = ioo[0].getObject();
-        final ByteArrayInputStream bais = new ByteArrayInputStream(b);
+        String s = new String(b, StandardCharsets.UTF_8);
+
+        // patch the file to wipe out unparsable objects
+        s = s.replaceAll("0000-", "2022-");
+
+        // use tablesaw to parse the csv
+        final StringReader sr = new StringReader(s);
         final CsvReadOptions options =
-                CsvReadOptions.builder(bais)
+                CsvReadOptions.builder(sr)
                     .separator(';')
                     .locale(Locale.ENGLISH)
                     .header(true)
