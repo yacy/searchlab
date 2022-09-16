@@ -35,7 +35,7 @@ import net.yacy.grid.io.index.IndexDAO;
 public class IndexSizeHistogramService extends AbstractService implements Service {
 
     @Override
-    public boolean supportsPath(String path) {
+    public boolean supportsPath(final String path) {
         if (!path.startsWith("/api/graph/index_size_histogram_")) return false;
         final int p = path.indexOf('.');
         if (p < 0) return false;
@@ -48,9 +48,12 @@ public class IndexSizeHistogramService extends AbstractService implements Servic
         final String id = serviceRequest.getUser();
         final String path = serviceRequest.getPath();
         TimeSeriesTable tst = null;
-        if (path.endsWith("_per10days.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per10days);
-        if (path.endsWith("_per10hours.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per10hours);
+
         if (path.endsWith("_per10minutes.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per10minutes);
+        if (path.endsWith("_per1hour.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1hour);
+        if (path.endsWith("_per1day.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1day);
+        if (path.endsWith("_per1month.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1month);
+        if (path.endsWith("_per1year.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1year);
         final TableViewer requestsTableViewer = tst.getGraph("index_size_" + id, "Index Size for user " + id, "Date", TimeSeriesTable.TS_DATE, new String[] {"data.documents SteelBlue"}, new String[] {});
         final String graph = requestsTableViewer.render2html(Searchlab.GRAPH_WIDTH, Searchlab.GRAPH_HEIGHT, true);
         return new ServiceResponse(graph);

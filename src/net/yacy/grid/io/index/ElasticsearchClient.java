@@ -1001,10 +1001,11 @@ public class ElasticsearchClient implements FulltextIndex {
         return result;
     }
 
-    public List<Map<String, Object>> queryWithCompare(final String indexName, final String compvName, final Date compvValue) {
+    public List<Map<String, Object>> queryWithCompare(final String indexName, final String compvName, final Date compvValue, final String... fields) {
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
                 .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setFrom(0);
+                .setFrom(0).setSize(10000);
+        if (fields != null && fields.length > 0) request.setFetchSource(fields, null);
 
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gte(DateParser.iso8601MillisFormat.format(compvValue)).includeLower(true))); // value like "2014-10-21T20:03:12.963" "2022-03-30T02:03:03.214Z"
@@ -1024,10 +1025,11 @@ public class ElasticsearchClient implements FulltextIndex {
         return result;
     }
 
-    public List<Map<String, Object>> queryWithCompare(final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue) {
+    public List<Map<String, Object>> queryWithCompare(final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue, final String... fields) {
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
                 .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setFrom(0);
+                .setFrom(0).setSize(10000);
+        if (fields != null && fields.length > 0) request.setFetchSource(fields, null);
 
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(facetName, facetValue)));

@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import eu.searchlab.Searchlab;
 import eu.searchlab.storage.table.TimeSeriesTable;
 import eu.searchlab.tools.DateParser;
+import eu.searchlab.tools.Logger;
 
 public class IndexDAO {
 
@@ -46,8 +47,10 @@ public class IndexDAO {
 
     public static enum Timeframe {
         per10minutes(1000L, 600), // 600 seconds / 10 minutes, 1 second per step, 600 steps
-        per10hours(60000L, 600), // 600 minutes / 10 hours, 1 minute per step, 600 steps
-        per10days(24L * 60000L, 600); // 240 hours / 10 days, 24 minutes per step, 600 steps
+        per1hour(6L * 1000L, 600), // 6 * 10 minutes
+        per1day(24L * 6000L, 600), // 24 * 1 hour
+        per1month(30L * 24L * 6000L, 600), // 30 * 1 day
+        per1year(365L * 24L * 6000L, 600); // 365 * 1 day
         long steplength;
         int stepcount;
         long framelength;
@@ -68,7 +71,7 @@ public class IndexDAO {
             getIndexDocumentCount(user_id);
             tc = knownDocumentCount.get(user_id);
         }
-        final int indexTimeForDocumentCount = (int) ((now - tc.time) / timeframe.steplength);
+        final int indexTimeForDocumentCount = (int) (Math.max(0, now - tc.time) / timeframe.steplength); // there is a slight chance that tc.time is a bit (just milliseconds) larger than 'now'
         assert indexTimeForDocumentCount >= 0;
         assert indexTimeForDocumentCount < timeframe.stepcount;
 
@@ -76,18 +79,31 @@ public class IndexDAO {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final Date fromDate = new Date(now - timeframe.framelength);
         final String dateField = WebMapping.load_date_dt.getMapping().name(); // like "load_date_dt": "2022-03-30T02:03:03.214Z",
-        final List<Map<String, Object>> documents = user_id.equals("en") ? Searchlab.ec.queryWithCompare(index_name, dateField, fromDate) : Searchlab.ec.queryWithCompare(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate);
+        final String[] dataFields = new String[] {WebMapping.load_date_dt.getMapping().name()};
+        //final String[] dataFields = new String[] {WebMapping.fresh_date_dt.getMapping().name(), WebMapping.last_modified.getMapping().name(), WebMapping.load_date_dt.getMapping().name()};
+
+        final List<Map<String, Object>> documents = user_id.equals("en") ? Searchlab.ec.queryWithCompare(index_name, dateField, fromDate, dataFields) : Searchlab.ec.queryWithCompare(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate, dataFields);
+
+        Logger.info("CountHistogram for " + timeframe.name() + " from " + fromDate.toString() + " to " + (new Date(now)).toString() + ": " + documents.size() + " documents.");
 
         // aggregate the documents to counts per second
         final long[] counts = new long[timeframe.stepcount]; for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
+
         for (final Map<String, Object> map: documents) {
+            /*
+            for (final Map.Entry<String, Object> entry: map.entrySet()) {
+                if (entry.getKey().endsWith("_dt") || entry.getKey().equals("last_modified")) {
+                    Logger.info(entry.getKey() + ": " + entry.getValue().toString());
+                }
+            }
+            */
             final String dates = (String) map.get(dateField);
             final Date date = DateParser.iso8601MillisParser(dates);
 
             // aggregate statistics about number of indexed documents by one for that indexTime
             if (date != null) {
-                // the increment time is a number from 0..599 which represents the time 0=now/last minute; 599=oldest/10 minutes in the past
-                final int indexTime = Math.max(0, (int) ((now - date.getTime()) / timeframe.steplength));
+                // the increment time is a number from 0..599 which represents the time 0:=now/last minute; 599:=oldest == x minutes/days/years in the past
+                final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) ((now - date.getTime()) / timeframe.steplength)));
                 // we increment the count at the incrementTime to reflect
                 counts[indexTime]++;
             }
@@ -95,13 +111,13 @@ public class IndexDAO {
 
         // find the count offset for the indexTimeForDocumentCount position and correct the counts using the time count info
         counts[indexTimeForDocumentCount] += tc.count;
-        for (int i = indexTimeForDocumentCount; i >= 0; i--) {
-            // go forward in time -> index increases
-            counts[i] += counts[i + 1];
+        for (int i = indexTimeForDocumentCount - 1; i >= 0; i--) {
+            // go forward (SIC!) in time -> index increases
+            counts[i] = counts[i + 1] + counts[i];
         }
         for (int i = indexTimeForDocumentCount + 1; i < timeframe.stepcount; i++) {
-            // go backward i time -> index decreases
-            counts[i] -= counts[i - 1];
+            // go backward (SIC!) in time -> index decreases
+            counts[i] = counts[i - 1] - counts[i];
         }
 
         // make a time series
