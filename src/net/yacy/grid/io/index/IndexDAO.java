@@ -98,14 +98,18 @@ public class IndexDAO {
             }
             */
             final String dates = (String) map.get(dateField);
-            final Date date = DateParser.iso8601MillisParser(dates);
+            try {
+                final Date date = DateParser.iso8601MillisParser(dates);
 
-            // aggregate statistics about number of indexed documents by one for that indexTime
-            if (date != null) {
-                // the increment time is a number from 0..599 which represents the time 0:=now/last minute; 599:=oldest == x minutes/days/years in the past
-                final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) ((now - date.getTime()) / timeframe.steplength)));
-                // we increment the count at the incrementTime to reflect
-                counts[indexTime]++;
+                // aggregate statistics about number of indexed documents by one for that indexTime
+                if (date != null) {
+                    // the increment time is a number from 0..599 which represents the time 0:=now/last minute; 599:=oldest == x minutes/days/years in the past
+                    final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) ((now - date.getTime()) / timeframe.steplength)));
+                    // we increment the count at the incrementTime to reflect
+                    counts[indexTime]++;
+                }
+            } catch (final Exception e) {
+                Logger.warn(e);
             }
         }
 
