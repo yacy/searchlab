@@ -40,6 +40,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -103,6 +104,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         String userPatreonLogin = "";
         String userName = "";
         String userEmail = "";
+        String userPatreonId = "";
         final String userLocationName = "";
         final String userTwitterUsername = "";
 
@@ -147,6 +149,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 Logger.info("json = " + json.toString());
                 final JSONObject data = json.optJSONObject("data");
                 if (data != null) {
+                	userPatreonId = data.optString("id");
                     final JSONObject attributes = data.getJSONObject("attributes");
                     userEmail = attributes.optString("email", "");
                     userName = attributes.optString("full_name", "");
@@ -173,6 +176,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 authentication = new Authentication();
                 authentication.setEmail(userEmail);
             }
+            authentication.setPatreonId(userPatreonId);
             authentication.setPatreonLogin(userPatreonLogin);
             authentication.setName(userName);
             authentication.setVisitDate(new Date());
@@ -183,7 +187,7 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
             final String cookie = authorization.toString();
             serviceResponse.addSessionCookie(WebServer.COOKIE_USER_ID_NAME, cookie);
 
-            // create an enry in two databases:
+            // create an entry in two databases:
             // - authentication to store the user credentials
             Searchlab.userDB.setAuthentication(authentication);
             // - authorization with cookie entry to give user access and operation right when accessing further webpages

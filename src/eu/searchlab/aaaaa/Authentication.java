@@ -274,6 +274,21 @@ public class Authentication {
         return this.json.optString("login_patreon", "");
     }
 
+    public Authentication setPatreonId(final String patreon_id) throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        try {
+            this.json.put("id_patreon", patreon_id);
+        } catch (final JSONException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return this;
+    }
+
+    public String getPatreonId() throws RuntimeException {
+        if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        return this.json.optString("id_patreon", "");
+    }
+
     public Authentication setPatreonSponsor(final String patreon_sponsor) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
         try {
