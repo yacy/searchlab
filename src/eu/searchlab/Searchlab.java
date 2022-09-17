@@ -78,7 +78,9 @@ public class Searchlab {
     public static UserDB userDB;
     public static AccountingTS accounting;
     public static AuthorizationTS authorization;
-    public static String github_client_id, github_client_secret, patreon_client_id, patreon_client_secret;
+    public static String
+    	github_client_id, github_client_secret,
+    	patreon_client_id, patreon_client_secret, patreon_access_token;
 
     // Cron Tooling
     public static UserAudit userAudit;
@@ -197,6 +199,7 @@ public class Searchlab {
         github_client_secret  = System.getProperty("github.client.secret", "");
         patreon_client_id     = System.getProperty("patreon.client.id", "");
         patreon_client_secret = System.getProperty("patreon.client.secret", "");
+        patreon_access_token  = System.getProperty("patreon.access.token", "");
 
         new Thread() {
             @Override
