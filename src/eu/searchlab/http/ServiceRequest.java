@@ -275,6 +275,11 @@ public final class ServiceRequest {
         if (this.user == null || this.user.length() <= 2 || !Authentication.isValid(this.user)) return Grade.L00_Everyone;
         if (!isAuthorized()) return Grade.L01_Anonymous;
         if (Authorization.maintainers.contains(getUser())) return Grade.L08_Maintainer;
+        final Authentication auth = this.getAuthentication(); // load authenication from user db if not done already
+        if (auth != null) {
+            final Grade grade = auth.getSponsorGrade();
+            if (grade.level > Grade.L02_Authenticated.level) return grade;
+        }
         return Grade.L02_Authenticated;
     }
 

@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
@@ -107,6 +109,8 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
         String userPatreonId = "";
         final String userLocationName = "";
         final String userTwitterUsername = "";
+        final Set<String> pledgeids = new HashSet<>();
+        final Set<String> rewardids = new HashSet<>();
 
         try {
             //final HttpClient httpclient = HttpClients.createDefault();
@@ -146,14 +150,42 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
                 entity = response.getEntity();
                 final String t = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
                 final JSONObject json = new JSONObject(new JSONTokener(t));
-                Logger.info("json = " + json.toString());
+                Logger.info("json = " + json.toString(2));
                 final JSONObject data = json.optJSONObject("data");
                 if (data != null) {
-                	userPatreonId = data.optString("id");
+                    userPatreonId = data.optString("id");
+                    final JSONObject relationships = data.optJSONObject("relationships");
+                    if (relationships != null) {
+                        final JSONObject pledges = relationships.optJSONObject("pledges");
+                        if (pledges != null) {
+                            final JSONArray pledgesdata = pledges.optJSONArray("data");
+                            for (int i = 0; i < pledgesdata.length(); i++) {
+                                final JSONObject pledge = pledgesdata.getJSONObject(i);
+                                final String id = pledge.getString("id");
+                                //final String type = pledge.getString("type");
+                                pledgeids.add(id);
+                            }
+                        }
+                    }
+
                     final JSONObject attributes = data.getJSONObject("attributes");
                     userEmail = attributes.optString("email", "");
                     userName = attributes.optString("full_name", "");
                     userPatreonLogin = data.optString("vanity", "");
+                }
+                final JSONArray included = json.optJSONArray("included");
+                if (included != null) {
+                    for (int i = 0; i < included.length(); i++) {
+                        final JSONObject relationships = included.getJSONObject(i).optJSONObject("relationships");
+                        if (relationships != null) {
+                            final JSONObject reward = relationships.optJSONObject("reward");
+                            if (reward != null) {
+                                final JSONObject rewarddata = reward.optJSONObject("data");
+                                final String id = rewarddata.optString("id");
+                                rewardids.add(id);
+                            }
+                        }
+                    }
                 }
                 if ("null".equals(userEmail)) userEmail = "";
             }
@@ -180,6 +212,9 @@ public class OAuthPatreonCallback  extends AbstractService implements Service {
             authentication.setPatreonLogin(userPatreonLogin);
             authentication.setName(userName);
             authentication.setVisitDate(new Date());
+
+            // check rewardids and assign sponsoring status
+            authentication.setPatreonSponsorRewardids(rewardids);
 
             // create an authorization cookie
             final String id = authentication.getID();

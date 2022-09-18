@@ -27,10 +27,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.aaaaa.Authorization.Grade;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 
@@ -128,7 +130,7 @@ public class Authentication {
         }
     }
 
-    public Authentication setVisitDate(Date date) throws RuntimeException {
+    public Authentication setVisitDate(final Date date) throws RuntimeException {
         try {this.json.put("date_visit", DateParser.minuteDateFormat.format(date));} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -243,6 +245,7 @@ public class Authentication {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
         try {
             this.json.put("sponsor_github_approved", approved);
+            this.json.put("sponsor_level", Authorization.Grade.L04_Level_Five.name()); // right now we can only approve level five
         } catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -252,6 +255,17 @@ public class Authentication {
     public boolean getGithubSponsorApproved() throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
         return this.json.optBoolean("sponsor_github_approved", false);
+    }
+
+    public Grade getSponsorGrade() {
+        final String sponsor_level = this.json.optString("sponsor_level");
+        if (sponsor_level == null) return Authorization.Grade.L00_Everyone;
+        try {
+            final Grade grade = Authorization.Grade.valueOf(sponsor_level);
+            return grade;
+        } catch (final RuntimeException e) {
+            return Authorization.Grade.L00_Everyone;
+        }
     }
 
     public Authentication setPatreonLogin(final String patreon_login) throws RuntimeException {
@@ -304,10 +318,28 @@ public class Authentication {
         return this.json.optString("sponsor_patreon", "");
     }
 
-    public Authentication setPatreonSponsorApproved(final boolean approved) throws RuntimeException {
+    public Authentication setPatreonSponsorRewardids(final Set<String> rewardids) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
+        // find out if any of the acl-defined reward ids match with the given one
+        final JSONObject acl = Authorization.getACL();
+        final JSONArray levels = acl.optJSONArray("levels");
+        for (int i = 0; i < levels.length(); i++) {
+            final JSONObject level = levels.optJSONObject(i);
+            final String patreonID = level.optString("patreonID");
+            final String levelName = level.optString("level");
+            if (rewardids.contains(patreonID)) {
+                try {
+                    this.json.put("sponsor_patreon_approved", true);
+                    this.json.put("sponsor_level", levelName);
+                } catch (final JSONException e) {
+                    throw new RuntimeException(e.getMessage());
+                }
+                return this;
+            }
+        }
+        // fail;
         try {
-            this.json.put("sponsor_patreon_approved", approved);
+            this.json.put("sponsor_patreon_approved", false);
         } catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }
