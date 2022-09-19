@@ -35,26 +35,26 @@
 </div>
 
 <div class="form-group">
-    <label for="email">Patreon Account</label>
-    <input class="form-control" name="sponsor_patreon" id="sponsor_patreon" type="text" size="50" maxlength="256" value="{{authentication.sponsor_patreon}}" />
+    <label for="sponsor_patreon">Patreon Account</label>
+    <input class="form-control" name="sponsor_patreon" id="sponsor_patreon" type="text" size="50" maxlength="256" value="{{authentication.sponsor_patreon}}" disabled />
     <p class="help-block">The connected patreon account</p>
 </div>
 
 <div class="checkbox">
-  <label>Verified Patreon Account</label>
-  <input type="checkbox" name="sponsor_patreon_verified" id="sponsor_patreon_verified" {{#if authentication.sponsor_patreon_verified}}checked="false"{{/if}} disabled>
+  <label for="sponsor_patreon_approved">Verified Patreon Account</label>
+  <input type="checkbox" name="sponsor_patreon_approved" id="sponsor_patreon_approved" {{#if authentication.sponsor_patreon_approved}}checked="false"{{/if}} disabled>
   <p class="help-block">If this is switched on, your patreon account was verified.</p>
 </div>
 
 <div class="form-group">
-    <label for="email">Github Sponsor Account</label>
-    <input class="form-control" name="sponsor_github" id="sponsor_github" type="text" size="50" maxlength="256" value="{{authentication.sponsor_github}}" />
+    <label for="sponsor_github">Github Sponsor Account</label>
+    <input class="form-control" name="sponsor_github" id="sponsor_github" type="text" size="50" maxlength="256" value="{{authentication.sponsor_github}}" disabled />
     <p class="help-block">The connected github sponsor account</p>
 </div>
 
 <div class="checkbox">
-  <label>Verified Github Sponsor Account</label>
-  <input type="checkbox" name="sponsor_github_verified" id="sponsor_github_verified" {{#if authentication.sponsor_github_verified}}checked="false"{{/if}} disabled>
+  <label for="sponsor_github_approved">Verified Github Sponsor Account</label>
+  <input type="checkbox" name="sponsor_github_approved" id="sponsor_github_approved" {{#if authentication.sponsor_github_approved}}checked="false"{{/if}} disabled>
   <p class="help-block">If this is switched on, your github sponsor account was verified. If this is off and you believe it should be on, try to log out and log in again!</p>
 </div>
 

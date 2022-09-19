@@ -73,6 +73,9 @@ public class HomeService  extends AbstractService implements Service {
         // read new settings
         final JSONObject post = serviceRequest.getPost();
         if (post.has("change")) {
+            // we do not allow changing of the sponsor account because that is done with logging in with that account
+            // furthermore patreon sponsor accounts do not have a nickname
+            /*
             final String sponsor_github = post.optString("sponsor_github", null);
             if (sponsor_github != null) {
                 authentication.setGithubSponsor(sponsor_github);
@@ -81,6 +84,7 @@ public class HomeService  extends AbstractService implements Service {
             if (sponsor_patreon != null) {
                 authentication.setPatreonSponsor(sponsor_patreon);
             }
+            */
             final boolean self = "on".equals(post.optString("self", "off"));
             authentication.setSelf(self);
 
@@ -121,7 +125,7 @@ public class HomeService  extends AbstractService implements Service {
             if (authorization != null) json.put("authorization", authorization.getJSON());
             json.put("authentication", authentication.getJSON());
             json.put("acl", serviceRequest.getACL());
-            Logger.info("DEBUG json = " + json.toString(2));
+            //Logger.info("DEBUG json = " + json.toString(2));
         } catch (final JSONException e) {
             Logger.warn(e);
         }
