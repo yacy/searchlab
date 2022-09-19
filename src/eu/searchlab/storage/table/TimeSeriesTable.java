@@ -30,13 +30,12 @@ import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TableViewer.GraphTypes;
 import eu.searchlab.tools.DateParser;
-
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
 import tech.tablesaw.api.LongColumn;
+import tech.tablesaw.api.Row;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
-import tech.tablesaw.api.Row;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.plotly.traces.ScatterTrace;
 
@@ -52,6 +51,7 @@ public class TimeSeriesTable {
 
     public final static String TS_TIME   = "ts.time";
     public final static String TS_DATE   = "ts.date"; // ISO8601 format yyyy-MM-dd HH:mm:ss
+
 
     private TimeSeriesTable() {
         this.tsTimeCol   = InstantColumn.create(TS_TIME);
@@ -203,6 +203,53 @@ public class TimeSeriesTable {
     }
 
     /**
+     * make an empty clone of this TimeSeriesTable
+     * @return a new TimeSeriesTable with the same column types as this table
+     */
+    public TimeSeriesTable emptyClone() {
+        final String[] viewColNames = new String[this.viewCols.length], metaColNames = new String[this.metaCols.length], dataColNames = new String[this.dataCols.length];
+        for (int i = 0; i < viewColNames.length; i++) viewColNames[i] = this.viewCols[i].name();
+        for (int i = 0; i < metaColNames.length; i++) metaColNames[i] = this.metaCols[i].name();
+        for (int i = 0; i < dataColNames.length; i++) dataColNames[i] = this.dataCols[i].name();
+        final boolean dataIsDouble = this.dataCols[0] instanceof DoubleColumn;
+        final TimeSeriesTable clone = new TimeSeriesTable(viewColNames, metaColNames, dataColNames, dataIsDouble);
+        return clone;
+    }
+
+    /**
+     * make a copy of this TimeSeriesTable where all values are aggregated over time
+     * @return
+     */
+    public TimeSeriesTable aggregation() {
+        final TimeSeriesTable aggregation = emptyClone();
+        final boolean dataIsDouble = this.dataCols[0] instanceof DoubleColumn;
+        if (dataIsDouble) {
+            final double[] a = new double[this.dataCols.length];
+            for (int i = 0; i < a.length; i++) a[i] = 0.0d;
+            for (int row = 0; row < this.size(); row++) {
+                final long time = getTime(row);
+                final String[] view = getView(row);
+                final String[] meta = getMeta(row);
+                final double[] data = getDouble(row);
+                for (int i = 0; i < a.length; i++) a[i] += data[i];
+                aggregation.addValues(time, view, meta, a);
+            }
+        } else {
+            final long[] a = new long[this.dataCols.length];
+            for (int i = 0; i < a.length; i++) a[i] = 0L;
+            for (int row = 0; row < this.size(); row++) {
+                final long time = getTime(row);
+                final String[] view = getView(row);
+                final String[] meta = getMeta(row);
+                final long[] data = getLong(row);
+                for (int i = 0; i < a.length; i++) a[i] += data[i];
+                aggregation.addValues(time, view, meta, a);
+            }
+        }
+        return aggregation;
+    }
+
+    /**
      * write a table to csv file
      * @param io
      * @param iop
@@ -221,8 +268,8 @@ public class TimeSeriesTable {
             if (t >= time) {
                 final Table ntable = this.table.table().emptyCopy();
                 for (int k = i; k < this.table.rowCount(); k++) {
-                	Row row = this.table.row(k);
-                	ntable.append(row);
+                    final Row row = this.table.row(k);
+                    ntable.append(row);
                 }
                 this.tsTimeCol = ntable.instantColumn(TS_TIME);
                 this.tsDateCol = ntable.stringColumn(TS_DATE);
@@ -232,9 +279,9 @@ public class TimeSeriesTable {
                 this.table = new IndexedTable(ntable);
                 return;
             }
-        } catch (DateTimeException e) {
-    		continue loop;
-    	}
+        } catch (final DateTimeException e) {
+            continue loop;
+        }
     }
 
     public boolean checkShape(final String[] view, final String[] meta, final long[] data) {
@@ -310,8 +357,6 @@ public class TimeSeriesTable {
         }
     }
 
-
-
     public String[] getMetaWhere(final String[] view) {
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with view constraints
@@ -356,10 +401,6 @@ public class TimeSeriesTable {
         return null;
     }
 
-    public long getTime(final int row) {
-        return this.tsTimeCol.getLongInternal(row);
-    }
-
     public long getFirstTime() {
         return getTime(0);
     }
@@ -367,6 +408,30 @@ public class TimeSeriesTable {
     public long getLastTime() {
         final int row = this.table.size() - 1;
         return getTime(row);
+    }
+
+    public long getTime(final int row) {
+        return this.tsTimeCol.get(row).getEpochSecond() * 1000L;
+    }
+
+    public String[] getView(final int row) {
+        final String[] s = new String[this.viewCols.length];
+        int c = 0;
+        for (int i = 0; i < this.viewCols.length; i++) {
+            s[c] = ((StringColumn) this.viewCols[i]).getString(row);
+            c++;
+        }
+        return s;
+    }
+
+    public String[] getMeta(final int row) {
+        final String[] s = new String[this.metaCols.length];
+        int c = 0;
+        for (int i = 0; i < this.metaCols.length; i++) {
+            s[c] = ((StringColumn) this.metaCols[i]).getString(row);
+            c++;
+        }
+        return s;
     }
 
     public double[] getDouble(final int row) {

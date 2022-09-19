@@ -48,7 +48,7 @@ public class UserAudit implements FrequencyTask {
     private final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> lastSeen;
     private final ConcurrentIO cio;
     private final IOPath requestsIOp, visitorsIOp;
-    private TimeSeriesTable requestsTable, visitorsTable;
+    private TimeSeriesTable requestsTable, visitorsTable, visitorsTableAggregated;
     private long requestsTableModified, visitorsTableModified;
 
     public UserAudit(final GenericIO io, final IOPath requestsIOp, final IOPath visitorsIOp) throws IOException {
@@ -61,6 +61,7 @@ public class UserAudit implements FrequencyTask {
         if (io.exists(requestsIOp)) try {this.requestsTable = new TimeSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
         this.requestsTableModified = System.currentTimeMillis();
         this.visitorsTable = new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
+        this.visitorsTableAggregated = new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
         Logger.info("loading " + visitorsIOp.toString());
         if (io.exists(visitorsIOp)) try {this.visitorsTable = new TimeSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
         this.visitorsTableModified = System.currentTimeMillis();
@@ -91,7 +92,7 @@ public class UserAudit implements FrequencyTask {
             final long modified = this.cio.getIO().lastModified(this.requestsIOp);
             if (modified > this.requestsTableModified) {
                 this.requestsTable = new TimeSeriesTable(this.cio, this.requestsIOp, false);
-                this.requestsTableModified = System.currentTimeMillis();
+                this.requestsTableModified = now;
             }
         } catch (final IOException e) {
         }
@@ -99,7 +100,7 @@ public class UserAudit implements FrequencyTask {
             final long modified = this.cio.getIO().lastModified(this.visitorsIOp);
             if (modified > this.visitorsTableModified) {
                 this.visitorsTable = new TimeSeriesTable(this.cio, this.visitorsIOp, false);
-                this.visitorsTableModified = System.currentTimeMillis();
+                this.visitorsTableModified = now;
             }
         } catch (final IOException e) {
         }
@@ -121,20 +122,26 @@ public class UserAudit implements FrequencyTask {
         if (sizeAfter > sizeBeforeRequest) {
             // store the table
             this.requestsTable.storeCSV(this.cio, this.requestsIOp);
-            this.requestsTableModified = System.currentTimeMillis();
+            this.requestsTableModified = now;
         }
 
         sizeAfter = this.visitorsTable.size();
         if (sizeAfter > sizeBeforeVisitor) {
             // store the table
             this.visitorsTable.storeCSV(this.cio, this.visitorsIOp);
-            this.visitorsTableModified = System.currentTimeMillis();
+            this.visitorsTableModified = now;
         }
+
+        // make aggregation of visitorsTable into visitorsTableAggregated
+        this.visitorsTableAggregated = this.visitorsTable.aggregation();
 
         // paint a graph
         final TableViewer requestsTableViewer = this.requestsTable.getGraph("requests_per_minute", "Requests per Minute", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.requests SteelBlue"}, new String[] {});
         Searchlab.htmlPanel.put("requests_per_minute", requestsTableViewer);
         final TableViewer visitorsTableViewer = this.visitorsTable.getGraph("visitors_per_minute", "Pseudo-Unique Visitors per Minute", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
         Searchlab.htmlPanel.put("visitors_per_minute", visitorsTableViewer);
+        final TableViewer visitorsTableViewerAggregated = this.visitorsTableAggregated.getGraph("visitors_per_minute_aggregated", "Pseudo-Unique Visitors per Minute (aggregated)", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
+        Searchlab.htmlPanel.put("visitors_per_minute_aggregated", visitorsTableViewerAggregated);
     }
+
 }
