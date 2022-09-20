@@ -240,6 +240,10 @@ public class IndexedTable implements Iterable<JSONObject> {
         return new IndexedTable(e);
     }
 
+    public IndexedTable sort() {
+        return new IndexedTable(this.table.sortAscendingOn(this.table.column(0).name()));
+    }
+
     private void addValue(final Column<?> column, final Object object) throws ParseException {
         if (column instanceof LongColumn) {
             if (object instanceof Integer) {((LongColumn) column).append(((Integer) object).longValue()); return;}

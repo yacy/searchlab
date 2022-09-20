@@ -75,6 +75,7 @@ import eu.searchlab.http.services.index.IndexStatusService;
 import eu.searchlab.http.services.index.SuggestService;
 import eu.searchlab.http.services.index.YaCySearchService;
 import eu.searchlab.http.services.info.ACLService;
+import eu.searchlab.http.services.info.CrawlStartHistogramService;
 import eu.searchlab.http.services.info.GraphGetService;
 import eu.searchlab.http.services.info.IndexSizeHistogramService;
 import eu.searchlab.http.services.info.LogService;
@@ -163,6 +164,7 @@ public class WebServer {
         ServiceMap.register(new IndexDeletionService());
         ServiceMap.register(new GraphGetService());
         ServiceMap.register(new IndexSizeHistogramService());
+        ServiceMap.register(new CrawlStartHistogramService());
 
         // Start webserver
         final PathHandler ph = Handlers.path();

@@ -216,6 +216,15 @@ public class TimeSeriesTable {
         return clone;
     }
 
+    public void sort() {
+        this.table = this.table.sort();
+        this.tsTimeCol = (InstantColumn) this.table.column(0);
+        this.tsDateCol = (StringColumn) this.table.column(1);
+        for (int i = 0; i < this.viewCols.length; i++) this.viewCols[i] = (StringColumn) this.table.column(i + 2);
+        for (int i = 0; i < this.metaCols.length; i++) this.metaCols[i] = (StringColumn) this.table.column(i + 2 + this.viewCols.length);
+        for (int i = 0; i < this.dataCols.length; i++) this.dataCols[i] = this.table.column(i + 2 + this.viewCols.length + this.metaCols.length);
+    }
+
     /**
      * make a copy of this TimeSeriesTable where all values are aggregated over time
      * @return

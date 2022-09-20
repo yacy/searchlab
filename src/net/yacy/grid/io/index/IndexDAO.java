@@ -134,6 +134,26 @@ public class IndexDAO {
         return tst;
     }
 
+    public static TimeSeriesTable getCrawlstartHistorgramAggregation() {
+        // get list of all documents that have been created in the last 10 minutes
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.crawlstart", ElasticsearchClient.DEFAULT_INDEXNAME_CRAWLSTART);
+        final List<Map<String, Object>> documents = Searchlab.ec.queryAll(index_name);
+        final String dateField = CrawlstartMapping.init_date_dt.getMapping().name(); // like "init_date_dt": "2022-08-18T21:58:28.918Z",
+        TimeSeriesTable tst = new TimeSeriesTable(new String[] {}, new String[] {}, new String[] {"data.crawlstarts"}, false);
+        for (final Map<String, Object> map: documents) {
+            final String dates = (String) map.get(dateField);
+            try {
+                final Date date = DateParser.iso8601MillisParser(dates);
+                tst.addValues(date.getTime(), new String[0], new String[0], new long[] {1});
+            } catch (final Exception e) {
+                Logger.warn(e);
+            }
+        }
+        tst.sort();
+        tst = tst.aggregation();
+        return tst;
+    }
+
     public static long getIndexDocumentCollectionCount(final String user_id) {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final long collections = Searchlab.ec.aggregationCount(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, WebMapping.collection_sxt.getMapping().name());

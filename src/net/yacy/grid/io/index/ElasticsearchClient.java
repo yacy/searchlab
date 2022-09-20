@@ -1001,6 +1001,28 @@ public class ElasticsearchClient implements FulltextIndex {
         return result;
     }
 
+    public List<Map<String, Object>> queryAll(final String indexName) {
+        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setFrom(0).setSize(10000);
+
+        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+        request.setQuery(bFilter);
+
+        // get response
+        final SearchResponse response = request.execute().actionGet();
+
+        // evaluate search result
+        final ArrayList<Map<String, Object>> result = new ArrayList<>();
+        final SearchHit[] hits = response.getHits().getHits();
+        for (final SearchHit hit: hits) {
+            final Map<String, Object> map = hit.getSourceAsMap();
+            result.add(map);
+        }
+
+        return result;
+    }
+
     public List<Map<String, Object>> queryWithCompare(final String indexName, final String compvName, final Date compvValue, final String... fields) {
         final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
                 .setSearchType(SearchType.QUERY_THEN_FETCH)
