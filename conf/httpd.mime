@@ -45,6 +45,7 @@ jpeg    = image/jpeg
 jpg     = image/jpeg
 js      = text/javascript
 json    = application/json
+jsonp   = application/javascript
 jsonlist= text/plain
 jsp     = text/html
 kml     = application/vnd.google-earth.kml+xml

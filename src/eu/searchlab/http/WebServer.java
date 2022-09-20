@@ -119,7 +119,7 @@ public class WebServer {
             APPS_PATH = new File(new File(new File(".").getCanonicalFile().getParentFile(), "searchlab_apps"), "htdocs").getCanonicalFile();
             HTDOCS_PATH = new File("htdocs");
         } catch (final IOException e) {
-            Logger.error("failed loading defaults/httpd.mime", e);
+            Logger.error("failed initializing web server", e);
         }
     }
 
@@ -194,6 +194,7 @@ public class WebServer {
 
             // process header
             final HeaderMap responseHeader = exchange.getResponseHeaders();
+            responseHeader.put(new HttpString("X-Content-Type-Options"), "nosniff"); // no evaluation of content by the browser, trust MIME type as given
             responseHeader.put(new HttpString("Access-Control-Allow-Origin"), "*");
             responseHeader.put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
             responseHeader.put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Methods, Access-Control-Request-Headers");
