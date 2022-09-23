@@ -21,6 +21,7 @@ package eu.searchlab.tools;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -42,6 +43,7 @@ public class Logger {
     private static final Map<String, org.slf4j.Logger> logger = new ConcurrentHashMap<>();
     private static final org.slf4j.Logger dfltLogger = org.slf4j.LoggerFactory.getLogger("default");
     private static final String logFormat = "%1$-7s [%2$s] %3$-48s %4$s%5$s%n";
+    private static final SimpleDateFormat iso8601MillisParser = DateParser.iso8601MillisParser();
 
     static {
         final StreamHandler sh = new ConsoleHandler();
@@ -125,10 +127,10 @@ public class Logger {
             throwable = sw.toString();
         }
 
-        synchronized(DateParser.iso8601MillisFormat) {
+        synchronized(iso8601MillisParser) {
             final String line = String.format(logFormat,
                 levelName,
-                DateParser.iso8601MillisFormat.format(dat), // this is date_optional_time in elastic
+                iso8601MillisParser.format(dat), // this is date_optional_time in elastic
                 className,
                 message,
                 throwable);

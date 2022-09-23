@@ -48,13 +48,15 @@ public class IndexSizeHistogramService extends AbstractService implements Servic
         final String id = serviceRequest.getUser();
         final String path = serviceRequest.getPath();
         TimeSeriesTable tst = null;
+        IndexDAO.Timeframe timeframe = IndexDAO.Timeframe.per10hour;
+        if (path.endsWith("_per10hour.html")) timeframe = IndexDAO.Timeframe.per10hour;
+        if (path.endsWith("_per1day.html"))   timeframe = IndexDAO.Timeframe.per1day;
+        if (path.endsWith("_per1week.html"))  timeframe = IndexDAO.Timeframe.per1week;
+        if (path.endsWith("_per1month.html")) timeframe = IndexDAO.Timeframe.per1month;
+        if (path.endsWith("_per1year.html"))  timeframe = IndexDAO.Timeframe.per1year;
 
-        if (path.endsWith("_per10minutes.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per10minutes);
-        if (path.endsWith("_per1hour.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1hour);
-        if (path.endsWith("_per1day.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1day);
-        if (path.endsWith("_per1month.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1month);
-        if (path.endsWith("_per1year.html")) tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, IndexDAO.Timeframe.per1year);
-        final TableViewer requestsTableViewer = tst.getGraph("index_size_" + id, "Index Size for user " + id, "Date", TimeSeriesTable.TS_DATE, new String[] {"data.documents SteelBlue"}, new String[] {});
+        tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, timeframe);
+        final TableViewer requestsTableViewer = tst.getGraph("index_size_" + id, "Index Size For User '" + id + "' Within " + timeframe.name, "Date", TimeSeriesTable.TS_DATE, new String[] {"data.documents SteelBlue"}, new String[] {});
         final String graph = requestsTableViewer.render2html(Searchlab.GRAPH_WIDTH, Searchlab.GRAPH_HEIGHT, true);
         return new ServiceResponse(graph);
     }

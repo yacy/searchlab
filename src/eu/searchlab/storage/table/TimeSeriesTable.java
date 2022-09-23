@@ -22,6 +22,7 @@ package eu.searchlab.storage.table;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Date;
@@ -30,6 +31,7 @@ import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TableViewer.GraphTypes;
 import eu.searchlab.tools.DateParser;
+import eu.searchlab.tools.Logger;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
 import tech.tablesaw.api.LongColumn;
@@ -39,6 +41,10 @@ import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.plotly.traces.ScatterTrace;
 
+/**
+ * Time Series Table for by-minute time series:
+ * every entry gets a time stamp with minute-precision.
+ */
 public class TimeSeriesTable {
 
     public IndexedTable table;
@@ -150,6 +156,7 @@ public class TimeSeriesTable {
         String lastd = "";
         long lastt = 0;
         final long now = System.currentTimeMillis();
+        final SimpleDateFormat minuteDateFormatParser = DateParser.minuteDateFormatParser();
         for (int i = 0; i < this.tsDateCol.size(); i++) {
             String d = this.tsDateCol.get(i);
             long t = this.tsTimeCol.get(i).toEpochMilli();
@@ -164,7 +171,7 @@ public class TimeSeriesTable {
                     d = lastd;
                     t = lastt;
                 } else {
-                    d = DateParser.minuteDateFormat.format(new Date(t));
+                    d = minuteDateFormatParser.format(new Date(t));
                 }
                 this.tsTimeCol.set(i, Instant.ofEpochMilli(t));
                 this.tsDateCol.set(i, d);
@@ -185,7 +192,7 @@ public class TimeSeriesTable {
 
         // clean up old rows
         try {
-            final Date cut = DateParser.minuteDateFormat.parse("2022-05-29 00:00");
+            final Date cut = minuteDateFormatParser.parse("2022-05-29 00:00");
             this.deleteBefore(cut.getTime());
         } catch (final ParseException e) {
         }
@@ -307,20 +314,27 @@ public class TimeSeriesTable {
     }
 
     public void addValues(final long time, final String[] view, final String[] meta, final double[] data) {
+        assert time > 0 : "time = " + time;
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
         this.tsTimeCol.append(Instant.ofEpochMilli(time));
-        this.tsDateCol.append(DateParser.minuteDateFormat.format(new Date(time)));
+        this.tsDateCol.append(DateParser.minuteDateFormatParser().format(new Date(time)));
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
         for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).append(data[i]);
     }
 
     public void addValues(final long time, final String[] view, final String[] meta, final long[] data) {
+        assert time > 0 : "time = " + time;
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
 
         this.tsTimeCol.append(Instant.ofEpochMilli(time));
-        this.tsDateCol.append(DateParser.minuteDateFormat.format(new Date(time)));
+        try {
+            this.tsDateCol.append(DateParser.minuteDateFormatParser().format(new Date(time)));
+        } catch (final Exception e) {
+            Logger.warn("date formatting problem with time = " + time, e);
+            throw e;
+        }
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
         for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).append(data[i]);
@@ -331,6 +345,7 @@ public class TimeSeriesTable {
     }
 
     public void setValuesWhere(final long time, final String[] view, final String[] meta, final double[] data) {
+        assert time > 0 : "time = " + time;
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints
@@ -349,6 +364,7 @@ public class TimeSeriesTable {
     }
 
     public void setValuesWhere(final long time, final String[] view, final String[] meta, final long[] data) {
+        assert time > 0 : "time = " + time;
         if (!checkShape(view, meta, data)) throw new RuntimeException("wrong shape");
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with time constraints

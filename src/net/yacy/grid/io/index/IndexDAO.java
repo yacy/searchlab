@@ -46,18 +46,20 @@ public class IndexDAO {
     }
 
     public static enum Timeframe {
-        per10minutes(1000L, 600), // 600 seconds / 10 minutes, 1 second per step, 600 steps
-        per1hour(6L * 1000L, 600), // 6 * 10 minutes
-        per1day(24L * 6000L, 600), // 24 * 1 hour
-        per1month(30L * 24L * 6000L, 600), // 30 * 1 day
-        per1year(365L * 24L * 6000L, 600); // 365 * 1 day
-        long steplength;
-        int stepcount;
-        long framelength;
-        Timeframe(final long steplength, final int stepcount) {
+        per10hour(   60L * 1000L, 600, "Ten Hours"), // 600 minutes, smallest steplength! - otherwise this does not fit within the time resolution of one minute of this time series.
+        per1day(         144000L, 600, "One Day"),   // 24 * 1 hour
+        per1week(   7L * 144000L, 600, "One Week"),  // 24 * 1 hour
+        per1month( 30L * 144000L, 600, "One Month"), // 30 * 1 day
+        per1year( 365L * 144000L, 600, "One Year");  // 365 * 1 day
+        public long steplength;
+        public int stepcount;
+        public long framelength;
+        public String name;
+        Timeframe(final long steplength, final int stepcount, final String name) {
             this.steplength = steplength;
             this.stepcount = stepcount;
             this.framelength = this.steplength * this.stepcount;
+            this.name = name;
         }
     }
 
@@ -87,7 +89,8 @@ public class IndexDAO {
         Logger.info("CountHistogram for " + timeframe.name() + " from " + fromDate.toString() + " to " + (new Date(now)).toString() + ": " + documents.size() + " documents.");
 
         // aggregate the documents to counts per second
-        final long[] counts = new long[timeframe.stepcount]; for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
+        final long[] counts = new long[timeframe.stepcount];
+        for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
 
         for (final Map<String, Object> map: documents) {
             /*
@@ -99,7 +102,7 @@ public class IndexDAO {
             */
             final String dates = (String) map.get(dateField);
             try {
-                final Date date = DateParser.iso8601MillisParser(dates);
+                final Date date = DateParser.iso8601MillisParser().parse(dates);
 
                 // aggregate statistics about number of indexed documents by one for that indexTime
                 if (date != null) {
@@ -107,9 +110,10 @@ public class IndexDAO {
                     final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) ((now - date.getTime()) / timeframe.steplength)));
                     // we increment the count at the incrementTime to reflect
                     counts[indexTime]++;
+                    assert counts[indexTime] >= 0;
                 }
             } catch (final Exception e) {
-                Logger.warn(e);
+                Logger.warn("Date parsing error with " + dates, e);
             }
         }
 
@@ -118,10 +122,12 @@ public class IndexDAO {
         for (int i = indexTimeForDocumentCount - 1; i >= 0; i--) {
             // go forward (SIC!) in time -> index increases
             counts[i] = counts[i + 1] + counts[i];
+            assert counts[i] >= 0;
         }
         for (int i = indexTimeForDocumentCount + 1; i < timeframe.stepcount; i++) {
             // go backward (SIC!) in time -> index decreases
             counts[i] = counts[i - 1] - counts[i];
+            assert counts[i] >= 0;
         }
 
         // make a time series
@@ -129,8 +135,11 @@ public class IndexDAO {
         // go forward in time by counting backwards
         for (int i = timeframe.stepcount - 1; i >= 0; i--) {
             final long c = counts[i];
+            assert c >= 0;
+            assert now > i * timeframe.steplength : "now = " + now + ", i = " + i + ", timeframe.steplength = " + timeframe.steplength;
             tst.addValues(now - i * timeframe.steplength, new String[0], new String[0], new long[] {c});
         }
+        tst.sort();
         return tst;
     }
 
@@ -143,7 +152,7 @@ public class IndexDAO {
         for (final Map<String, Object> map: documents) {
             final String dates = (String) map.get(dateField);
             try {
-                final Date date = DateParser.iso8601MillisParser(dates);
+                final Date date =DateParser.iso8601MillisParser().parse(dates);
                 tst.addValues(date.getTime(), new String[0], new String[0], new long[] {1});
             } catch (final Exception e) {
                 Logger.warn(e);

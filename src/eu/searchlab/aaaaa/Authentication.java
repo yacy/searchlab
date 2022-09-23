@@ -119,11 +119,11 @@ public class Authentication {
             final Date randomPast = new Date(System.currentTimeMillis() - ((Math.abs(random.nextLong())) % (90 * dayms)));
             final String date_registration = this.json.optString("date_registration");
             if (date_registration == null || date_registration.length() == 0) {
-                this.json.put("date_registration", DateParser.minuteDateFormat.format(randomPast));
+                this.json.put("date_registration", DateParser.minuteDateFormatParser().format(randomPast));
             }
             final String date_visit = this.json.optString("date_visit");
             if (date_visit == null || date_visit.length() == 0) {
-                this.json.put("date_visit", DateParser.minuteDateFormat.format(randomPast));
+                this.json.put("date_visit", DateParser.minuteDateFormatParser().format(randomPast));
             }
         } catch (final JSONException e) {
             Logger.error(e);
@@ -131,7 +131,7 @@ public class Authentication {
     }
 
     public Authentication setVisitDate(final Date date) throws RuntimeException {
-        try {this.json.put("date_visit", DateParser.minuteDateFormat.format(date));} catch (final JSONException e) {
+        try {this.json.put("date_visit", DateParser.minuteDateFormatParser().format(date));} catch (final JSONException e) {
             throw new RuntimeException(e.getMessage());
         }
         return this;
@@ -139,14 +139,14 @@ public class Authentication {
 
     public Date getRegistrationDate() {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts do not have registration dates");
-        try {return DateParser.minuteDateFormat.parse(this.json.getString("date_registration"));} catch (final JSONException | ParseException e) {
+        try {return DateParser.minuteDateFormatParser().parse(this.json.getString("date_registration"));} catch (final JSONException | ParseException e) {
             throw new RuntimeException(e.getMessage());
         }
     }
 
     public Date getVisitDate() {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts do not have registration dates");
-        try {return DateParser.minuteDateFormat.parse(this.json.getString("date_visit"));} catch (final JSONException | ParseException e) {
+        try {return DateParser.minuteDateFormatParser().parse(this.json.getString("date_visit"));} catch (final JSONException | ParseException e) {
             throw new RuntimeException(e.getMessage());
         }
     }

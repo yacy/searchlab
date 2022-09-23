@@ -19,6 +19,8 @@
 
 package net.yacy.grid.io.index;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -178,7 +180,7 @@ public class Document extends JSONObject {
 
     public Document putDate(final MappingDeclaration declaration, final Date date) throws JSONException {
         if (!isDate(declaration)) return this;
-        this.put(declaration.getMapping().name(), DateParser.iso8601MillisFormat.format(date));
+        this.put(declaration.getMapping().name(), DateParser.iso8601MillisParser().format(date));
         return this;
     }
 
@@ -186,7 +188,12 @@ public class Document extends JSONObject {
        if (!isDate(declaration)) return null;
         if (!this.has(declaration.getMapping().name())) return null;
         final String date = this.getString(declaration.getMapping().name());
-        return DateParser.iso8601MillisParser(date);
+        final SimpleDateFormat iso8601MillisParser = DateParser.iso8601MillisParser();
+        try {
+            return iso8601MillisParser.parse(date);
+        } catch (final ParseException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
     private boolean isDate(final MappingDeclaration declaration) {

@@ -45,9 +45,7 @@ public class DateParser {
 
     /** Date formatter/non-sloppy parser for W3C datetime (ISO8601) in GMT/UTC */
     public final static SimpleDateFormat iso8601Format = new SimpleDateFormat(PATTERN_ISO8601, Locale.US);
-    public final static SimpleDateFormat iso8601MillisFormat = new SimpleDateFormat(PATTERN_ISO8601MILLIS, Locale.US);
     public final static DateFormat dayDateFormat = new SimpleDateFormat(PATTERN_MONTHDAY, Locale.US);
-    public final static DateFormat minuteDateFormat = new SimpleDateFormat(PATTERN_MONTHDAYHOURMINUTE, Locale.US);
     public final static DateTimeFormatter minuteDateFormatter = DateTimeFormatter.ofPattern(PATTERN_MONTHDAYHOURMINUTE);
     public final static DateFormat secondDateFormat = new SimpleDateFormat(PATTERN_MONTHDAYHOURMINUTESECOND, Locale.US);
     public final static SimpleDateFormat FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123, Locale.US);
@@ -58,9 +56,7 @@ public class DateParser {
     static {
         UTCCalendar.setTimeZone(UTCtimeZone);
         iso8601Format.setCalendar(UTCCalendar);
-        iso8601MillisFormat.setCalendar(UTCCalendar);
         dayDateFormat.setCalendar(UTCCalendar);
-        minuteDateFormat.setCalendar(UTCCalendar);
         secondDateFormat.setCalendar(UTCCalendar);
         FORMAT_RFC1123.setCalendar(UTCCalendar);
     }
@@ -84,8 +80,8 @@ public class DateParser {
             if (dateString.indexOf(':', p + 1) > 0)
                 synchronized (secondDateFormat) {
                     cal.setTime(secondDateFormat.parse(dateString));
-                } else synchronized (minuteDateFormat) {
-                    cal.setTime(minuteDateFormat.parse(dateString));
+                } else {
+                    cal.setTime(minuteDateFormatParser().parse(dateString));
                 }
         } else synchronized (dayDateFormat) {
             cal.setTime(dayDateFormat.parse(dateString));
@@ -94,12 +90,16 @@ public class DateParser {
         return cal;
     }
 
-    public static Date iso8601MillisParser(final String date) {
-        try {
-            return iso8601MillisFormat.parse(date);
-        } catch (ParseException | NumberFormatException e) {
-            return new Date();
-        }
+    public static SimpleDateFormat iso8601MillisParser() {
+        final SimpleDateFormat iso8601MillisFormat = new SimpleDateFormat(PATTERN_ISO8601MILLIS, Locale.US);
+        iso8601MillisFormat.setCalendar(UTCCalendar);
+        return iso8601MillisFormat;
+    }
+
+    public static SimpleDateFormat minuteDateFormatParser() {
+        final SimpleDateFormat minuteDateFormat = new SimpleDateFormat(PATTERN_MONTHDAYHOURMINUTE, Locale.US);
+        minuteDateFormat.setCalendar(UTCCalendar);
+        return minuteDateFormat;
     }
 
     public static String toPostDate(final Date d) {

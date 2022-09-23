@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 /**
@@ -108,9 +109,10 @@ public class TableParser {
             return ic;
         } else {
             final InstantColumn ic = InstantColumn.create(column.name());
+            final SimpleDateFormat iso8601MillisParser = DateParser.iso8601MillisParser();
             for (final Object o: column.asList()) {
                 try {
-                    final Date d = DateParser.iso8601MillisFormat.parse(o.toString());
+                    final Date d = iso8601MillisParser.parse(o.toString());
                     final Instant i = Instant.ofEpochMilli(d.getTime());
                     ic.append(i);
                 } catch (final ParseException e) {
