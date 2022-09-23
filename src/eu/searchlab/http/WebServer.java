@@ -196,10 +196,11 @@ public class WebServer {
 
             // process header
             final HeaderMap responseHeader = exchange.getResponseHeaders();
-            responseHeader.put(new HttpString("X-Content-Type-Options"), "nosniff"); // no evaluation of content by the browser, trust MIME type as given
+            //responseHeader.put(new HttpString("X-Content-Type-Options"), "nosniff"); // no evaluation of content by the browser, trust MIME type as given
             responseHeader.put(new HttpString("Access-Control-Allow-Origin"), "*");
             responseHeader.put(new HttpString("Access-Control-Allow-Methods"), "POST, GET, OPTIONS");
             responseHeader.put(new HttpString("Access-Control-Allow-Headers"), "Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Methods, Access-Control-Request-Headers");
+            responseHeader.put(new HttpString("Referrer-Policy"), "unsafe-url, no-referrer-when-downgrade"); // switch off the new default strict-origin-when-cross-origin also not revert to no-referrer-when-downgrade; we actually want to show referrers to everyone!
 
             final String method = exchange.getRequestMethod().toString();
             if (method.toLowerCase().equals("options")) {
