@@ -522,6 +522,10 @@ public class IndexedTable implements Iterable<JSONObject> {
         return this.table.column(columnIndex);
     }
 
+    public Column<?> column(final String columnName) {
+        return this.table.column(columnName);
+    }
+
     public boolean isEmpty() {
         return this.table.isEmpty();
     }
@@ -591,16 +595,210 @@ public class IndexedTable implements Iterable<JSONObject> {
         return a;
     }
 
-    public double aggregateDouble(final String column) {
-        //Column<?> c = table.column(column);
-        double a = 0;
-        for (int r = 0; r < this.table.rowCount(); r++) {
-            final Row row = this.table.row(r);
-            final double d = row.getDouble(column);
-            assert d >= 0;
-            a += d;
-        }
+    /**
+     * Calculate the average of a column. The column type can be double or long.
+     * @param columnName the source column for the average computation
+     * @return the average number of the numbers in that column
+     */
+    public double average(final String columnName) {
+        return sum(columnName) / this.size();
+    }
+
+    public static double average(final DoubleColumn column) {
+        return sum(column, 0, column.size()) / column.size();
+    }
+
+    public static double average(final LongColumn column) {
+        return sum(column, 0, column.size()) / column.size();
+    }
+
+    /**
+     * Calculate the average of a column within given index limits. The column type can be double or long.
+     * @param columnName the source column for the average computation
+     * @param from the first index that shall be included
+     * @param until the first index that shall NOT be included (so it's excluding this boundary)
+     * @return the average number of the numbers in that column
+     */
+    public double average(final String columnName, final int from /*including*/, final int until /*excluding*/) {
+        return sum(columnName, from /*including*/, until) / (until - from);
+    }
+
+    public static double average(final DoubleColumn column, final int from /*including*/, final int until /*excluding*/) {
+        return sum(column, from /*including*/, until) / (until - from);
+    }
+
+    public static double average(final LongColumn column, final int from /*including*/, final int until /*excluding*/) {
+        return sum(column, from /*including*/, until) / (until - from);
+    }
+
+    /**
+     * Calculate the sum of a column. The column type can be double or long.
+     * @param columnName the source column for the sum computation
+     * @return the sum of the numbers in that column
+     */
+    public double sum(final String columnName) {
+        final Column<?> column = this.table.column(columnName);
+        if (column instanceof DoubleColumn) return sum((DoubleColumn) column, 0, column.size());
+        if (column instanceof LongColumn) return (double) sum((LongColumn) column, 0, column.size());
+        return 0.0d;
+    }
+
+    /**
+     * Calculate the sum of a column within given index limits. The column type can be double or long.
+     * @param columnName the source column for the sum computation
+     * @param from the first index that shall be included
+     * @param until the first index that shall NOT be included (so it's excluding this boundary)
+     * @return the sum of the numbers in that column
+     */
+    public double sum(final String columnName, final int from /*including*/, final int until /*excluding*/) {
+        final Column<?> column = this.table.column(columnName);
+        if (column instanceof DoubleColumn) return sum((DoubleColumn) column, from, until);
+        if (column instanceof LongColumn) return (double) sum((LongColumn) column, from, until);
+        return 0.0d;
+    }
+
+    private static double sum(final DoubleColumn column, final int from /*including*/, final int until /*excluding*/) {
+        double a = 0.0d;
+        for (int i = from; i < until; i++) a += column.get(i);
         return a;
+    }
+
+    private static long sum(final LongColumn column, final int from /*including*/, final int until /*excluding*/) {
+        long a = 0L;
+        for (int i = from; i < until; i++) a += column.get(i);
+        return a;
+    }
+
+    /**
+     * compute an exponential approximation of values given in a sequence of values
+     * within a named column within a defined interval.
+     * The resulting function will be:
+     *    approx(i) = a * b ^^ i;
+     *    a = approx(pivot) * b ^^ (1 / pivot)
+     *    c = approx(pivot) by definition
+     * .. which also means that for i = 0
+     *    approx(0) = a
+     */
+    public class ExponentialApproximation extends AbstractApproximation implements Approximation {
+
+        private double c, b;
+        private final int pivot;
+        private final DoubleColumn column;
+
+        public ExponentialApproximation(
+                final String source,
+                final int from /*including*/, final int until /*excluding*/) {
+            // for now this is the best we can do...
+            this(source, from, until, (from - until) / 3, 3);
+        }
+
+        /**
+         * Compute an exponential approximation which considers that the source column contains a sequence of periods.
+         * This makes it easy to make a function because it would approximate the averages of the sequences.
+         * @param source
+         * @param from
+         * @param until
+         * @param periodLength
+         * @param periodCount
+         */
+        public ExponentialApproximation(
+                final String source,
+                final int from /*including*/, final int until /*excluding*/,
+                final int periodLength,
+                int periodCount) {
+            super(source, from, until);
+
+            // use averages to compute growth
+            this.column = IndexedTable.this.table.doubleColumn(source);
+            this.pivot = (from + until) / 2;
+            assert this.maxValues() >= periodLength;
+            assert from + this.maxValues() / 2 == this.pivot;
+            periodCount = Math.min(this.maxValues() / periodLength, periodCount);
+
+            // we now take advantage of the given period lengths to get the average of the first and last period
+            final double firstPeriodAverage =  Math.max(0.001d, IndexedTable.this.average(source,
+                    until - periodCount * periodLength,
+                    until - (periodCount - 1) * periodLength));
+            final double lastPeriodAverage =  Math.max(0.001d, IndexedTable.this.average(source,
+                    until - periodLength,
+                    until));
+
+            // now we can compute the growth factor for each period
+            final double growthFactorPerPeriod = Math.pow(lastPeriodAverage / firstPeriodAverage, 1.0d / (periodCount - 1));
+            assert growthFactorPerPeriod != 0.0d;
+
+            // according to that growth factor the factor per steps comes from the period length
+            this.b = Math.pow(growthFactorPerPeriod, 1.0d / periodLength);
+            assert this.b != 0.0d;
+
+            // finally the value a is computed from the average of the last period by finding the necessary steps to get to the first element in the sequence
+            assert this.maxValues() > periodLength / 2;
+            final int samplePosForLastPeriod = until - periodLength / 2;
+            final int stepsToPivot = samplePosForLastPeriod - this.pivot;
+            assert stepsToPivot > 0;
+            this.c = lastPeriodAverage * Math.pow(this.b, -stepsToPivot);
+
+            // fine-shift of approximation
+            for (int i = 0; i < 10; i++) {
+                if (verticalShift() && rotation()) continue;
+                break;
+            }
+        }
+
+        private boolean verticalShift() {
+            for (int i = 0; i < 100; i++) {
+                final double orig_c = this.c;
+                final double r0 = r();
+                this.c = r0 > 0 ? this.c / 1.001 : this.c * 1.001;
+                final double r1 = r();
+                if (Math.abs(r0) > Math.abs(r1)) continue;
+
+                //Logger.info("verticalShift worked for " + i + " steps");
+                this.c = orig_c;
+                return i != 0;
+            }
+            //Logger.info("verticalShift terminated with 100 steps");
+            return true;
+        }
+
+        private boolean rotation() {
+            for (int i = 0; i < 100; i++) {
+                final double orig_b = this.b;
+                final double r0 = r2();
+
+                this.b = orig_b / 1.00001;
+                double r1 = r2();
+                if (Math.abs(r0) > Math.abs(r1)) continue;
+
+                this.b = orig_b * 1.00001;
+                r1 = r2();
+                if (Math.abs(r0) > Math.abs(r1)) continue;
+
+                //Logger.info("rotation worked for " + i + " steps");
+                this.b = orig_b;
+                return i != 0;
+            }
+            //Logger.info("rotation terminated with 100 steps");
+            return true;
+        }
+
+        public double a() {
+            return approx(0);
+        }
+
+        public double b() {
+            return this.b;
+        }
+
+        @Override
+        public double trueval(final int i) {
+            return this.column.getDouble(i);
+        }
+
+        @Override
+        public double approx(final int i) {
+            return this.c * Math.pow(this.b, i - this.pivot);
+        }
     }
 
     public static class SplitSelect {
