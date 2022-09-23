@@ -20,6 +20,7 @@
 
 package net.yacy.grid.io.index;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +93,7 @@ public class IndexDAO {
         final long[] counts = new long[timeframe.stepcount];
         for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
 
+        final SimpleDateFormat iso8601MillisParser = DateParser.iso8601MillisParser();
         for (final Map<String, Object> map: documents) {
             /*
             for (final Map.Entry<String, Object> entry: map.entrySet()) {
@@ -102,7 +104,7 @@ public class IndexDAO {
             */
             final String dates = (String) map.get(dateField);
             try {
-                final Date date = DateParser.iso8601MillisParser().parse(dates);
+                final Date date = iso8601MillisParser.parse(dates);
 
                 // aggregate statistics about number of indexed documents by one for that indexTime
                 if (date != null) {
