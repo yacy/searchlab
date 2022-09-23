@@ -6,9 +6,10 @@ Searchlab provides services based on different subscription types:
 <table>
 <tr>
 <th>level<th/>
-<th>price<th/>
-<th>crawler<th/>
-<th>index size<th/>
+<th>price for users<th/>
+<th>price for creators<th/>
+<th>crawler limits<th/>
+<th>index size limits<th/>
 <th>queries<th/>
 <tr/>
 
@@ -18,6 +19,10 @@ Searchlab provides services based on different subscription types:
 <tr><td>
 
 {{this.level}}<br>{{this.description}}
+
+<td/><td>
+
+free
 
 <td/><td>
 
