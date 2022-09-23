@@ -9,6 +9,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 /**
  *  TableParser
  *  Copyright 29.05.2022 by Michael Peter Christen, @orbiterlab
@@ -64,7 +65,7 @@ public class TableParser {
                     .separator(';')
                     .locale(Locale.ENGLISH)
                     .header(true)
-                    .dateFormat(DateParser.minuteDateFormatter)
+                    .dateFormat(DateTimeFormatter.ofPattern(DateParser.PATTERN_MONTHDAYHOURMINUTE))
                     .build();
         final Table table = Table.read().usingOptions(options);
         return table;

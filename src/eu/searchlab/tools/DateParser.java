@@ -19,10 +19,8 @@
 
 package eu.searchlab.tools;
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -36,18 +34,16 @@ public class DateParser {
     public final static long DAY_MILLIS = HOUR_MILLIS * 24;
     public final static long WEEK_MILLIS = DAY_MILLIS * 7;
 
-    public final static String PATTERN_ISO8601 = "yyyy-MM-dd'T'HH:mm:ss'Z'"; // pattern for a W3C datetime variant of a non-localized ISO8601 date
+    public final static String PATTERN_ISO8601       = "yyyy-MM-dd'T'HH:mm:ss'Z'"; // pattern for a W3C datetime variant of a non-localized ISO8601 date
     public final static String PATTERN_ISO8601MILLIS = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"; // same with milliseconds, called date_optimal_time in elastic
-    public final static String PATTERN_MONTHDAY = "yyyy-MM-dd"; // the twitter search modifier format
-    public final static String PATTERN_MONTHDAYHOURMINUTE = "yyyy-MM-dd HH:mm"; // this is the format which morris.js understands for date-histogram graphs
+    public final static String PATTERN_MONTHDAY                 = "yyyy-MM-dd"; // the twitter search modifier format
+    public final static String PATTERN_MONTHDAYHOURMINUTE       = "yyyy-MM-dd HH:mm"; // this is the format which morris.js understands for date-histogram graphs
     public final static String PATTERN_MONTHDAYHOURMINUTESECOND = "yyyy-MM-dd HH:mm:ss";
     public final static String PATTERN_RFC1123 = "EEE, dd MMM yyyy HH:mm:ss Z"; // with numeric time zone indicator as defined in RFC5322
 
     /** Date formatter/non-sloppy parser for W3C datetime (ISO8601) in GMT/UTC */
     public final static SimpleDateFormat iso8601Format = new SimpleDateFormat(PATTERN_ISO8601, Locale.US);
-    public final static DateFormat dayDateFormat = new SimpleDateFormat(PATTERN_MONTHDAY, Locale.US);
-    public final static DateTimeFormatter minuteDateFormatter = DateTimeFormatter.ofPattern(PATTERN_MONTHDAYHOURMINUTE);
-    public final static DateFormat secondDateFormat = new SimpleDateFormat(PATTERN_MONTHDAYHOURMINUTESECOND, Locale.US);
+    public final static SimpleDateFormat dayDateFormat = new SimpleDateFormat(PATTERN_MONTHDAY, Locale.US);
     public final static SimpleDateFormat FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123, Locale.US);
 
 
@@ -57,7 +53,6 @@ public class DateParser {
         UTCCalendar.setTimeZone(UTCtimeZone);
         iso8601Format.setCalendar(UTCCalendar);
         dayDateFormat.setCalendar(UTCCalendar);
-        secondDateFormat.setCalendar(UTCCalendar);
         FORMAT_RFC1123.setCalendar(UTCCalendar);
     }
 
@@ -77,9 +72,8 @@ public class DateParser {
         dateString = dateString.replaceAll("_", " ");
         int p = -1;
         if ((p = dateString.indexOf(':')) > 0) {
-            if (dateString.indexOf(':', p + 1) > 0)
-                synchronized (secondDateFormat) {
-                    cal.setTime(secondDateFormat.parse(dateString));
+            if (dateString.indexOf(':', p + 1) > 0) {
+                    cal.setTime(secondDateFormatParser().parse(dateString));
                 } else {
                     cal.setTime(minuteDateFormatParser().parse(dateString));
                 }
@@ -102,8 +96,14 @@ public class DateParser {
         return minuteDateFormat;
     }
 
+    public static SimpleDateFormat secondDateFormatParser() {
+        final SimpleDateFormat secondDateFormat = new SimpleDateFormat(PATTERN_MONTHDAYHOURMINUTESECOND, Locale.US);
+        secondDateFormat.setCalendar(UTCCalendar);
+        return secondDateFormat;
+    }
+
     public static String toPostDate(final Date d) {
-        return secondDateFormat.format(d).replace(' ', '_');
+        return secondDateFormatParser().format(d).replace(' ', '_');
     }
 
     public static int getTimezoneOffset() {
