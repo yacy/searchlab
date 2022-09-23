@@ -20,6 +20,8 @@
 package eu.searchlab.audit;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import eu.searchlab.Searchlab;
@@ -45,7 +47,7 @@ public class UserAudit implements FrequencyTask {
     private final static String[] visitorsMetaColNames = new String[] {};
     private final static String[] visitorsDataColNames = new String[] {"data.visitors"};
 
-    private final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> lastSeen;
+    private final ConcurrentHashMap<String, TreeMap<Long, String>> lastSeen;
     private final ConcurrentIO cio;
     private final IOPath requestsIOp, visitorsIOp;
     private TimeSeriesTable requestsTable, visitorsTable, visitorsTableAggregated;
@@ -67,27 +69,35 @@ public class UserAudit implements FrequencyTask {
         this.visitorsTableModified = System.currentTimeMillis();
     }
 
+    /**
+     * The event method collects the request of a specific user with a specific (pseudomized) ip to a specific time
+     * @param id    the user id
+     * @param ip00  the pseudomized IP
+     */
     public void event(final String id, final String ip00) {
-        ConcurrentHashMap<Long, String> u = this.lastSeen.get(id);
+        TreeMap<Long, String> u = this.lastSeen.get(id);
         if (u == null) {
-            u = new ConcurrentHashMap<>();
+            u = new TreeMap<>();
             this.lastSeen.put(id, u);
         }
-        u.put(System.currentTimeMillis(), ip00);
+        synchronized (u) {
+            u.put(System.currentTimeMillis(), ip00);
+        }
     }
 
     @Override
     public void check() {
 
-        // flush the lastSeen and update tables
-        final long now = System.currentTimeMillis();
-        final int sizeBeforeRequest = this.requestsTable.size();
-        final int sizeBeforeVisitor = this.visitorsTable.size();
-        final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> w = new ConcurrentHashMap<>();
-        w.putAll(this.lastSeen);
+        // flush the lastSeen and update tables & make a copy of the audit log:
+        // this will prevent that the log is modified while we evaluate it
+        final ConcurrentHashMap<String, TreeMap<Long, String>> audit = new ConcurrentHashMap<>();
+        audit.putAll(this.lastSeen);
         this.lastSeen.clear();
 
         // check if the tables have been updated by another process meanwhile
+        final long now = System.currentTimeMillis();
+        final int sizeBeforeRequest = this.requestsTable.size();
+        final int sizeBeforeVisitor = this.visitorsTable.size();
         try {
             final long modified = this.cio.getIO().lastModified(this.requestsIOp);
             if (modified > this.requestsTableModified) {
@@ -106,21 +116,30 @@ public class UserAudit implements FrequencyTask {
         }
 
         // read out copy of audit (the original one has been flushed already)
-        w.forEach((id, tip) -> {
-            final int count = tip.size();
-            if (count > 0) {
-                final String ip = tip.values().iterator().next();
-                this.requestsTable.addValues(now, new String[] {id}, new String[] {ip}, new long[] {count});
-            }
-        });
-        if (w.size() > 0) {
-            this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {w.size()});
+        // and write into the requests and visitor tables
+        if (audit.size() > 0) {
+            audit.forEach((id, events) -> {
+                // events is now a time -> IP mapping.
+                // for the request table we are not interested in the different IPs, just the number of requests that happened:
+                final int count = events.size();
+                if (count > 0) {
+                    // we get out just one single ip as reference. We consider that all IPs should be the same
+                    final Map.Entry<Long, String> event = events.entrySet().iterator().next();
+                    final long eventTime = event.getKey(); // we could also use 'now', not sure what is best.
+                    final String ip = event.getValue();
+                    this.requestsTable.addValues(eventTime, new String[] {id}, new String[] {ip}, new long[] {count});
+                }
+            });
+
+            // the number of visitors is just the number of entries because the visitor is identified by it's id, not the IP
+            this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {audit.size()});
         }
 
         // store tables
         int sizeAfter = this.requestsTable.size();
         if (sizeAfter > sizeBeforeRequest) {
             // store the table
+            this.requestsTable.sort();
             this.requestsTable.storeCSV(this.cio, this.requestsIOp);
             this.requestsTableModified = now;
         }
@@ -128,6 +147,7 @@ public class UserAudit implements FrequencyTask {
         sizeAfter = this.visitorsTable.size();
         if (sizeAfter > sizeBeforeVisitor) {
             // store the table
+            this.visitorsTable.sort();
             this.visitorsTable.storeCSV(this.cio, this.visitorsIOp);
             this.visitorsTableModified = now;
         }
