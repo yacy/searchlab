@@ -25,7 +25,7 @@ import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TableParser;
-import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.storage.table.MinuteSeriesTable;
 
 public class AuthorizationTS {
 
@@ -35,7 +35,7 @@ public class AuthorizationTS {
 
     private final ConcurrentIO cio;
     private final IOPath aaaaaIop, authorizationIop, loginIop;
-    private TimeSeriesTable loginTable;
+    private MinuteSeriesTable loginTable;
     private long loginTableLoadTime = 0;
 
     public AuthorizationTS(final GenericIO io, final IOPath aaaaaIop) throws IOException {
@@ -50,14 +50,14 @@ public class AuthorizationTS {
         if (this.cio.exists(this.loginIop)) {
             final long lastModified = this.cio.getIO().lastModified(this.loginIop);
             if (lastModified < this.loginTableLoadTime) return;
-            this.loginTable = new TimeSeriesTable(this.cio, this.loginIop, false);
+            this.loginTable = new MinuteSeriesTable(this.cio, this.loginIop, false);
             if (this.loginTable.viewCols.length != authorizationViewColNames.length ||
                     this.loginTable.metaCols.length != authorizationMetaColNames.length ||
                     this.loginTable.dataCols.length != authorizationDataColNames.length) {
-                this.loginTable = new TimeSeriesTable(authorizationViewColNames, authorizationMetaColNames, authorizationDataColNames, false);
+                this.loginTable = new MinuteSeriesTable(authorizationViewColNames, authorizationMetaColNames, authorizationDataColNames, false);
             }
         } else {
-            this.loginTable = new TimeSeriesTable(authorizationViewColNames, authorizationMetaColNames, authorizationDataColNames, false);
+            this.loginTable = new MinuteSeriesTable(authorizationViewColNames, authorizationMetaColNames, authorizationDataColNames, false);
         }
         this.loginTableLoadTime = System.currentTimeMillis();
     }

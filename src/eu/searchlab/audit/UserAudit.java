@@ -30,7 +30,7 @@ import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TableViewer;
-import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.storage.table.MinuteSeriesTable;
 import eu.searchlab.tools.Logger;
 
 /**
@@ -50,7 +50,7 @@ public class UserAudit implements FrequencyTask {
     private final ConcurrentHashMap<String, TreeMap<Long, String>> lastSeen;
     private final ConcurrentIO cio;
     private final IOPath requestsIOp, visitorsIOp;
-    private TimeSeriesTable requestsTable, visitorsTable, visitorsTableAggregated;
+    private MinuteSeriesTable requestsTable, visitorsTable, visitorsTableAggregated;
     private long requestsTableModified, visitorsTableModified;
 
     public UserAudit(final GenericIO io, final IOPath requestsIOp, final IOPath visitorsIOp) throws IOException {
@@ -58,14 +58,14 @@ public class UserAudit implements FrequencyTask {
         this.requestsIOp = requestsIOp;
         this.visitorsIOp = visitorsIOp;
         this.lastSeen = new ConcurrentHashMap<>();
-        this.requestsTable = new TimeSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
+        this.requestsTable = new MinuteSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
         Logger.info("loading " + visitorsIOp.toString());
-        if (io.exists(requestsIOp)) try {this.requestsTable = new TimeSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
+        if (io.exists(requestsIOp)) try {this.requestsTable = new MinuteSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
         this.requestsTableModified = System.currentTimeMillis();
-        this.visitorsTable = new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
-        this.visitorsTableAggregated = new TimeSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
+        this.visitorsTable = new MinuteSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
+        this.visitorsTableAggregated = new MinuteSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
         Logger.info("loading " + visitorsIOp.toString());
-        if (io.exists(visitorsIOp)) try {this.visitorsTable = new TimeSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
+        if (io.exists(visitorsIOp)) try {this.visitorsTable = new MinuteSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
         this.visitorsTableModified = System.currentTimeMillis();
     }
 
@@ -101,7 +101,7 @@ public class UserAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.requestsIOp);
             if (modified > this.requestsTableModified) {
-                this.requestsTable = new TimeSeriesTable(this.cio, this.requestsIOp, false);
+                this.requestsTable = new MinuteSeriesTable(this.cio, this.requestsIOp, false);
                 this.requestsTableModified = now;
             }
         } catch (final IOException e) {
@@ -109,7 +109,7 @@ public class UserAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.visitorsIOp);
             if (modified > this.visitorsTableModified) {
-                this.visitorsTable = new TimeSeriesTable(this.cio, this.visitorsIOp, false);
+                this.visitorsTable = new MinuteSeriesTable(this.cio, this.visitorsIOp, false);
                 this.visitorsTableModified = now;
             }
         } catch (final IOException e) {
@@ -156,11 +156,11 @@ public class UserAudit implements FrequencyTask {
         this.visitorsTableAggregated = this.visitorsTable.aggregation();
 
         // paint a graph
-        final TableViewer requestsTableViewer = this.requestsTable.getGraph("requests_per_minute", "Requests per Minute", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.requests SteelBlue"}, new String[] {});
+        final TableViewer requestsTableViewer = this.requestsTable.getGraph("requests_per_minute", "Requests per Minute", "Date", MinuteSeriesTable.TS_DATE, new String[] {"data.requests SteelBlue"}, new String[] {});
         Searchlab.htmlPanel.put("requests_per_minute", requestsTableViewer);
-        final TableViewer visitorsTableViewer = this.visitorsTable.getGraph("visitors_per_minute", "Pseudo-Unique Visitors per Minute", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
+        final TableViewer visitorsTableViewer = this.visitorsTable.getGraph("visitors_per_minute", "Pseudo-Unique Visitors per Minute", "Date", MinuteSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
         Searchlab.htmlPanel.put("visitors_per_minute", visitorsTableViewer);
-        final TableViewer visitorsTableViewerAggregated = this.visitorsTableAggregated.getGraph("visitors_per_minute_aggregated", "Pseudo-Unique Visitors per Minute (aggregated)", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
+        final TableViewer visitorsTableViewerAggregated = this.visitorsTableAggregated.getGraph("visitors_per_minute_aggregated", "Pseudo-Unique Visitors per Minute (aggregated)", "Date", MinuteSeriesTable.TS_DATE, new String[] {"data.visitors SteelBlue"}, new String[] {});
         Searchlab.htmlPanel.put("visitors_per_minute_aggregated", visitorsTableViewerAggregated);
     }
 

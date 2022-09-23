@@ -25,7 +25,7 @@ import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.storage.table.TableViewer;
-import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.storage.table.MinuteSeriesTable;
 import net.yacy.grid.io.index.IndexDAO;
 
 /**
@@ -45,8 +45,8 @@ public class CrawlStartHistogramService extends AbstractService implements Servi
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-        final TimeSeriesTable tst = IndexDAO.getCrawlstartHistorgramAggregation();
-        final TableViewer requestsTableViewer = tst.getGraph("crawl_start", "Crawl Starts", "Date", TimeSeriesTable.TS_DATE, new String[] {"data.crawlstarts SteelBlue"}, new String[] {});
+        final MinuteSeriesTable tst = IndexDAO.getCrawlstartHistorgramAggregation();
+        final TableViewer requestsTableViewer = tst.getGraph("crawl_start", "Crawl Starts", "Date", MinuteSeriesTable.TS_DATE, new String[] {"data.crawlstarts SteelBlue"}, new String[] {});
         final String graph = requestsTableViewer.render2html(Searchlab.GRAPH_WIDTH, Searchlab.GRAPH_HEIGHT, true);
         return new ServiceResponse(graph);
     }

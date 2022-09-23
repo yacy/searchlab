@@ -32,7 +32,7 @@ import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.TableParser;
-import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.storage.table.MinuteSeriesTable;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.MultiProtocolURL;
 
@@ -80,12 +80,12 @@ public class AccountingTS {
     public void storeCorpus(final String user_id, final String range, final List<MultiProtocolURL> urls, final Set<String> collections, final long depth, final long size) throws IOException {
         final IOPath userPath = getAssetsPathForUser(user_id);
         final IOPath corpusPath = userPath.append("corpus.csv");
-        TimeSeriesTable corpusTable = new TimeSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
-        if (this.cio.exists(corpusPath)) try {corpusTable = new TimeSeriesTable(this.cio, corpusPath, false);} catch (final IOException e) {}
+        MinuteSeriesTable corpusTable = new MinuteSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
+        if (this.cio.exists(corpusPath)) try {corpusTable = new MinuteSeriesTable(this.cio, corpusPath, false);} catch (final IOException e) {}
         if (corpusTable.viewCols.length != corpusViewColNames.length ||
             corpusTable.metaCols.length != corpusMetaColNames.length ||
             corpusTable.dataCols.length != corpusDataColNames.length) {
-            corpusTable = new TimeSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
+            corpusTable = new MinuteSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
         }
 
         for (final MultiProtocolURL url: urls) {

@@ -26,7 +26,7 @@ import eu.searchlab.operation.FrequencyTask;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
-import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.storage.table.MinuteSeriesTable;
 
 public class IndexAudit implements FrequencyTask {
 
@@ -42,7 +42,7 @@ public class IndexAudit implements FrequencyTask {
     private final ConcurrentHashMap<String, ConcurrentHashMap<Long, String>> lastSeen;
     private final ConcurrentIO cio;
     private final IOPath requestsIOp, visitorsIOp;
-    private TimeSeriesTable requestsTable, visitorsTable;
+    private MinuteSeriesTable requestsTable, visitorsTable;
     private long requestsTableModified, visitorsTableModified;
 
     public IndexAudit(final GenericIO io, final IOPath requestsIOp, final IOPath visitorsIOp) throws IOException {
@@ -50,11 +50,11 @@ public class IndexAudit implements FrequencyTask {
         this.requestsIOp = requestsIOp;
         this.visitorsIOp = visitorsIOp;
         this.lastSeen = new ConcurrentHashMap<>();
-        this.requestsTable = new TimeSeriesTable(indexSizeViewColNames, indexSizeMetaColNames, indexSizeDataColNames, false);
-        if (io.exists(requestsIOp)) try {this.requestsTable = new TimeSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
+        this.requestsTable = new MinuteSeriesTable(indexSizeViewColNames, indexSizeMetaColNames, indexSizeDataColNames, false);
+        if (io.exists(requestsIOp)) try {this.requestsTable = new MinuteSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
         this.requestsTableModified = System.currentTimeMillis();
-        this.visitorsTable = new TimeSeriesTable(webViewColNames, webMetaColNames, webDataColNames, false);
-        if (io.exists(visitorsIOp)) try {this.visitorsTable = new TimeSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
+        this.visitorsTable = new MinuteSeriesTable(webViewColNames, webMetaColNames, webDataColNames, false);
+        if (io.exists(visitorsIOp)) try {this.visitorsTable = new MinuteSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
         this.visitorsTableModified = System.currentTimeMillis();
     }
 
@@ -82,7 +82,7 @@ public class IndexAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.requestsIOp);
             if (modified > this.requestsTableModified) {
-                this.requestsTable = new TimeSeriesTable(this.cio, this.requestsIOp, false);
+                this.requestsTable = new MinuteSeriesTable(this.cio, this.requestsIOp, false);
                 this.requestsTableModified = System.currentTimeMillis();
             }
         } catch (final IOException e) {
@@ -90,7 +90,7 @@ public class IndexAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.visitorsIOp);
             if (modified > this.visitorsTableModified) {
-                this.visitorsTable = new TimeSeriesTable(this.cio, this.visitorsIOp, false);
+                this.visitorsTable = new MinuteSeriesTable(this.cio, this.visitorsIOp, false);
                 this.visitorsTableModified = System.currentTimeMillis();
             }
         } catch (final IOException e) {

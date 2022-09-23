@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import eu.searchlab.Searchlab;
-import eu.searchlab.storage.table.TimeSeriesTable;
+import eu.searchlab.storage.table.MinuteSeriesTable;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 
@@ -64,7 +64,7 @@ public class IndexDAO {
         }
     }
 
-    public static TimeSeriesTable getIndexDocumentCountHistorgramPerTimeframe(String user_id, final Timeframe timeframe) {
+    public static MinuteSeriesTable getIndexDocumentCountHistorgramPerTimeframe(String user_id, final Timeframe timeframe) {
         if (user_id == null || user_id.length() == 0) user_id = "en";
         final long now = System.currentTimeMillis();
 
@@ -133,7 +133,7 @@ public class IndexDAO {
         }
 
         // make a time series
-        final TimeSeriesTable tst = new TimeSeriesTable(new String[] {}, new String[] {}, new String[] {"data.documents"}, false);
+        final MinuteSeriesTable tst = new MinuteSeriesTable(new String[] {}, new String[] {}, new String[] {"data.documents"}, false);
         // go forward in time by counting backwards
         for (int i = timeframe.stepcount - 1; i >= 0; i--) {
             final long c = counts[i];
@@ -145,12 +145,12 @@ public class IndexDAO {
         return tst;
     }
 
-    public static TimeSeriesTable getCrawlstartHistorgramAggregation() {
+    public static MinuteSeriesTable getCrawlstartHistorgramAggregation() {
         // get list of all documents that have been created in the last 10 minutes
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.crawlstart", ElasticsearchClient.DEFAULT_INDEXNAME_CRAWLSTART);
         final List<Map<String, Object>> documents = Searchlab.ec.queryAll(index_name);
         final String dateField = CrawlstartMapping.init_date_dt.getMapping().name(); // like "init_date_dt": "2022-08-18T21:58:28.918Z",
-        TimeSeriesTable tst = new TimeSeriesTable(new String[] {}, new String[] {}, new String[] {"data.crawlstarts"}, false);
+        MinuteSeriesTable tst = new MinuteSeriesTable(new String[] {}, new String[] {}, new String[] {"data.crawlstarts"}, false);
         for (final Map<String, Object> map: documents) {
             final String dates = (String) map.get(dateField);
             try {

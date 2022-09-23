@@ -71,8 +71,11 @@ public class CalendarWeek implements Comparable<CalendarWeek> {
         y53kw.add(2004); y53kw.add(2009); y53kw.add(2015); y53kw.add(2020); y53kw.add(2026);
         y53kw.add(2032); y53kw.add(2037); y53kw.add(2043); y53kw.add(2048); y53kw.add(2054);
 
+        eastersundayweek.put(2015, 14); eastersundayweek.put(2016, 12); eastersundayweek.put(2017, 15); eastersundayweek.put(2018, 13);
         eastersundayweek.put(2019, 16); eastersundayweek.put(2020, 15); eastersundayweek.put(2021, 13); eastersundayweek.put(2022, 15);
         eastersundayweek.put(2023, 14); eastersundayweek.put(2024, 13); eastersundayweek.put(2025, 16); eastersundayweek.put(2026, 14);
+        eastersundayweek.put(2027, 12); eastersundayweek.put(2028, 15); eastersundayweek.put(2029, 13); eastersundayweek.put(2030, 16);
+        eastersundayweek.put(2031, 15); eastersundayweek.put(2032, 13); eastersundayweek.put(2033, 15); eastersundayweek.put(2034, 14);
 
         // compute the prevWeekMap
         for (final int year: eastersundayweek.keySet()) {
@@ -95,7 +98,7 @@ public class CalendarWeek implements Comparable<CalendarWeek> {
                 }
 
                 // alternative computation in case that this is not applicable
-                if (prevweek == 0) prevweek = weekOfPrevYear(year, week);
+                if (prevweek == 0) prevweek = decYearBusinessInternal(year, week).week;
                 weeks[i] = prevweek;
             }
             prevWeekMap.put(year, weeks);
@@ -174,39 +177,6 @@ public class CalendarWeek implements Comparable<CalendarWeek> {
         return new CalendarWeek(this.year , prevWoche);
     }
 
-    public CalendarWeek decYear0() {
-        final LocalDate d = getSaturdayDayOfWeek();
-        final int day = d.getDayOfMonth();
-        final int month = d.getMonthValue();
-        final int year = d.getYear();
-        try {
-            final LocalDate d1 = LocalDate.of(year - 1, month, day); // danger of DateTimeException: Invalid date 'February 29' as '2019' is not a leap year
-            return new CalendarWeek(d1);
-        } catch (final DateTimeException e) {
-            final int prevYear = this.year - 1;
-            if (this.week == 53 && !y53kw.contains(prevYear)) return new CalendarWeek(this.year, 1);
-            return new CalendarWeek(prevYear, this.week);
-        }
-    }
-
-    private static int weekOfPrevYear(final int year0, final int week) {
-        final LocalDate d = LocalDate.now().with(DayOfWeek.SATURDAY).with(yowby, year0).with(wowby, week);
-        final int day = d.getDayOfMonth();
-        final int month = d.getMonthValue();
-        final int year = d.getMonthValue();
-        try {
-            final LocalDate d1 = LocalDate.of(year - 1, month, day); // danger of DateTimeException: Invalid date 'February 29' as '2019' is not a leap year
-            final int t = d1.get(wowby);
-            if (week == 1 && t > 3) return 1;
-            if (week >= 52 && t == 1) return 52;
-            return t;
-        } catch (final DateTimeException e) {
-            final int prevYear = year - 1;
-            if (week == 53 && !y53kw.contains(prevYear)) return 52;
-            return week;
-        }
-    }
-
     public CalendarWeek decYearNumeric() {
         final int prevYear = this.year - 1;
         if (this.week == 53 && !y53kw.contains(prevYear)) return new CalendarWeek(prevYear, 52);
@@ -218,10 +188,54 @@ public class CalendarWeek implements Comparable<CalendarWeek> {
         final int[] prevYearWeeks = prevWeekMap.get(this.year);
         if (prevYearWeeks == null) {
             // fail-over method if we have no prev-computed year present
-            final int w = weekOfPrevYear(this.year, this.week);
-            return new CalendarWeek(this.year - 1, w);
+            return decYearBusinessInternal();
         }
-        return new CalendarWeek(this.year - 1, prevYearWeeks[this.week - 1]);
+        final CalendarWeek kw0 = new CalendarWeek(this.year - 1, prevYearWeeks[this.week - 1]); // ACHTUNG "this.woche - 1" ist richtig weil wir die Woche 1 auf Indexposition 0 speichern!
+        assert kw0.equals(this.decYearBusinessInternal());
+        return kw0;
+    }
+
+    public CalendarWeek decYearBusinessInternal() {
+        return decYearBusinessInternal(this.year, this.week);
+    }
+
+    public static CalendarWeek decYearBusinessInternal(final int y1, final int w1) {
+
+        if (!eastersundayweek.containsKey(y1 - 1)) return new CalendarWeek(y1 - 1, w1 == 53 ? 52 : w1);
+
+        final int easterweek1 = eastersundayweek.get(y1);
+        final int easterweek0 = eastersundayweek.get(y1 - 1);
+
+        // calculate the week number for the year before
+        int w0 = 0; // 0 as poison number
+
+        // lookup of easter-related week in last year
+        offsetlookup: for (final int offset: easteroffsetweeks) {
+            if (easterweek1 + offset == w1) {
+                w0 = easterweek0 + offset; // week of previous year with same offset
+                break offsetlookup;
+            }
+        }
+
+        if (w0 != 0) return new CalendarWeek(y1 - 1, w0);
+
+        // find calendary previous week
+        final LocalDate d1 = LocalDate.now().with(yowby, y1).with(wowby, w1).with(DayOfWeek.SATURDAY);
+        assert d1.getDayOfWeek() == DayOfWeek.SATURDAY;
+        final int day1 = d1.getDayOfMonth();
+        final int month1 = d1.getMonthValue();
+        final int year1 = d1.getYear();
+        final int year0 = year1 - 1;
+        try {
+            final LocalDate d0 = LocalDate.of(year0, month1, day1); // danger of DateTimeException: Invalid date 'February 29' as '2019' is not a leap year
+            w0 = d0.get(wowby);
+            final int y0 = d0.get(yowby);
+            if (y0 == y1 - 1) return new CalendarWeek(y0, w0);
+            return new CalendarWeek(y1 - 1, w1 == 53 ? 52 : w1);
+        } catch (final DateTimeException e) {
+            assert false;
+            return new CalendarWeek(y1 - 1, w1 == 53 ? 52 : w1);
+        }
     }
 
     /**

@@ -32,9 +32,7 @@ import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 
-public class WeekSeriesTable {
-
-    public IndexedTable table;
+public class WeekSeriesTable extends AbstractTimeSeriesTable implements TimeSeriesTable {
 
     public DateTimeColumn tscwDateCol;
     public LongColumn tscwTimeCol;
@@ -43,9 +41,6 @@ public class WeekSeriesTable {
     public StringColumn tscwSYKWCol;
     public StringColumn tscwCALDCol;
     public StringColumn tscwPRNTCol;
-    public StringColumn[] viewCols;
-    public StringColumn[] metaCols;
-    public DoubleColumn[] dataCols;
     private double[] zeroData;
     private Map<String, Integer> dataColNameIndex;
 
@@ -68,13 +63,6 @@ public class WeekSeriesTable {
         this.dataColNameIndex = new ConcurrentHashMap<>();
     }
 
-    private void initZeroes(final int len) {
-        this.zeroData = new double[len];
-        for (int i = 0; i < this.zeroData.length; i++) {
-            this.zeroData[i] = 0.0d;
-        }
-    }
-
     /**
      * Kalenderwochen - Zeitserie erzeugen
      * @param viewCols views sind potentielle Suchfacetten im Datensatz zur Eingrenzung auf Teil-Zeitserien. Um eine Zeitserie zu erhalten, müssen alle Facetten fixiert werden.
@@ -83,6 +71,18 @@ public class WeekSeriesTable {
      */
     public WeekSeriesTable(final StringColumn[] viewCols, final StringColumn[] metaCols, final DoubleColumn[] dataCols) {
         this();
+
+        // validate columns
+        for (int i = 0; i < viewCols.length; i++)  {
+            if (!viewCols[i].name().startsWith("view.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'view.'");
+        }
+        for (int i = 0; i < metaCols.length; i++) {
+            if (!metaCols[i].name().startsWith("meta.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'meta.'");
+        }
+        for (int i = 0; i < dataCols.length; i++) {
+            if (!dataCols[i].name().startsWith("data.")) throw new UnsupportedOperationException("column " + viewCols[i].name() + ": unsupported name. must start with 'data.'");
+        }
+
         this.viewCols = viewCols;
         this.metaCols = metaCols;
         this.dataCols = dataCols;
@@ -95,7 +95,6 @@ public class WeekSeriesTable {
             this.dataColNameIndex.put(this.dataCols[i].name(), i);
         }
         this.table = new IndexedTable(t);
-        initZeroes(dataCols.length);
     }
 
     /**
@@ -107,11 +106,18 @@ public class WeekSeriesTable {
     public WeekSeriesTable(final String[] viewColNames, final String[] metaColNames, final String[] dataColNames) {
         this();
         this.viewCols = new StringColumn[viewColNames.length];
-        for (int i = 0; i < viewColNames.length; i++) this.viewCols[i] = StringColumn.create(viewColNames[i]);
+        for (int i = 0; i < viewColNames.length; i++) {
+            if (!viewColNames[i].startsWith("view.")) throw new UnsupportedOperationException("column " + viewColNames[i] + ": unsupported name. must start with 'view.'");
+            this.viewCols[i] = StringColumn.create(viewColNames[i]);
+        }
         this.metaCols = new StringColumn[metaColNames.length];
-        for (int i = 0; i < metaColNames.length; i++) this.metaCols[i] = StringColumn.create(metaColNames[i]);
+        for (int i = 0; i < metaColNames.length; i++) {
+            if (!metaColNames[i].startsWith("meta.")) throw new UnsupportedOperationException("column " + metaColNames[i] + ": unsupported name. must start with 'meta.'");
+            this.metaCols[i] = StringColumn.create(metaColNames[i]);
+        }
         this.dataCols = new DoubleColumn[dataColNames.length];
         for (int i = 0; i < dataColNames.length; i++) {
+            if (!dataColNames[i].startsWith("data.")) throw new UnsupportedOperationException("column " + dataColNames[i] + ": unsupported name. must start with 'data.'");
             this.dataCols[i] = DoubleColumn.create(dataColNames[i]);
             this.dataColNameIndex.put(dataColNames[i], i);
         }
@@ -123,7 +129,6 @@ public class WeekSeriesTable {
             t.addColumns(this.dataCols[i]);
         }
         this.table = new IndexedTable(t);
-        initZeroes(this.dataCols.length);
     }
 
     /**
@@ -157,11 +162,6 @@ public class WeekSeriesTable {
             if (name.startsWith("meta.")) this.metaCols[metaColCount++] = table.table().stringColumn(col);
             if (name.startsWith("data.")) this.dataCols[dataColCount++] = table.table().doubleColumn(col);
         }
-        initZeroes(this.dataCols.length);
-    }
-
-    public int size() {
-        return this.table.rowCount();
     }
 
     public void deleteBefore(final long jahr) {
@@ -197,9 +197,20 @@ public class WeekSeriesTable {
     }
 
     public void addValues(final long year, final long week, final String[] view, final String[] meta, final double[] data) {
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        addValues(year, week, view, meta);
+        for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).append(data[i]);
+    }
+
+    public void addValues(final long year, final long week, final String[] view, final String[] meta, final long[] data) {
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        addValues(year, week, view, meta);
+        for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).append(data[i]);
+    }
+
+    private void addValues(final long year, final long week, final String[] view, final String[] meta) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
-        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
         final CalendarWeek kw = new CalendarWeek((int) year, (int) week);
         final long time = kw.getTime();
         final LocalDate firstDay = kw.getFirstDayOfWeek();
@@ -213,7 +224,6 @@ public class WeekSeriesTable {
         this.tscwPRNTCol.append(kw.getYear() + " KW" + kw.getWW() + " " + firstDay.get(ChronoField.DAY_OF_MONTH) + "." + firstDay.get(ChronoField.MONTH_OF_YEAR) + ".-" + lastDay.get(ChronoField.DAY_OF_MONTH) + "." + lastDay.get(ChronoField.MONTH_OF_YEAR) + "."); // Print format yyyy "KW"kw, dd.mm.-dd.mm.
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
-        for (int i = 0; i < data.length; i++) this.dataCols[i].append(data[i]);
     }
 
     public void append(final WeekSeriesTable t) {
@@ -253,12 +263,25 @@ public class WeekSeriesTable {
         if (idx >= 0) {
             // overwrite values and finish. We consider that this hit is unique
             for (int i = 0; i < meta.length; i++) this.metaCols[i].set(idx, meta[i]);
-            for (int i = 0; i < data.length; i++) this.dataCols[i].set(idx, data[i]);
+            for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).set(idx, data[i]);
             return;
         }
     }
 
-    public double[] getValues(final int year, final int week, final String[] view) {
+    public void setValuesWhere(final int year, final int week, final String[] view, final String[] meta, final long[] data) {
+        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
+        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        final int idx = getIndex(year, week, view);
+        if (idx >= 0) {
+            // overwrite values and finish. We consider that this hit is unique
+            for (int i = 0; i < meta.length; i++) this.metaCols[i].set(idx, meta[i]);
+            for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).set(idx, data[i]);
+            return;
+        }
+    }
+
+    public double[] getValuesWhere(final int year, final int week, final String[] view) {
         assert view == null || view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
 
         final int idx = getIndex(year, week, view);
@@ -268,17 +291,25 @@ public class WeekSeriesTable {
         return null;
     }
 
-    public WeekData getWeekData(final long year, final long week) {
+    public String[] getMetaWhere(final int year, final int week, final String[] view) {
+        final int idx = getIndex(year, week, view);
+        if (idx >= 0) {
+            return getMeta(idx);
+        }
+        return null;
+    }
+
+    public WeekDataDouble getWeekDataDouble(final long year, final long week) {
         final int idx = getIndex(year, week, null);
         if (idx < 0) return null;
-        return new WeekData(idx);
+        return new WeekDataDouble(idx);
     }
 
     /**
      * WeekData
      * is a "row" in a WeekSeriesTable
      */
-    public class WeekData {
+    public class WeekDataDouble {
 
         public final String[] view;
         public final String[] meta;
@@ -289,7 +320,7 @@ public class WeekSeriesTable {
          * @param year
          * @param week
          */
-        public WeekData(final long year, final long week) {
+        public WeekDataDouble(final long year, final long week) {
             this(getIndex(year, week, null));
         }
 
@@ -297,13 +328,56 @@ public class WeekSeriesTable {
          * get a row by given index
          * @param idx
          */
-        public WeekData(final int idx) {
+        public WeekDataDouble(final int idx) {
             this.view = new String[WeekSeriesTable.this.viewCols.length];
             this.meta = new String[WeekSeriesTable.this.metaCols.length];
             this.data = new double[WeekSeriesTable.this.dataCols.length];
             for (int i = 0; i < this.view.length; i++) this.view[i] = WeekSeriesTable.this.viewCols[i].get(idx);
             for (int i = 0; i < this.meta.length; i++) this.meta[i] = WeekSeriesTable.this.metaCols[i].get(idx);
-            for (int i = 0; i < this.data.length; i++) this.data[i] = WeekSeriesTable.this.dataCols[i].get(idx); // NPE??
+            for (int i = 0; i < this.data.length; i++) this.data[i] = ((DoubleColumn) WeekSeriesTable.this.dataCols[i]).get(idx); // NPE??
+        }
+
+        public double getData(final String colname) {
+            return this.data[WeekSeriesTable.this.dataColNameIndex.get(colname)];
+        }
+    }
+
+    public WeekDataLong getWeekDataLong(final long year, final long week) {
+        final int idx = getIndex(year, week, null);
+        if (idx < 0) return null;
+        return new WeekDataLong(idx);
+    }
+
+    /**
+     * WeekData
+     * is a "row" in a WeekSeriesTable
+     */
+    public class WeekDataLong {
+
+        public final String[] view;
+        public final String[] meta;
+        public final long[] data;
+
+        /**
+         * get row by given date
+         * @param year
+         * @param week
+         */
+        public WeekDataLong(final long year, final long week) {
+            this(getIndex(year, week, null));
+        }
+
+        /**
+         * get a row by given index
+         * @param idx
+         */
+        public WeekDataLong(final int idx) {
+            this.view = new String[WeekSeriesTable.this.viewCols.length];
+            this.meta = new String[WeekSeriesTable.this.metaCols.length];
+            this.data = new long[WeekSeriesTable.this.dataCols.length];
+            for (int i = 0; i < this.view.length; i++) this.view[i] = WeekSeriesTable.this.viewCols[i].get(idx);
+            for (int i = 0; i < this.meta.length; i++) this.meta[i] = WeekSeriesTable.this.metaCols[i].get(idx);
+            for (int i = 0; i < this.data.length; i++) this.data[i] = ((LongColumn) WeekSeriesTable.this.dataCols[i]).get(idx); // NPE??
         }
 
         public double getData(final String colname) {
@@ -335,17 +409,6 @@ public class WeekSeriesTable {
         return new CalendarWeek((int) year, (int) week);
     }
 
-    public double[] getDouble(final int row) {
-        final double[] d = new double[this.dataCols.length];
-        int c = 0;
-        for (int i = 0; i < this.dataCols.length; i++) {
-            d[c] = this.dataCols[i].getDouble(row);
-            if (!Double.isFinite(d[c]) || Double.isNaN(d[c])) d[c] = 0.0d;
-            c++;
-        }
-        return d;
-    }
-
     public void addValuesOverWeek(final int year, final int week, final String[] view, final String[] meta, final double[] data) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
@@ -354,33 +417,6 @@ public class WeekSeriesTable {
         //final long stop = start + weekLengthMilliseconds - 1;
         addValues(year, week, view, meta, data);
         //addValues(stop, year, week, view, meta, data, unit);
-    }
-
-    public void dropRowsWithMissingValues() {
-        this.table.dropRowsWithMissingValues();
-    }
-
-    @Override
-    public String toString() {
-        return this.table.toString();
-    }
-
-    public String printAll() {
-        return this.table.printAll();
-    }
-
-    /**
-     * paint a graph from the time-series table
-     * @param filename
-     * @param title
-     * @param xscalename
-     * @param timecolname
-     * @param yscalecols
-     * @param y2scalecols
-     * @return
-     */
-    public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
-        return TimeSeriesTable.getGraph(this.table.table(), filename, title, xscalename, timecolname, yscalecols, y2scalecols);
     }
 
 }

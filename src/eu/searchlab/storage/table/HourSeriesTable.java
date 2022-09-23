@@ -30,9 +30,7 @@ import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 
-public class HourSeriesTable {
-
-    public IndexedTable table;
+public class HourSeriesTable extends AbstractTimeSeriesTable implements TimeSeriesTable {
 
     public DateTimeColumn tshDateCol;
     public LongColumn tshTimeCol;
@@ -42,9 +40,6 @@ public class HourSeriesTable {
     public LongColumn tshHourCol;
     public StringColumn tshSYKWCol;
     public StringColumn tshCALDCol;
-    public StringColumn[] viewCols;
-    public StringColumn[] metaCols;
-    public DoubleColumn[] dataCols;
     private double[] zeroData;
 
     public final static String TSH_DATE  = "tsh.date";
@@ -155,10 +150,6 @@ public class HourSeriesTable {
         initZeroes(this.dataCols.length);
     }
 
-    public int size() {
-        return this.table.rowCount();
-    }
-
     public void deleteBefore(final long jahr) {
         for (int i = 0; i < this.tshYearCol.size(); i++) {
             final long j = this.tshYearCol.getLong(i);
@@ -197,9 +188,20 @@ public class HourSeriesTable {
     }
 
     public void addValues(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta, final double[] data) {
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        addValues(year, month, day, hour, view, meta);
+        for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).append(data[i]);
+    }
+
+    public void addValues(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta, final long[] data) {
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        addValues(year, month, day, hour, view, meta);
+        for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).append(data[i]);
+    }
+
+    private void addValues(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
-        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
         final LocalDateTime date = getLocalDate(year, month, day, hour);
         final long time = date.toEpochSecond(ZoneOffset.UTC);
         this.tshDateCol.appendObj(LocalDateTime.ofEpochSecond(time / 1000, 0, ZoneOffset.ofHours(0)));
@@ -211,7 +213,6 @@ public class HourSeriesTable {
         this.tshCALDCol.append(date.toString()); // ISO-8601 format yyy-mm-dd
         for (int i = 0; i < view.length; i++) this.viewCols[i].append(view[i]);
         for (int i = 0; i < meta.length; i++) this.metaCols[i].append(meta[i]);
-        for (int i = 0; i < data.length; i++) this.dataCols[i].append(data[i]);
     }
 
     public void append(final WeekSeriesTable t) {
@@ -242,12 +243,32 @@ public class HourSeriesTable {
 
             // overwrite values and finish. We consider that this hit is unique
             for (int i = 0; i < meta.length; i++) this.metaCols[i].set(r, meta[i]);
-            for (int i = 0; i < data.length; i++) this.dataCols[i].set(r, data[i]);
+            for (int i = 0; i < data.length; i++) ((DoubleColumn) this.dataCols[i]).set(r, data[i]);
             return;
         }
     }
 
-    public double[] getValues(final int year, final int month, final int day, final int hour, final String[] view) {
+    public void setValuesWhere(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta, final long[] data) {
+        assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
+        assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
+        assert data.length == this.dataCols.length : "neue data.length = " + data.length + ", bestehende data.length = " + this.dataCols.length;
+        rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
+            // try to match with time constraints
+            if (this.tshYearCol.get(r) != year || this.tshMonthCol.get(r) != month || this.tshDayCol.get(r) != day || this.tshHourCol.get(r) != hour) continue;
+
+            // try to match with view constraints
+            for (int t = 0; t < view.length; t++) {
+                if (!this.viewCols[t].get(r).equals(view[t])) continue rowloop;
+            }
+
+            // overwrite values and finish. We consider that this hit is unique
+            for (int i = 0; i < meta.length; i++) this.metaCols[i].set(r, meta[i]);
+            for (int i = 0; i < data.length; i++) ((LongColumn) this.dataCols[i]).set(r, data[i]);
+            return;
+        }
+    }
+
+    public double[] getValuesWhere(final int year, final int month, final int day, final int hour, final String[] view) {
         assert view == null || view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
 
         // execute select
@@ -295,17 +316,6 @@ public class HourSeriesTable {
         return getLocalDate((int) year, (int) month, (int) day, (int) hour);
     }
 
-    public double[] getDouble(final int row) {
-        final double[] d = new double[this.dataCols.length];
-        int c = 0;
-        for (int i = 0; i < this.dataCols.length; i++) {
-            d[c] = this.dataCols[i].getDouble(row);
-            if (!Double.isFinite(d[c]) || Double.isNaN(d[c])) d[c] = 0.0d;
-            c++;
-        }
-        return d;
-    }
-
     public void addValuesOverWeek(final int year, final int month, final int day, final int hour, final String[] view, final String[] meta, final double[] data) {
         assert view.length == this.viewCols.length : "neue view.length = " + view.length + ", bestehende view.length = " + this.viewCols.length;
         assert meta.length == this.metaCols.length : "neue meta.length = " + meta.length + ", bestehende meta.length = " + this.metaCols.length;
@@ -314,33 +324,6 @@ public class HourSeriesTable {
         //final long stop = start + weekLengthMilliseconds - 1;
         addValues(year, month, day, hour, view, meta, data);
         //addValues(stop, year, week, view, meta, data, unit);
-    }
-
-    public void dropRowsWithMissingValues() {
-        this.table.dropRowsWithMissingValues();
-    }
-
-    @Override
-    public String toString() {
-        return this.table.toString();
-    }
-
-    public String printAll() {
-        return this.table.printAll();
-    }
-
-    /**
-     * paint a graph from the time-series table
-     * @param filename
-     * @param title
-     * @param xscalename
-     * @param timecolname
-     * @param yscalecols
-     * @param y2scalecols
-     * @return
-     */
-    public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
-        return TimeSeriesTable.getGraph(this.table.table(), filename, title, xscalename, timecolname, yscalecols, y2scalecols);
     }
 
 }
