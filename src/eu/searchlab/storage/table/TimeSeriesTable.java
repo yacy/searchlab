@@ -21,4 +21,24 @@ package eu.searchlab.storage.table;
 
 public interface TimeSeriesTable {
 
+    public int size();
+
+    public String[] getView(final int row);
+
+    public String[] getMeta(final int row);
+
+    public String[] getMetaWhere(final String[] view);
+
+    public double[] getDouble(final int row);
+
+    public long[] getLong(final int row);
+
+    public void dropRowsWithMissingValues();
+
+    @Override
+    public String toString();
+
+    public String printAll();
+
+    public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols);
 }

@@ -269,7 +269,7 @@ public class DaySeriesTable extends AbstractTimeSeriesTable implements TimeSerie
                 if (view != null) for (int j = 0; j < view.length; j++) {
                     if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
                 }
-                return getDataColsRowDouble(i);
+                return getDouble(i);
             }
         }
         return null;
@@ -284,7 +284,7 @@ public class DaySeriesTable extends AbstractTimeSeriesTable implements TimeSerie
                 if (view != null) for (int j = 0; j < view.length; j++) {
                     if (!view[j].equals(this.viewCols[j].getString(i))) continue search;
                 }
-                return getDataColsRowLong(i);
+                return getLong(i);
             }
         }
         return null;

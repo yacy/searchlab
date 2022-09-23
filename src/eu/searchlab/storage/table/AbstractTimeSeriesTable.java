@@ -36,31 +36,12 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
     public Column<?>[] dataCols;
 
 
+    @Override
     public int size() {
         return this.table.rowCount();
     }
 
-    public double[] getDataColsRowDouble(final int row) {
-        final double[] d = new double[this.dataCols.length];
-        int c = 0;
-        for (int i = 0; i < this.dataCols.length; i++) {
-            d[c] = ((DoubleColumn) this.dataCols[i]).getDouble(row);
-            if (!Double.isFinite(d[c]) || Double.isNaN(d[c])) d[c] = 0.0d;
-            c++;
-        }
-        return d;
-    }
-
-    public long[] getDataColsRowLong(final int row) {
-        final long[] l = new long[this.dataCols.length];
-        int c = 0;
-        for (int i = 0; i < this.dataCols.length; i++) {
-            l[c] = ((LongColumn) this.dataCols[i]).getLong(row);
-            c++;
-        }
-        return l;
-    }
-
+    @Override
     public String[] getView(final int row) {
         final String[] s = new String[this.viewCols.length];
         int c = 0;
@@ -71,6 +52,7 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
         return s;
     }
 
+    @Override
     public String[] getMeta(final int row) {
         final String[] s = new String[this.metaCols.length];
         int c = 0;
@@ -80,6 +62,7 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
         return s;
     }
 
+    @Override
     public String[] getMetaWhere(final String[] view) {
         rowloop: for (int r = 0; r < this.table.rowCount(); r++) {
             // try to match with view constraints
@@ -94,6 +77,7 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
         return null;
     }
 
+    @Override
     public double[] getDouble(final int row) {
         final double[] d = new double[this.dataCols.length];
         int c = 0;
@@ -105,6 +89,7 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
         return d;
     }
 
+    @Override
     public long[] getLong(final int row) {
         final long[] d = new long[this.dataCols.length];
         int c = 0;
@@ -115,6 +100,7 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
         return d;
     }
 
+    @Override
     public void dropRowsWithMissingValues() {
         this.table.dropRowsWithMissingValues();
     }
@@ -124,6 +110,7 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
         return this.table.toString();
     }
 
+    @Override
     public String printAll() {
         return this.table.printAll();
     }
@@ -138,6 +125,7 @@ public class AbstractTimeSeriesTable implements TimeSeriesTable {
      * @param y2scalecols
      * @return
      */
+    @Override
     public TableViewer getGraph(final String filename, final String title, final String xscalename, final String timecolname, final String[] yscalecols, final String[] y2scalecols) {
         return getGraph(this.table.table(), filename, title, xscalename, timecolname, yscalecols, y2scalecols);
     }
