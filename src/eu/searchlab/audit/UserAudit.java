@@ -29,8 +29,8 @@ import eu.searchlab.operation.FrequencyTask;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
-import eu.searchlab.storage.table.TableViewer;
 import eu.searchlab.storage.table.MinuteSeriesTable;
+import eu.searchlab.storage.table.TableViewer;
 import eu.searchlab.tools.Logger;
 
 /**
@@ -134,12 +134,13 @@ public class UserAudit implements FrequencyTask {
             // the number of visitors is just the number of entries because the visitor is identified by it's id, not the IP
             this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {audit.size()});
         }
+        this.requestsTable.sort();
+        this.visitorsTable.sort();
 
         // store tables
         int sizeAfter = this.requestsTable.size();
         if (sizeAfter > sizeBeforeRequest) {
             // store the table
-            this.requestsTable.sort();
             this.requestsTable.storeCSV(this.cio, this.requestsIOp);
             this.requestsTableModified = now;
         }
@@ -147,7 +148,6 @@ public class UserAudit implements FrequencyTask {
         sizeAfter = this.visitorsTable.size();
         if (sizeAfter > sizeBeforeVisitor) {
             // store the table
-            this.visitorsTable.sort();
             this.visitorsTable.storeCSV(this.cio, this.visitorsIOp);
             this.visitorsTableModified = now;
         }
