@@ -24,8 +24,8 @@ import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
-import eu.searchlab.storage.table.TableViewer;
 import eu.searchlab.storage.table.MinuteSeriesTable;
+import eu.searchlab.storage.table.TableViewer;
 import net.yacy.grid.io.index.IndexDAO;
 
 /**
@@ -56,6 +56,9 @@ public class IndexSizeHistogramService extends AbstractService implements Servic
         if (path.endsWith("_per1year.html"))  timeframe = IndexDAO.Timeframe.per1year;
 
         tst = IndexDAO.getIndexDocumentCountHistorgramPerTimeframe(id, timeframe);
+        tst.sort();
+        tst.before(System.currentTimeMillis());
+        assert tst.checkOrder();
         final TableViewer requestsTableViewer = tst.getGraph("index_size_" + id, "Index Size For User '" + id + "' Within " + timeframe.name, "Date", MinuteSeriesTable.TS_DATE, new String[] {"data.documents SteelBlue"}, new String[] {});
         final String graph = requestsTableViewer.render2html(Searchlab.GRAPH_WIDTH, Searchlab.GRAPH_HEIGHT, true);
         return new ServiceResponse(graph);
