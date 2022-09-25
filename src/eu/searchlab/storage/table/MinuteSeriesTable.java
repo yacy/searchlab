@@ -222,7 +222,9 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
      * @return a new TimeSeriesTable with the same column types as this table
      */
     public MinuteSeriesTable emptyClone() {
-        final String[] viewColNames = new String[this.viewCols.length], metaColNames = new String[this.metaCols.length], dataColNames = new String[this.dataCols.length];
+        final String[] viewColNames = new String[this.viewCols.length];
+        final String[] metaColNames = new String[this.metaCols.length];
+        final String[] dataColNames = new String[this.dataCols.length];
         for (int i = 0; i < viewColNames.length; i++) viewColNames[i] = this.viewCols[i].name();
         for (int i = 0; i < metaColNames.length; i++) metaColNames[i] = this.metaCols[i].name();
         for (int i = 0; i < dataColNames.length; i++) dataColNames[i] = this.dataCols[i].name();
@@ -232,12 +234,52 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
     }
 
     public void sort() {
-        this.table = this.table.sort();
+        sort(0);
+    }
+
+    public void sort(final int column) {
+        this.table = this.table.sort(column);
+        reassignColumns();
+    }
+
+    public void sort(final String columnName) {
+        this.table = this.table.sort(columnName);
+        reassignColumns();
+    }
+
+    public void before(final long time) {
+        this.table = whereBeforeTime(time).table;
+        reassignColumns();
+    }
+
+    private void reassignColumns() {
         this.tsTimeCol = (InstantColumn) this.table.column(0);
         this.tsDateCol = (StringColumn) this.table.column(1);
         for (int i = 0; i < this.viewCols.length; i++) this.viewCols[i] = (StringColumn) this.table.column(i + 2);
         for (int i = 0; i < this.metaCols.length; i++) this.metaCols[i] = (StringColumn) this.table.column(i + 2 + this.viewCols.length);
         for (int i = 0; i < this.dataCols.length; i++) this.dataCols[i] = this.table.column(i + 2 + this.viewCols.length + this.metaCols.length);
+    }
+
+    public boolean checkOrder() {
+        long t0 = Long.MIN_VALUE;
+        for (int i = 0; i < this.tsTimeCol.size(); i++) {
+            final long t1 = this.tsTimeCol.getLongInternal(i);
+            if (t1 < t0) return false;
+        }
+
+        final SimpleDateFormat minuteDateFormatParser = DateParser.minuteDateFormatParser();
+        t0 = Long.MIN_VALUE;
+        for (int i = 0; i < this.tsDateCol.size(); i++) {
+            final String s1 = this.tsDateCol.get(i);
+            long t1;
+            try {
+                t1 = minuteDateFormatParser.parse(s1).getTime();
+                if (t1 < t0) return false;
+            } catch (final ParseException e) {
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -267,10 +309,61 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
                 final String[] meta = getMeta(row);
                 final long[] data = getLong(row);
                 for (int i = 0; i < a.length; i++) a[i] += data[i];
+                if (time < 0) continue;
                 aggregation.addValues(time, view, meta, a);
             }
         }
         return aggregation;
+    }
+
+    public MinuteSeriesTable whereBeforeTime(final long l) {
+        final MinuteSeriesTable where = emptyClone();
+        final boolean dataIsDouble = this.dataCols[0] instanceof DoubleColumn;
+        if (dataIsDouble) {
+            for (int row = 0; row < this.size(); row++) {
+                final long time = getTime(row);
+                if (time < 0 || time >= l) continue;
+                final String[] view = getView(row);
+                final String[] meta = getMeta(row);
+                final double[] data = getDouble(row);
+                where.addValues(time, view, meta, data);
+            }
+        } else {
+            for (int row = 0; row < this.size(); row++) {
+                final long time = getTime(row);
+                if (time < 0 || time >= l) continue;
+                final String[] view = getView(row);
+                final String[] meta = getMeta(row);
+                final long[] data = getLong(row);
+                where.addValues(time, view, meta, data);
+            }
+        }
+        return where;
+    }
+
+    public MinuteSeriesTable whereFromTime(final long l) {
+        final MinuteSeriesTable where = emptyClone();
+        final boolean dataIsDouble = this.dataCols[0] instanceof DoubleColumn;
+        if (dataIsDouble) {
+            for (int row = 0; row < this.size(); row++) {
+                final long time = getTime(row);
+                if (time < 0 || time < l) continue;
+                final String[] view = getView(row);
+                final String[] meta = getMeta(row);
+                final double[] data = getDouble(row);
+                where.addValues(time, view, meta, data);
+            }
+        } else {
+            for (int row = 0; row < this.size(); row++) {
+                final long time = getTime(row);
+                if (time < 0 || time < l) continue;
+                final String[] view = getView(row);
+                final String[] meta = getMeta(row);
+                final long[] data = getLong(row);
+                where.addValues(time, view, meta, data);
+            }
+        }
+        return where;
     }
 
     /**
@@ -420,13 +513,26 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
         return getTime(0);
     }
 
+    public Instant getFirstInstant() {
+        return getInstant(0);
+    }
+
     public long getLastTime() {
         final int row = this.table.size() - 1;
         return getTime(row);
     }
 
+    public Instant getLastInstant() {
+        final int row = this.table.size() - 1;
+        return getInstant(row);
+    }
+
     public long getTime(final int row) {
         return this.tsTimeCol.get(row).getEpochSecond() * 1000L;
+    }
+
+    public Instant getInstant(final int row) {
+        return this.tsTimeCol.get(row);
     }
 
 }

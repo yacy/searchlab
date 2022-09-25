@@ -241,7 +241,15 @@ public class IndexedTable implements Iterable<JSONObject> {
     }
 
     public IndexedTable sort() {
-        return new IndexedTable(this.table.sortAscendingOn(this.table.column(0).name()));
+        return sort(0);
+    }
+
+    public IndexedTable sort(final int column) {
+        return sort(this.table.column(column).name());
+    }
+
+    public IndexedTable sort(final String columnName) {
+        return new IndexedTable(this.table.sortAscendingOn(columnName));
     }
 
     private void addValue(final Column<?> column, final Object object) throws ParseException {
@@ -581,7 +589,7 @@ public class IndexedTable implements Iterable<JSONObject> {
         final Table t = this.table.emptyCopy();
         final List<Integer> l = index.get(value);
         if (l == null) return new IndexedTable(t);
-        l.forEach(r -> t.addRow(this.table.row(r)));
+        l.forEach(r -> t.append(this.table.row(r)));
         return new IndexedTable(t);
     }
 
@@ -877,8 +885,40 @@ public class IndexedTable implements Iterable<JSONObject> {
         return ((LongIndex) getIndex(columnName)).get(value);
     }
 
+    private Selection whereAtLeastSelection(final String columnName, final long value) {
+        return ((LongIndex) getIndex(columnName)).atLeast(value);
+    }
+
+    private Selection whereAtMostSelection(final String columnName, final long value) {
+        return ((LongIndex) getIndex(columnName)).atMost(value);
+    }
+
+    private Selection whereGreaterThanSelection(final String columnName, final long value) {
+        return ((LongIndex) getIndex(columnName)).greaterThan(value);
+    }
+
+    private Selection whereLessThanSelection(final String columnName, final long value) {
+        return ((LongIndex) getIndex(columnName)).lessThan(value);
+    }
+
     private Selection whereSelection(final String columnName, final double value) {
         return ((DoubleIndex) getIndex(columnName)).get(value);
+    }
+
+    private Selection whereAtLeastSelection(final String columnName, final double value) {
+        return ((DoubleIndex) getIndex(columnName)).atLeast(value);
+    }
+
+    private Selection whereAtMostSelection(final String columnName, final double value) {
+        return ((DoubleIndex) getIndex(columnName)).atMost(value);
+    }
+
+    private Selection whereGreaterThanSelection(final String columnName, final double value) {
+        return ((DoubleIndex) getIndex(columnName)).greaterThan(value);
+    }
+
+    private Selection whereLessThanSelection(final String columnName, final double value) {
+        return ((DoubleIndex) getIndex(columnName)).lessThan(value);
     }
 
     private Selection whereSelection(final String... selects) {
@@ -938,7 +978,7 @@ public class IndexedTable implements Iterable<JSONObject> {
     public IndexedTable head(final int count) {
         final Table t = this.table.emptyCopy();
         for (int r = 0; r < Math.min(count, this.table.rowCount()); r++) {
-            t.addRow(this.table.row(r));
+            t.append(this.table.row(r));
         }
         return new IndexedTable(t);
     }
@@ -953,9 +993,59 @@ public class IndexedTable implements Iterable<JSONObject> {
         return new IndexedTable(this.table.where(con));
     }
 
+    public IndexedTable where(final String columnName, final double value) {
+        final Selection con = whereSelection(columnName, value);
+        return new IndexedTable(this.table.where(con));
+    }
+
     public IndexedTable whereNot(final String columnName, final long value) {
         final Selection con = whereSelection(columnName, value);
         return new IndexedTable(this.table.where(not(con)));
+    }
+
+    public IndexedTable whereNot(final String columnName, final double value) {
+        final Selection con = whereSelection(columnName, value);
+        return new IndexedTable(this.table.where(not(con)));
+    }
+
+    public IndexedTable whereAtLeast(final String columnName, final long l) {
+        final Selection con = whereAtLeastSelection(columnName, l);
+        return new IndexedTable(this.table.where(con));
+    }
+
+    public IndexedTable whereAtMost(final String columnName, final long l) {
+        final Selection con = whereAtMostSelection(columnName, l);
+        return new IndexedTable(this.table.where(con));
+    }
+
+    public IndexedTable whereGreaterThan(final String columnName, final long l) {
+        final Selection con = whereGreaterThanSelection(columnName, l);
+        return new IndexedTable(this.table.where(con));
+    }
+
+    public IndexedTable whereLessThan(final String columnName, final long l) {
+        final Selection con = whereLessThanSelection(columnName, l);
+        return new IndexedTable(this.table.where(con));
+    }
+
+    public IndexedTable whereAtLeast(final String columnName, final double d) {
+        final Selection con = whereAtLeastSelection(columnName, d);
+        return new IndexedTable(this.table.where(con));
+    }
+
+    public IndexedTable whereAtMost(final String columnName, final double d) {
+        final Selection con = whereAtMostSelection(columnName, d);
+        return new IndexedTable(this.table.where(con));
+    }
+
+    public IndexedTable whereGreaterThan(final String columnName, final double d) {
+        final Selection con = whereGreaterThanSelection(columnName, d);
+        return new IndexedTable(this.table.where(con));
+    }
+
+    public IndexedTable whereLessThan(final String columnName, final double d) {
+        final Selection con = whereLessThanSelection(columnName, d);
+        return new IndexedTable(this.table.where(con));
     }
 
     public String selectStringFrom(final String select, final String column, final long value) {

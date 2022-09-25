@@ -20,6 +20,8 @@
 package eu.searchlab.audit;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +33,7 @@ import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.MinuteSeriesTable;
 import eu.searchlab.storage.table.TableViewer;
+import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 
 /**
@@ -134,8 +137,19 @@ public class UserAudit implements FrequencyTask {
             // the number of visitors is just the number of entries because the visitor is identified by it's id, not the IP
             this.visitorsTable.addValues(now, new String[] {}, new String[] {}, new long[] {audit.size()});
         }
+
+        // clean up old rows
+        try {
+            final Date cut = DateParser.minuteDateFormatParser().parse("2022-05-29 00:00");
+            this.requestsTable.deleteBefore(cut.getTime());
+            this.visitorsTable.deleteBefore(cut.getTime());
+        } catch (final ParseException e) {}
+        this.requestsTable.before(now);
         this.requestsTable.sort();
+        assert this.requestsTable.checkOrder();
+        this.visitorsTable.before(now);
         this.visitorsTable.sort();
+        assert this.visitorsTable.checkOrder();
 
         // store tables
         int sizeAfter = this.requestsTable.size();
