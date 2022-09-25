@@ -111,7 +111,7 @@ public class HomeService  extends AbstractService implements Service {
 
         // all good, we respond with user credentials
         final JSONObject json = new JSONObject(true);
-        final long documents = IndexDAO.getIndexDocumentCount(authentication.getID());
+        final long documents = IndexDAO.getIndexDocumentTimeCount(authentication.getID(), System.currentTimeMillis() - 10000).count;
         final long collections = IndexDAO.getIndexDocumentCollectionCount(authentication.getID());
 
         try {

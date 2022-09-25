@@ -33,17 +33,40 @@ import eu.searchlab.tools.Logger;
 
 public class IndexDAO {
 
+    /**
+     * TimeCount is an object which gives a count to a given time
+     */
+    public final static class TimeCount {
 
-    public final static class TimeCount {long time; long count; public TimeCount(final long time, final long count) {this.time = time; this.count = count;}}
+        public final long time, count;
+
+        public TimeCount(final long time, final long count) {
+            this.time = time;
+            this.count = count;
+        }
+    }
+
+    // the knownDocumentCount is a map from a given user id to the TimeCount of documents of a given time
     private final static Map<String, TimeCount> knownDocumentCount = new ConcurrentHashMap<>();
 
-    public static long getIndexDocumentCount(String user_id) {
-        if (user_id == null || user_id.length() == 0) user_id = "en";
-        final long now = System.currentTimeMillis();
-        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final long documents = user_id.equals("en") ? Searchlab.ec.count(index_name) : Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id);
-        knownDocumentCount.put(user_id, new TimeCount(now, documents));
-        return documents;
+    /**
+     * get a document count together with the time when that count was retrieved
+     * @param user_id the user id of the document count
+     * @param maxtime the time (millis since epoch) as upper border for the age of the time within the TimeCount
+     * @return
+     */
+    public static TimeCount getIndexDocumentTimeCount(final String user_id, final double maxtime) {
+        TimeCount tc = knownDocumentCount.get(user_id);
+        if (tc == null || tc.time <= maxtime) {
+            String user_id1 = user_id;
+            if (user_id1 == null || user_id1.length() == 0) user_id1 = "en";
+            final long now = System.currentTimeMillis();
+            final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+            final long documents = user_id1.equals("en") ? Searchlab.ec.count(index_name) : Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id1);
+            knownDocumentCount.put(user_id1, new TimeCount(now, documents));
+            tc = knownDocumentCount.get(user_id);
+        }
+        return tc;
     }
 
     public static enum Timeframe {
@@ -67,20 +90,11 @@ public class IndexDAO {
     public static MinuteSeriesTable getIndexDocumentCountHistorgramPerTimeframe(String user_id, final Timeframe timeframe) {
         if (user_id == null || user_id.length() == 0) user_id = "en";
         final long now = System.currentTimeMillis();
-
-        // get a total index count for user
-        TimeCount tc = knownDocumentCount.get(user_id);
-        if (tc == null || tc.time <= now - timeframe.framelength) {
-            getIndexDocumentCount(user_id);
-            tc = knownDocumentCount.get(user_id);
-        }
-        final int indexTimeForDocumentCount = (int) (Math.max(0, now - tc.time) / timeframe.steplength); // there is a slight chance that tc.time is a bit (just milliseconds) larger than 'now'
-        assert indexTimeForDocumentCount >= 0;
-        assert indexTimeForDocumentCount < timeframe.stepcount;
+        final long afterTime = now - timeframe.framelength;
 
         // get list of all documents that have been created in the last 10 minutes
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final Date fromDate = new Date(now - timeframe.framelength);
+        final Date fromDate = new Date(afterTime);
         final String dateField = WebMapping.load_date_dt.getMapping().name(); // like "load_date_dt": "2022-03-30T02:03:03.214Z",
         final String[] dataFields = new String[] {WebMapping.load_date_dt.getMapping().name()};
         //final String[] dataFields = new String[] {WebMapping.fresh_date_dt.getMapping().name(), WebMapping.last_modified.getMapping().name(), WebMapping.load_date_dt.getMapping().name()};
@@ -94,7 +108,7 @@ public class IndexDAO {
         for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
 
         final SimpleDateFormat iso8601MillisParser = DateParser.iso8601MillisParser();
-        for (final Map<String, Object> map: documents) {
+        docreader: for (final Map<String, Object> map: documents) {
             /*
             for (final Map.Entry<String, Object> entry: map.entrySet()) {
                 if (entry.getKey().endsWith("_dt") || entry.getKey().equals("last_modified")) {
@@ -109,7 +123,12 @@ public class IndexDAO {
                 // aggregate statistics about number of indexed documents by one for that indexTime
                 if (date != null) {
                     // the increment time is a number from 0..599 which represents the time 0:=now/last minute; 599:=oldest == x minutes/days/years in the past
-                    final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) ((now - date.getTime()) / timeframe.steplength)));
+                    final long datetime = date.getTime(); // milliseconds since epoch
+                    if (datetime < afterTime || now < datetime) continue docreader; // not valid for statistical collection
+                    assert datetime >= afterTime : "date is before required period by " + (afterTime - datetime) + " milliseconds";
+                    assert now > datetime: "datetime is " + (datetime - now) + " milliseconds too large: " + dates;  // the document time must be in the past always
+                    final long pasttime = now - datetime;
+                    final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) (pasttime / timeframe.steplength)));
                     // we increment the count at the incrementTime to reflect
                     counts[indexTime]++;
                     assert counts[indexTime] >= 0;
@@ -118,6 +137,14 @@ public class IndexDAO {
                 Logger.warn("Date parsing error with " + dates, e);
             }
         }
+
+        // get a total index count for user: that is used to reconstruct the actual number of index entries from the aggregated number
+        final TimeCount tc = getIndexDocumentTimeCount(user_id, now - timeframe.framelength);
+        final long pt = now - tc.time;
+        //assert pt >= 0;
+        final int indexTimeForDocumentCount = (int) (Math.max(0, pt) / timeframe.steplength); // there is a slight chance that tc.time is a bit (just milliseconds) larger than 'now'
+        assert indexTimeForDocumentCount >= 0;
+        assert indexTimeForDocumentCount < timeframe.stepcount;
 
         // find the count offset for the indexTimeForDocumentCount position and correct the counts using the time count info
         counts[indexTimeForDocumentCount] += tc.count;

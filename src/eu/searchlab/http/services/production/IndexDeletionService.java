@@ -71,7 +71,7 @@ public class IndexDeletionService  extends AbstractService implements Service {
         }
 
         // prepare result
-        final long documents = IndexDAO.getIndexDocumentCount(user_id);
+        final long documents = IndexDAO.getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
         final long collections = IndexDAO.getIndexDocumentCollectionCount(user_id);
         final JSONObject json = new JSONObject(true);
         try {

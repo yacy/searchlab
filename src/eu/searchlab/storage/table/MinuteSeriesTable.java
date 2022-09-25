@@ -26,6 +26,8 @@ import java.text.SimpleDateFormat;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
@@ -122,6 +124,19 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
         // create appropriate columns from given table
         // If those columes come from a parsed input, the types may be not correct
 
+        // verify column names
+        final Set<String> colnames = new LinkedHashSet<>();
+        colnames.addAll(xtable.columnNames());
+        if (!xtable.column(0).name().equals(TS_TIME) && !colnames.contains(TS_TIME)) {
+            // considert that the first column is TS_TIME
+            xtable.column(0).setName(TS_TIME);
+        }
+        if (!xtable.column(1).name().equals(TS_DATE) && !colnames.contains(TS_DATE)) {
+            // considert that the first column is TS_TIME
+            xtable.column(0).setName(TS_DATE);
+        }
+
+        // verify consistency and order
         xtable = xtable.sortAscendingOn(TS_TIME);
         this.tsTimeCol = TableParser.asInstant(xtable.column(TS_TIME));
         this.tsDateCol = TableParser.asString(xtable.column(TS_DATE));
