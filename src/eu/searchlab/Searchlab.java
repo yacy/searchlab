@@ -243,7 +243,7 @@ public class Searchlab {
         }.start();
 
         // connect to minio without background thread because we need this before we initialize the server for audit
-        final String s3address = System.getProperty("grid.s3.address", "admin:12345678@yacygrid.b00:9000");
+        final String s3address = System.getProperty("grid.s3.address", "");
         final String s3DataPath = System.getProperty("grid.s3.datapath", "/data");
         final String bucket_endpoint = getHost(s3address);
         final int p = bucket_endpoint.indexOf('.');
@@ -256,7 +256,7 @@ public class Searchlab {
         aaaaaIOp  = dataIOp.append("aaaaa");
         auditUserRequestsIOp = statusIOp.append("audit_user_requests.csv");
         auditUserVisitorsIOp = statusIOp.append("audit_user_visitors.csv");
-        Logger.info("Connected S3 at " + s3address);
+        Logger.info("Connected S3 at " + s3address.replaceAll(".*@", ""));
 
         // initialize audit and aaaaa
         // if this fails, we cannot start the searchlab!
