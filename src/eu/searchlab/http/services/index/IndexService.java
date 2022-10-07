@@ -26,7 +26,6 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.searchlab.Searchlab;
 import eu.searchlab.aaaaa.Authentication;
 import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
@@ -35,6 +34,7 @@ import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.tools.Classification;
 import eu.searchlab.tools.JSONList;
 import net.yacy.grid.io.index.ElasticsearchClient;
+import net.yacy.grid.io.index.IndexDAO;
 import net.yacy.grid.io.index.Sort;
 import net.yacy.grid.io.index.WebDocument;
 import net.yacy.grid.io.index.WebMapping;
@@ -59,13 +59,12 @@ public class IndexService extends AbstractService implements Service {
         final boolean hasReferer = request.hasReferer(); // if this request comes with no referrer, do not offer more than one response pages
 
         // evaluate request parameter
-        final String indexName = request.get("index", System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB));
         final String id = request.get("id", "");
         final String q = request.get("query", request.get("q", "")).trim();
         final JSONObject json = new JSONObject(true);
 
         try {
-            if (indexName.length() > 0 && id.length() > 0) {
+            if (id.length() > 0) {
                 json.put("title", "Search for id = " + id);
                 json.put("description", "Search for id = " + id);
                 json.put("startIndex", "0");
@@ -74,7 +73,7 @@ public class IndexService extends AbstractService implements Service {
                 json.put("pages", "1");
                 json.put("page", "1");
 
-                final Map<String, Object> map = Searchlab.ec.readMap(indexName, id);
+                final Map<String, Object> map = IndexDAO.exportIndex(id);
                 final JSONList list = new JSONList();
                 if (map == null) {
                     json.put("totalResults",  "0");
@@ -87,7 +86,7 @@ public class IndexService extends AbstractService implements Service {
                     json.put("itemsCount", 1);
                     json.put("items", list.toArray());
                 }
-            } else if (indexName.length() > 0 && q.length() > 0) {
+            } else if (q.length() > 0) {
                 final int startRecord = request.get("startRecord", request.get("start", 0));
                 final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
                 String collection = request.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
@@ -102,8 +101,8 @@ public class IndexService extends AbstractService implements Service {
                 final String user_id = self ? authentication.getID() : null;
 
                 final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
-                final ElasticsearchClient.Query query = Searchlab.ec.query(
-                        indexName, user_id, yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
+                final ElasticsearchClient.Query query = IndexDAO.query(
+                        user_id, yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
 
                 final JSONList items = new JSONList();
                 final List<Map<String, Object>> qr = query.results;

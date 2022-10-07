@@ -87,9 +87,9 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
+import eu.searchlab.tools.Cons;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
-
 /**
  * To get data out of the elasticsearch index which is written with this client, try:
  * http://localhost:9200/web/_search?q=*:*
@@ -346,12 +346,9 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    public long count(final String indexName, final String key0, final String value0, final String key1, final String value1) {
-        final TermQueryBuilder q0 = QueryBuilders.termQuery(key0, value0);
-        final TermQueryBuilder q1 = QueryBuilders.termQuery(key1, value1);
-        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        bFilter.must(QueryBuilders.constantScoreQuery(q0));
-        bFilter.must(QueryBuilders.constantScoreQuery(q1));
+    @SafeVarargs
+    public final long count(final String indexName, final Cons<String, String>... constraints) {
+        final QueryBuilder bFilter = constraintQuery(constraints);
 
         while (true) try {
             return countInternal(bFilter, indexName);
@@ -364,7 +361,7 @@ public class ElasticsearchClient implements FulltextIndex {
 
     @Override
     public long count(final String indexName, final String user_id, final YaCyQuery yq) {
-        final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
+        final QueryBuilder q = constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         while (true) try {
             return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -379,11 +376,6 @@ public class ElasticsearchClient implements FulltextIndex {
         return response.getHits().getTotalHits();
     }
 
-    private QueryBuilder constraint(final QueryBuilder qb, final WebMapping field, final String value) {
-        if (value == null) return qb;
-        final TermQueryBuilder c = QueryBuilders.termQuery(field.getMapping().name(), value);
-        return QueryBuilders.boolQuery().must(qb).must(c);
-    }
 
     /**
      * Get the document for a given id.
@@ -456,13 +448,9 @@ public class ElasticsearchClient implements FulltextIndex {
         return getResponse.isExists() ? getResponse.getType() : null;
     }
 
-    public long delete(final String indexName, final String key0, final String value0, final String key1, final String value1) {
-        final TermQueryBuilder q0 = QueryBuilders.termQuery(key0, value0);
-        final TermQueryBuilder q1 = QueryBuilders.termQuery(key1, value1);
-        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        bFilter.must(QueryBuilders.constantScoreQuery(q0));
-        bFilter.must(QueryBuilders.constantScoreQuery(q1));
-
+    @SafeVarargs
+    public final long delete(final String indexName, final Cons<String, String>... constraints) {
+        final QueryBuilder bFilter = constraintQuery(constraints);
         while (true) try {
             return deleteByQuery(indexName, bFilter);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -486,9 +474,9 @@ public class ElasticsearchClient implements FulltextIndex {
      * @return true if the document existed and was deleted, false otherwise
      */
     @Override
-    public boolean delete(final String indexName, final String typeName, final String id) {
+    public boolean deleteByID(final String indexName, final String typeName, final String id) {
         while (true) try {
-            return deleteInternal(indexName, typeName, id);
+            return deleteInternalByID(indexName, typeName, id);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
             Logger.info("ElasticsearchClient delete failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
@@ -497,7 +485,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
     }
 
-    private boolean deleteInternal(final String indexName, final String typeName, final String id) {
+    private boolean deleteInternalByID(final String indexName, final String typeName, final String id) {
         final DeleteResponse response = this.elasticsearchClient.prepareDelete(indexName, typeName, id).get();
         return response.getResult() == DocWriteResponse.Result.DELETED;
     }
@@ -514,7 +502,7 @@ public class ElasticsearchClient implements FulltextIndex {
      */
     @Override
     public long deleteByQuery(final String indexName, final String user_id, final YaCyQuery yq) {
-        final QueryBuilder q = constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
+        final QueryBuilder q = constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         while (true) try {
             return deleteByQuery(indexName, q);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -826,6 +814,8 @@ public class ElasticsearchClient implements FulltextIndex {
      * @param indexName the name of the search index
      * @param queryBuilder a query for the search
      * @param postFilter a filter that does not affect aggregations
+     * @param sort sortorder
+     * @param highlightField field to be used for highlighting
      * @param timezoneOffset - an offset in minutes that is applied on dates given in the query of the form since:date until:date
      * @param from - from index to start the search from, 1st entry has from-index 0.
      * @param resultCount - the number of messages in the result; can be zero if only aggregations are wanted
@@ -833,12 +823,10 @@ public class ElasticsearchClient implements FulltextIndex {
      * @param aggregationFields - names of the aggregation fields. If no aggregation is wanted, pass no (zero) field(s)
      */
     @Override
-    public FulltextIndex.Query query(final String indexName, final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
-        final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : constraint(yq.getQueryBuilder(), WebMapping.user_id_sxt, user_id);
-        return query(indexName, q, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
-    }
-
-    public FulltextIndex.Query query(final String indexName, final QueryBuilder queryBuilder, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
+    public FulltextIndex.Query query(
+            final String indexName, final QueryBuilder queryBuilder, final YaCyQuery postFilter, final Sort sort,
+            final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount,
+            final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
         final FulltextIndex.Query query = new FulltextIndex.Query();
         for (int t = 0; t < 10; t++) try {
 
@@ -930,23 +918,17 @@ public class ElasticsearchClient implements FulltextIndex {
         return query;
     }
 
-    public int aggregationCount(final String indexName, final String fieldName, final String fieldValue, final String aggregationField) {
-        return aggregation(indexName, fieldName, fieldValue, aggregationField).size();
+    public int aggregationCount(final String indexName, final String aggregationField, final Cons<String, String> field) {
+        return aggregation(indexName, aggregationField, field).size();
     }
 
-    public Map<String, Long> aggregation(final String indexName, final String fieldName, final String fieldValue, final String aggregationField) {
+    public Map<String, Long> aggregation(final String indexName, final String aggregationField, final Cons<String, String> field) {
 
         final Map<String, Long> a = new HashMap<>();
 
         try {
 
-            final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-                    .setSearchType(SearchType.QUERY_THEN_FETCH)
-                    .setFrom(0);
-
-            final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-            bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(fieldName, fieldValue))));
-            request.setQuery(bFilter);
+            final SearchRequestBuilder request = constraintRequest(indexName, field);
             request.addAggregation(AggregationBuilders.terms(aggregationField).field(aggregationField).minDocCount(1).size(1000));
 
 
@@ -976,16 +958,8 @@ public class ElasticsearchClient implements FulltextIndex {
         return a;
     }
 
-    public List<Map<String, Object>> queryWithConstraints(final String indexName, final Map<String, String> constraints, final boolean latest) {
-        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-                .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setFrom(0);
-
-        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        for (final Map.Entry<?,?> entry : constraints.entrySet()) {
-            bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery((String) entry.getKey(), ((String) entry.getValue()).toLowerCase())));
-        }
-        request.setQuery(bFilter);
+    public final List<Map<String, Object>> queryWithConstraints(final String indexName, final Cons<String, String> constraints, final boolean latest) {
+        final SearchRequestBuilder request = constraintRequest(indexName, constraints);
 
         // get response
         final SearchResponse response = request.execute().actionGet();
@@ -1002,12 +976,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     public List<Map<String, Object>> queryAll(final String indexName) {
-        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-                .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setFrom(0).setSize(10000);
-
-        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        request.setQuery(bFilter);
+        final SearchRequestBuilder request = constraintRequest(indexName);
 
         // get response
         final SearchResponse response = request.execute().actionGet();
@@ -1021,6 +990,31 @@ public class ElasticsearchClient implements FulltextIndex {
         }
 
         return result;
+    }
+
+    @SafeVarargs
+    private final SearchRequestBuilder constraintRequest(final String indexName, final Cons<String, String>... constraints) {
+        final QueryBuilder bFilter = constraintQuery(constraints);
+        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setFrom(0)
+                .setQuery(bFilter);
+        return request;
+    }
+
+    @SafeVarargs
+    private final QueryBuilder constraintQuery(final Cons<String, String>... constraints) {
+        return constraintQuery(QueryBuilders.boolQuery(), constraints);
+    }
+
+    @SafeVarargs
+    public final QueryBuilder constraintQuery(final QueryBuilder qb, final Cons<String, String>... constraints) {
+        if (constraints == null || constraints.length == 0) return qb;
+        final BoolQueryBuilder bFilter = qb instanceof BoolQueryBuilder ? (BoolQueryBuilder) qb: QueryBuilders.boolQuery().must(qb);
+        for (final Map.Entry<?,?> entry : constraints) {
+            bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery((String) entry.getKey(), ((String) entry.getValue()).toLowerCase())));
+        }
+        return bFilter;
     }
 
     public List<Map<String, Object>> queryWithCompare(final String indexName, final String compvName, final Date afterDate, final String... fields) {

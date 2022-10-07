@@ -47,6 +47,7 @@ import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
+import eu.searchlab.tools.Cons;
 import eu.searchlab.tools.Digest;
 import eu.searchlab.tools.Domains;
 import eu.searchlab.tools.JSONList;
@@ -233,10 +234,10 @@ public class CrawlStartService  extends AbstractService implements Service {
                 // find all user_ids which have participated in the same crawl
                 final Map<String, Long> agg_host_s = Searchlab.ec.aggregation(
                         System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB),
-                        WebMapping.host_s.name(), url.getHost(), WebMapping.user_id_s.name());
+                        WebMapping.user_id_s.name(), Cons.of(WebMapping.host_s.name(), url.getHost()));
                 final Map<String, Long> agg_host_sxt = Searchlab.ec.aggregation(
                         System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB),
-                        WebMapping.host_s.name(), url.getHost(), WebMapping.user_id_sxt.name());
+                        WebMapping.user_id_sxt.name(), Cons.of(WebMapping.host_s.name(), url.getHost()));
                 for (final String s: agg_host_s.keySet()) {
                     if (!agg_host_sxt.containsKey(s)) agg_host_sxt.put(s, agg_host_s.get(s));
                 }

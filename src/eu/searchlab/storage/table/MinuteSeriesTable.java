@@ -233,20 +233,46 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
         return clone;
     }
 
+    /**
+     * sort all lines by the date of the rows
+     */
     public void sort() {
         sort(0);
     }
 
+    /**
+     * Sort all lines by the given column
+     * @param columnName
+     */
     public void sort(final int column) {
         this.table = this.table.sort(column);
         reassignColumns();
     }
 
+    /**
+     * Sort all lines by the given column
+     * @param columnName
+     */
     public void sort(final String columnName) {
         this.table = this.table.sort(columnName);
         reassignColumns();
     }
 
+    /**
+     * Get a new table where all rows are from the given time or after that time.
+     * The given time is included
+     * @param time the given time
+     */
+    public void from(final long time) {
+        this.table = whereFromTime(time).table;
+        reassignColumns();
+    }
+
+    /**
+     * Get a new table where all rows are before the given time.
+     * The given time is excluded
+     * @param time the given time
+     */
     public void before(final long time) {
         this.table = whereBeforeTime(time).table;
         reassignColumns();

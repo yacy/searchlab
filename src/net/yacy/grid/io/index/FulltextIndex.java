@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.elasticsearch.client.transport.NoNodeAvailableException;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -103,7 +104,7 @@ public interface FulltextIndex {
      *            the unique identifier of a document
      * @return true if the document existed and was deleted, false otherwise
      */
-    public boolean delete(String indexName, String typeName, final String id);
+    public boolean deleteByID(String indexName, String typeName, final String id);
 
     /**
      * Delete documents using a query. Check what would be deleted first with a normal search query!
@@ -198,7 +199,7 @@ public interface FulltextIndex {
         }
     }
 
-    public Query query(final String indexName, final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, int timezoneOffset, int from, int resultCount, int aggregationLimit, boolean explain, WebMapping... aggregationFields);
+    public Query query(final String indexName, final QueryBuilder queryBuilder, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields);
 
     public static class Query {
         public int hitCount;

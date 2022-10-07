@@ -57,16 +57,35 @@ public class IndexDeletionService  extends AbstractService implements Service {
             Logger.error(e);
         }
 
+        final boolean simulation = serviceRequest.get("simulation", false);
         final String for_user_id = serviceRequest.get("forUser", user_id);
         if (for_user_id.length() > 0 && maintainer) user_id = for_user_id;
+        long deleted = 0;
 
-        // do the deletion
+        // do the deletion for all documents
+        final boolean all = serviceRequest.get("all", false);
+        if (authorized && all) {
+                if (simulation) {
+                    deleted = IndexDAO.getIndexDocumentsByUserID(user_id);
+                    Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id);
+                } else {
+                    deleted = IndexDAO.deleteIndexDocumentsByUserID(user_id);
+                    Logger.info("deleted " + deleted + " documents for user " + user_id);
+                }
+        }
+
+        // do the deletion for domains
         final String domainss = serviceRequest.get("domain", "").trim();
         if (authorized && !domainss.isEmpty()) {
             final String[] domains = domainss.split(",");
             for (final String domain: domains) {
-                final long deleted = IndexDAO.deleteIndexDocumentsByDomainName(user_id, domain.trim());
-                Logger.info("deleted " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
+                if (simulation) {
+                    deleted += IndexDAO.getIndexDocumentsByDomainNameCount(user_id, domain.trim());
+                    Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
+                } else {
+                    deleted += IndexDAO.deleteIndexDocumentsByDomainName(user_id, domain.trim());
+                    Logger.info("deleted " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
+                }
             }
         }
 
@@ -81,6 +100,8 @@ public class IndexDeletionService  extends AbstractService implements Service {
             size.put("documents", documents);
             size.put("collections", collections);
             json.put("assets", assets);
+            json.put("deleted", deleted);
+            json.put("simulation", simulation);
 
             json.put("context", context);
         } catch (final JSONException e) {

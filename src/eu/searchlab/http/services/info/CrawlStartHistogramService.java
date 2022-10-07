@@ -45,7 +45,7 @@ public class CrawlStartHistogramService extends AbstractService implements Servi
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-        final MinuteSeriesTable tst = IndexDAO.getCrawlstartHistorgramAggregation();
+        final MinuteSeriesTable tst = IndexDAO.getCrawlstartHistogramAggregation();
         final TableViewer requestsTableViewer = tst.getGraph("crawl_start", "Crawl Starts", "Date", MinuteSeriesTable.TS_DATE, new String[] {"data.crawlstarts SteelBlue"}, new String[] {});
         final String graph = requestsTableViewer.render2html(Searchlab.GRAPH_WIDTH, Searchlab.GRAPH_HEIGHT, true);
         return new ServiceResponse(graph);

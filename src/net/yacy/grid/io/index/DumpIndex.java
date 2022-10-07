@@ -49,6 +49,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -183,7 +184,7 @@ public class DumpIndex implements FulltextIndex {
     }
 
     @Override
-    public boolean delete(final String indexName, final String typeName, final String id) {
+    public boolean deleteByID(final String indexName, final String typeName, final String id) {
         // TODO Auto-generated method stub
         return false;
     }
@@ -219,11 +220,9 @@ public class DumpIndex implements FulltextIndex {
     }
 
     @Override
-    public Query query(
-            final String indexName, final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort,
-            final WebMapping highlightField, final int timezoneOffset,
-            final int from, final int resultCount, final int aggregationLimit, final boolean explain,
-            final WebMapping... aggregationFields) {
+    public Query query(final String indexName, final QueryBuilder queryBuilder, final YaCyQuery postFilter, final Sort sort,
+            final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit,
+            final boolean explain, final WebMapping... aggregationFields) {
         final QueryParser parser = new QueryParser("text_t", new StandardAnalyzer());
         org.apache.lucene.search.Query query = null;
         try {
@@ -254,5 +253,4 @@ public class DumpIndex implements FulltextIndex {
         }
 
     }
-
 }
