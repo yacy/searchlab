@@ -32,8 +32,10 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,6 +87,7 @@ import eu.searchlab.http.services.info.ThreaddumpService;
 import eu.searchlab.http.services.production.CrawlStartService;
 import eu.searchlab.http.services.production.IndexDeletionService;
 import eu.searchlab.storage.io.AbstractIO;
+import eu.searchlab.storage.table.IndexedTable;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 import io.undertow.Handlers;
@@ -353,50 +356,212 @@ public class WebServer {
             if (f != null) b = file2bytes(f); // throws FileNotFoundException which must be handled outside
             final Service service = ServiceMap.getService(path);
 
+            // we distinguish the following four cases of a response construction base on
+            // the presence of a file for the given path and a service defined for the given path
+            // (0) no file, no service   : error
+            // (1) only file, no service : serve the file as it is
+            // (2) only service no file  : construct a result based on the service
+            // (3) file and service      : treat the file as template and use the service to instantiate the template with content
+            
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
+
+            if (b == null && service == null) {
+            	// case (0) - error
+                throw new FileNotFoundException("not found:" + path);
+            }
+
             ServiceResponse serviceResponse = null;
-            if (service == null) {
-                serviceResponse = new ServiceResponse(b);
-            } else {
-                serviceResponse = service.serve(serviceRequest);
-                if (b != null) {
-                    if (serviceResponse.getType() == Service.Type.OBJECT) {
-                        final JSONObject json = serviceResponse.getObject();
-                        final Handlebars handlebars = new Handlebars();
-                        final Context context = Context
-                                .newBuilder(json)
-                                .resolver(JSONObjectValueResolver.INSTANCE)
-                                .build();
+            if (b != null && service == null) {
+            	// case (1) - serve the file
+            	serviceResponse = new ServiceResponse(b); // sets Type.BINARY
+            }
+            
+            if (b == null && service != null) {
+            	// case (2) - construct a result based on the service
+            	serviceResponse = service.serve(serviceRequest);
+            	
+            	// depending on the path extension the OBJECT or ARRAY content can be transformed
+            	// to html in the shape of a table or a graph
+            	
+                String tablename = null;
+                int p = path.indexOf("/get/");
+                if (p > 0) {
+                    tablename = path.substring(p + 5);
+                    p = tablename.indexOf('.');
+                    if (p > 0) tablename = tablename.substring(0, p); else tablename = null;
+                }
+            	if (serviceResponse.getType() == Service.Type.OBJECT) {
+                    final JSONObject json = serviceResponse.getObject();
+                    assert json != null;
+                    if (json == null) return null;
+
+                    if (path.endsWith(".json")) {
+                        final String callback = serviceRequest.get("callback", ""); //  used like "callback=?", which encapsulates then json into <callback> "([" <json> "]);"
+                        final boolean minified = serviceRequest.get("minified", false);
+                        String jsons = "";
                         try {
-                            final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
-                            serviceResponse.setValue(template.apply(context));
-                        } catch (final HandlebarsException e) {
-                            Logger.error("Handlebars Error", e);
+                            jsons = minified ? json.toString() : json.toString(2);
+                        } catch (final JSONException e) {
                             throw new IOException(e.getMessage());
                         }
-                    } else if (serviceResponse.getType() == Service.Type.ARRAY) {
-                        final JSONArray json = serviceResponse.getArray();
-                        final Handlebars handlebars = new Handlebars();
-                        final Context context = Context
-                                .newBuilder(json)
-                                .resolver(JSONObjectValueResolver.INSTANCE)
-                                .build();
+                        jsons = callback.length() > 0 ? (callback + "([" + jsons + "]);") : jsons;
+                        serviceResponse.setValue(jsons);
+                        return serviceResponse;
+                    }
+                    if (path.endsWith(".table")) {
                         try {
-                            final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
-                            serviceResponse.setValue(template.apply(context));
-                        } catch (final HandlebarsException e) {
-                            Logger.error("Handlebars Error", e);
+                            serviceResponse.setValue(new TableGenerator(tablename, json).getTable());
+                            return serviceResponse;
+                        } catch (final JSONException e) {
                             throw new IOException(e.getMessage());
                         }
                     }
+                    if (path.endsWith(".tablei")) {
+                        try {
+                            serviceResponse.setValue(new TableGenerator(tablename, json).getTableI());
+                            return serviceResponse;
+                        } catch (final JSONException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
+                    new IOException("extension not appropriate for JSONObject");
+                } else if (serviceResponse.getType() == Service.Type.ARRAY) {
+                    final JSONArray array = serviceResponse.getArray();
+                    assert array != null;
+                    if (array == null) return null;
+
+                    if (path.endsWith(".json")) {
+                        try {
+                            serviceResponse.setValue(array.toString(2));
+                            return serviceResponse;
+                        } catch (final JSONException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
+                    if (path.endsWith(".csv")) {
+                        // write a csv file
+                        try {
+                            final List<String> headKeys = new ArrayList<>();
+                            final StringBuilder sb = new StringBuilder();
+                            // there are two types of array representations
+                            // - either as array of arrays where the first array has the column names
+                            // - or as array of objects where each array entry has objects with same keys
+                            final Object head = array.get(0);
+                            if (head instanceof JSONArray) {
+                                // array of arrays
+                                for (int i = 0; i < ((JSONArray) head).length(); i++) headKeys.add(((JSONArray) head).getString(i));
+                                for (final String k: headKeys) sb.append(k).append(';');
+                                sb.setCharAt(sb.length() - 1, '\n');
+                                for (int i = 1; i < array.length(); i++) {
+                                    final JSONArray row = array.getJSONArray(i);
+                                    for (int j = 0; j < headKeys.size(); j++) sb.append(row.getString(j)).append(';');
+                                    sb.setCharAt(sb.length() - 1, '\n');
+                                }
+                            } else {
+                                // array of objects
+                                headKeys.addAll(((JSONObject) head).keySet()); // this MUST be put into an List to ensure that the order is consistent in all lines
+                                for (final String k: headKeys) sb.append(k).append(';');
+                                sb.setCharAt(sb.length() - 1, '\n');
+                                for (int i = 0; i < array.length(); i++) {
+                                    final JSONObject row = array.getJSONObject(i);
+                                    for (final String k: headKeys) {
+                                        final Object vo = row.opt(k);
+                                        String vs = vo == null ? "" : vo instanceof String ? (String) vo : String.valueOf(vo);
+                                        if (vo instanceof Double || vo instanceof Float) vs = vs.replace('.', ','); // german decimal separator
+                                        sb.append(vs).append(';');
+                                    }
+                                    sb.setCharAt(sb.length() - 1, '\n');
+                                }
+                            }
+                            serviceResponse.setValue(sb.toString());
+                            return serviceResponse;
+                        } catch (final JSONException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
+                    if (path.endsWith(".table")) {
+                        try {
+                            serviceResponse.setValue(new TableGenerator(tablename, array).getTable());
+                            return serviceResponse;
+                        } catch (final JSONException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
+                    if (path.endsWith(".tablei")) {
+                        try {
+                            serviceResponse.setValue(new TableGenerator(tablename, array).getTableI());
+                            return serviceResponse;
+                        } catch (final JSONException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
+                    new IOException("extension not appropriate for JSONArray");
+                } else if (serviceResponse.getType() == Service.Type.TABLE) {
+                    final IndexedTable table = serviceResponse.getTable();
+                    if (table == null) return null;
+
+                    if (path.endsWith(".table")) {
+                        try {
+                            serviceResponse.setValue(new TableGenerator(path, table.toJSON(true)).getTable());
+                            return serviceResponse;
+                        } catch (final JSONException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
+                    if (path.endsWith(".tablei")) {
+                        try {
+                            serviceResponse.setValue(new TableGenerator(path, table.toJSON(true)).getTableI());
+                            return serviceResponse;
+                        } catch (final JSONException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
+                    new IOException("extension not appropriate for JSONArray");
                 }
             }
+            
+            if (b != null && service != null) {
+            	// case (3) - treat the file as template and use the service to instantiate the template with content
+            	serviceResponse = service.serve(serviceRequest);
+            	
+            	// apply template using the OBJECT or ARRAY content which the service produced
+            	if (serviceResponse.getType() == Service.Type.OBJECT) {
+                    final JSONObject json = serviceResponse.getObject();
+                    final Handlebars handlebars = new Handlebars();
+                    final Context context = Context
+                            .newBuilder(json)
+                            .resolver(JSONObjectValueResolver.INSTANCE)
+                            .build();
+                    try {
+                        final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
+                        serviceResponse.setValue(template.apply(context));
+                    } catch (final HandlebarsException e) {
+                        Logger.error("Handlebars Error", e);
+                        throw new IOException(e.getMessage());
+                    }
+                } else if (serviceResponse.getType() == Service.Type.ARRAY) {
+                    final JSONArray json = serviceResponse.getArray();
+                    final Handlebars handlebars = new Handlebars();
+                    final Context context = Context
+                            .newBuilder(json)
+                            .resolver(JSONObjectValueResolver.INSTANCE)
+                            .build();
+                    try {
+                        final Template template = handlebars.compileInline(new String(b, StandardCharsets.UTF_8));
+                        serviceResponse.setValue(template.apply(context));
+                    } catch (final HandlebarsException e) {
+                        Logger.error("Handlebars Error", e);
+                        throw new IOException(e.getMessage());
+                    }
+                }
+            }
+            
 
             // check finally if the resulting byte array was defined
             // (either by a file or a service)
             b = serviceResponse.toByteArray(false);
             if (b == null && f == null) {
-                throw new FileNotFoundException("not found:" + path);
+                throw new FileNotFoundException("not sound:" + path);
             }
 
             // apply server-side includes
