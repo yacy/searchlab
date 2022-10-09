@@ -15,7 +15,7 @@ nav:
     - App Development: apps/app_development.md
   - Production:
     - Crawler: production/crawler.md
-    - Network Scanner: production/network_scanner.md
+#    - Network Scanner: production/network_scanner.md
     - Index Deletion: production/deletion.md
     - Index Import/Export: production/import_export.md
   - Data Warehouse:
