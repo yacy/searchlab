@@ -247,7 +247,7 @@ public class Searchlab {
         final String s3DataPath = System.getProperty("grid.s3.datapath", "/data");
         final String bucket_endpoint = getHost(s3address);
         final int p = bucket_endpoint.indexOf('.');
-        assert p > 0;
+        assert p > 0 : "bucket_endpoint = " + bucket_endpoint;
         final String bucket = bucket_endpoint.substring(0, p);
         final String endpoint = bucket_endpoint.substring(p + 1);
         io = new MinioS3IO("http://" + endpoint + ":" + getPort(s3address, "9000"), getUser(s3address, "admin"), getPassword(s3address, "12345678"));

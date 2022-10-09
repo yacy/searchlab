@@ -229,6 +229,12 @@ public class IndexDAO {
         return collections;
     }
 
+    public final static long getIndexDocumentByCollectionCount(final String user_id, final String collection_name) {
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final long collections = Searchlab.ec.count(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
+        return collections;
+    }
+
     public final static long deleteIndexDocumentsByCollectionName(final String user_id, final String collection_name) {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final long deleted = Searchlab.ec.delete(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
