@@ -52,6 +52,10 @@ public class IndexDeletionService  extends AbstractService implements Service {
         try {
             context.put("forUser", user_id);
             context.put("forUser_disabled", !maintainer);
+            context.put("all_delete_disabled", !authorized);
+            context.put("all_simulate_disabled", !authorized);
+            context.put("collection_delete_disabled", !authorized);
+            context.put("collection_simulate_disabled", !authorized);
             context.put("domain_delete_disabled", !authorized);
             context.put("domain_simulate_disabled", !authorized);
         	context.put("domain", "");
@@ -77,6 +81,9 @@ public class IndexDeletionService  extends AbstractService implements Service {
         final boolean allSimulateDeletion = !serviceRequest.get("AllSimulateDeletion", "").isEmpty();
         final boolean allDelete = !serviceRequest.get("AllDelete", "").isEmpty();
 
+        final boolean collectionSimulateDeletion = !serviceRequest.get("CollectionSimulateDeletion", "").isEmpty();
+        final boolean collectionDelete = !serviceRequest.get("CollectionDelete", "").isEmpty();
+
         final boolean domainSimulateDeletion = !serviceRequest.get("DomainSimulateDeletion", "").isEmpty();
         final boolean domainDelete = !serviceRequest.get("DomainDelete", "").isEmpty();
 
@@ -92,6 +99,26 @@ public class IndexDeletionService  extends AbstractService implements Service {
         if (authorized && allDelete) {
             deleted = IndexDAO.deleteIndexDocumentsByUserID(user_id);
             Logger.info("deleted " + deleted + " documents for user " + user_id);
+            try {context.put("deleted", deleted);} catch (JSONException e) {}
+        }
+
+        // do the deletion for collections
+        final String collectionss = serviceRequest.get("collection", "").trim();
+        final String[] collections = collectionss.isEmpty() ? new String[0]: collectionss.split(",");
+        if (authorized && collectionSimulateDeletion && collections.length > 0) {
+        	try {context.put("domain", collectionss);} catch (JSONException e) {}
+            for (final String collection: collections) {
+                deleted += IndexDAO.getIndexDocumentByCollectionCount(user_id, collection.trim());
+                Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", collection " + collection.trim());
+            }
+            try {context.put("simulated", deleted);} catch (JSONException e) {}
+        }
+        if (authorized && collectionDelete && collections.length > 0) {
+        	try {context.put("domain", collectionss);} catch (JSONException e) {}
+            for (final String collection: collections) {
+            	deleted += IndexDAO.deleteIndexDocumentsByCollectionName(user_id, collection.trim());
+                Logger.info("deleted " + deleted + " documents for user " + user_id + ", collection " + collection.trim());
+            }
             try {context.put("deleted", deleted);} catch (JSONException e) {}
         }
 
@@ -116,14 +143,14 @@ public class IndexDeletionService  extends AbstractService implements Service {
         }
 
         // prepare result
-        final long documents = IndexDAO.getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
-        final long collections = IndexDAO.getIndexDocumentCollectionCount(user_id);
+        final long documentCount = IndexDAO.getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
+        final long collectionCount = IndexDAO.getIndexDocumentCollectionCount(user_id);
         try {
             final JSONObject assets = new JSONObject(true);
             final JSONObject size = new JSONObject(true);
             assets.put("size", size);
-            size.put("documents", documents);
-            size.put("collections", collections);
+            size.put("documents", documentCount);
+            size.put("collections", collectionCount);
             json.put("assets", assets);
         } catch (final JSONException e) {
             Logger.error(e);
