@@ -31,8 +31,8 @@ import org.json.JSONObject;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
-import eu.searchlab.storage.table.TableParser;
 import eu.searchlab.storage.table.MinuteSeriesTable;
+import eu.searchlab.storage.table.TableParser;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.MultiProtocolURL;
 
@@ -81,7 +81,7 @@ public class AccountingTS {
         final IOPath userPath = getAssetsPathForUser(user_id);
         final IOPath corpusPath = userPath.append("corpus.csv");
         MinuteSeriesTable corpusTable = new MinuteSeriesTable(corpusViewColNames, corpusMetaColNames, corpusDataColNames, false);
-        if (this.cio.exists(corpusPath)) try {corpusTable = new MinuteSeriesTable(this.cio, corpusPath, false);} catch (final IOException e) {}
+        if (this.cio.exists(corpusPath)) try {corpusTable = new MinuteSeriesTable(this.cio, corpusPath, corpusViewColNames.length, corpusMetaColNames.length, corpusDataColNames.length, false);} catch (final IOException e) {}
         if (corpusTable.viewCols.length != corpusViewColNames.length ||
             corpusTable.metaCols.length != corpusMetaColNames.length ||
             corpusTable.dataCols.length != corpusDataColNames.length) {

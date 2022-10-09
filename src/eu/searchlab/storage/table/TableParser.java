@@ -1,15 +1,3 @@
-package eu.searchlab.storage.table;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 /**
  *  TableParser
  *  Copyright 29.05.2022 by Michael Peter Christen, @orbiterlab
@@ -28,20 +16,43 @@ import java.time.format.DateTimeFormatter;
  *  along with this program in the file lgpl21.txt
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+package eu.searchlab.storage.table;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+
+import com.univocity.parsers.common.AbstractParser;
+import com.univocity.parsers.csv.CsvFormat;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOObject;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
+import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.api.DateColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
 import tech.tablesaw.api.LongColumn;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
+import tech.tablesaw.columns.AbstractColumnParser;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.io.csv.CsvReadOptions;
 import tech.tablesaw.io.csv.CsvWriteOptions;
@@ -49,20 +60,19 @@ import tech.tablesaw.io.csv.CsvWriter;
 
 public class TableParser {
 
-    public static Table readCSV(final ConcurrentIO io, final IOPath iop) throws IOException {
+    public static Table readCSVWithTablesaw(final ConcurrentIO io, final IOPath iop) throws IOException {
         final IOObject[] ioo = io.readForced(iop);
         assert ioo.length == 1;
         final byte[] b = ioo[0].getObject();
-        String s = new String(b, StandardCharsets.UTF_8);
-
-        // patch the file to wipe out unparsable objects
-        s = s.replaceAll("0000-", "2022-");
+        final String s = new String(b, StandardCharsets.UTF_8);
 
         // use tablesaw to parse the csv
         final StringReader sr = new StringReader(s);
         final CsvReadOptions options =
                 CsvReadOptions.builder(sr)
                     .separator(';')
+                    .quoteChar('\"')
+                    .commentPrefix('#')
                     .locale(Locale.ENGLISH)
                     .header(true)
                     .dateFormat(DateTimeFormatter.ofPattern(DateParser.PATTERN_MONTHDAYHOURMINUTE))
@@ -70,6 +80,83 @@ public class TableParser {
         final Table table = Table.read().usingOptions(options);
         return table;
     }
+
+    public static Table readCSV(final ConcurrentIO io, final IOPath iop, final boolean header, final Locale locale, final ColumnType[] columnTypes) throws IOException {
+        final IOObject[] ioo = io.readForced(iop);
+        assert ioo.length == 1;
+        final String s = new String(ioo[0].getObject(), StandardCharsets.UTF_8);
+
+        // use tablesaw  to parse the csv
+        final StringReader sr = new StringReader(s);
+
+        final CsvReadOptions options =
+                CsvReadOptions.builder(sr)
+                    .separator(';').quoteChar('\"').commentPrefix('#').locale(locale).header(header)
+                    .dateFormat(DateTimeFormatter.ofPattern(DateParser.PATTERN_MONTHDAYHOURMINUTE))
+                    .build();
+
+        final CsvParserSettings settings = new CsvParserSettings();
+        settings.setLineSeparatorDetectionEnabled(options.lineSeparatorDetectionEnabled());
+        final CsvFormat csvFormat = new CsvFormat();
+        if (options.quoteChar() != null) csvFormat.setQuote(options.quoteChar());
+        if (options.escapeChar() != null) csvFormat.setQuoteEscape(options.escapeChar());
+        if (options.separator() != null) csvFormat.setDelimiter(options.separator());
+        if (options.lineEnding() != null) csvFormat.setLineSeparator(options.lineEnding());
+        if (options.commentPrefix() != null) csvFormat.setComment(options.commentPrefix());
+        settings.setFormat(csvFormat);
+        settings.setMaxCharsPerColumn(options.maxCharsPerColumn());
+        if (options.maxNumberOfColumns() != null) settings.setMaxColumns(options.maxNumberOfColumns());
+
+        // start parsing
+        final CsvParser parser = new CsvParser(settings);
+        final Reader reader = new StringReader(s);
+        parser.beginParsing(reader);
+        final Table table = Table.create();
+
+        // read header row and define parsers for columns
+        final String[] columnNames = header ? ((AbstractParser<?>) parser).parseNext() : new String[columnTypes.length];
+        final List<AbstractColumnParser<?>> parserList = new ArrayList<>();
+        if (columnNames.length < columnTypes.length) throw new IOException("header line does not have enough column names");
+
+        for (int i = 0; i < columnTypes.length; i++) {
+            columnNames[i] = columnNames[i] == null || columnNames[i].isEmpty() ? "C" + i : columnNames[i].trim();
+            table.addColumns(columnTypes[i].create(columnNames[i]));
+            parserList.add(columnTypes[i].customParser(options));
+        }
+
+        // read the rows
+        String[] nextLine;
+        final Object[] nextObjs = new Object[columnTypes.length];
+        rowreader: for (int linec = header ? 1 : 0; (nextLine = parser.parseNext()) != null; linec++) {
+            if (nextLine.length < columnTypes.length) {
+                Logger.warn("Row " + linec + " has wrong column size (" + nextLine.length + ", expected " + columnTypes.length + "), ignored");
+                continue;
+            }
+
+            // first parse the whole line into nextObj. If any error occurrs we can still skip the whole line
+            try {
+                for (int i = 0; i < columnTypes.length; i++) {
+                    nextObjs[i] = parserList.get(i).parse(nextLine[i]);
+                }
+            } catch (final Throwable e) {
+                // skip line
+                Logger.warn("Row " + linec + " has parser error \"" + e.getMessage() + "\", ignored");
+                continue rowreader;
+            }
+
+            for (int i = 0; i < columnTypes.length; i++) {
+                table.column(i).appendObj(nextObjs[i]);
+            }
+        }
+
+        if (reader != null) {
+            parser.stopParsing();
+            reader.close();
+        }
+        return table;
+    }
+
+    // --------------------------------------------------------------------------------------------------------------
 
     public static void storeCSV( final ConcurrentIO io, final IOPath iop, final Table table) {
         final long start = System.currentTimeMillis();

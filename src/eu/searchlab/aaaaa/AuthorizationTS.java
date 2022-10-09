@@ -24,8 +24,8 @@ import java.io.IOException;
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
-import eu.searchlab.storage.table.TableParser;
 import eu.searchlab.storage.table.MinuteSeriesTable;
+import eu.searchlab.storage.table.TableParser;
 
 public class AuthorizationTS {
 
@@ -50,7 +50,7 @@ public class AuthorizationTS {
         if (this.cio.exists(this.loginIop)) {
             final long lastModified = this.cio.getIO().lastModified(this.loginIop);
             if (lastModified < this.loginTableLoadTime) return;
-            this.loginTable = new MinuteSeriesTable(this.cio, this.loginIop, false);
+            this.loginTable = new MinuteSeriesTable(this.cio, this.loginIop, authorizationViewColNames.length, authorizationMetaColNames.length, authorizationDataColNames.length, false);
             if (this.loginTable.viewCols.length != authorizationViewColNames.length ||
                     this.loginTable.metaCols.length != authorizationMetaColNames.length ||
                     this.loginTable.dataCols.length != authorizationDataColNames.length) {
@@ -62,7 +62,7 @@ public class AuthorizationTS {
         this.loginTableLoadTime = System.currentTimeMillis();
     }
 
-    public void announceAuthorization(final String user_id, String cookie_id) throws IOException {
+    public void announceAuthorization(final String user_id, final String cookie_id) throws IOException {
         loadLoginTable();
         this.loginTable.addValues(System.currentTimeMillis(),
                 new String[] {user_id},
@@ -78,7 +78,7 @@ public class AuthorizationTS {
         return meta[0];
     }
 
-    public boolean verifyAuthorization(final String user_id, String cookie_id) throws IOException {
+    public boolean verifyAuthorization(final String user_id, final String cookie_id) throws IOException {
         final String stored_cookie_id = getCookieId(user_id);
         if (stored_cookie_id == null) return false;
         return stored_cookie_id.equals(cookie_id);

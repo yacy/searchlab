@@ -63,12 +63,12 @@ public class UserAudit implements FrequencyTask {
         this.lastSeen = new ConcurrentHashMap<>();
         this.requestsTable = new MinuteSeriesTable(requestsViewColNames, requestsMetaColNames, requestdDataColNames, false);
         Logger.info("loading " + visitorsIOp.toString());
-        if (io.exists(requestsIOp)) try {this.requestsTable = new MinuteSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
+        if (io.exists(requestsIOp)) try {this.requestsTable = new MinuteSeriesTable(this.cio, requestsIOp, requestsViewColNames.length, requestsMetaColNames.length, requestdDataColNames.length, false);} catch (final IOException e) {}
         this.requestsTableModified = System.currentTimeMillis();
         this.visitorsTable = new MinuteSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
         this.visitorsTableAggregated = new MinuteSeriesTable(visitorsViewColNames, visitorsMetaColNames, visitorsDataColNames, false);
         Logger.info("loading " + visitorsIOp.toString());
-        if (io.exists(visitorsIOp)) try {this.visitorsTable = new MinuteSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
+        if (io.exists(visitorsIOp)) try {this.visitorsTable = new MinuteSeriesTable(this.cio, visitorsIOp, visitorsViewColNames.length, visitorsMetaColNames.length, visitorsDataColNames.length, false);} catch (final IOException e) {}
         this.visitorsTableModified = System.currentTimeMillis();
     }
 
@@ -104,7 +104,7 @@ public class UserAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.requestsIOp);
             if (modified > this.requestsTableModified) {
-                this.requestsTable = new MinuteSeriesTable(this.cio, this.requestsIOp, false);
+                this.requestsTable = new MinuteSeriesTable(this.cio, this.requestsIOp, requestsViewColNames.length, requestsMetaColNames.length, requestdDataColNames.length, false);
                 this.requestsTableModified = now;
             }
         } catch (final IOException e) {
@@ -112,7 +112,7 @@ public class UserAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.visitorsIOp);
             if (modified > this.visitorsTableModified) {
-                this.visitorsTable = new MinuteSeriesTable(this.cio, this.visitorsIOp, false);
+                this.visitorsTable = new MinuteSeriesTable(this.cio, this.visitorsIOp, visitorsViewColNames.length, visitorsMetaColNames.length, visitorsDataColNames.length, false);
                 this.visitorsTableModified = now;
             }
         } catch (final IOException e) {

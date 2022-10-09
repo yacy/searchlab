@@ -27,12 +27,14 @@ import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
+import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.InstantColumn;
 import tech.tablesaw.api.LongColumn;
@@ -133,7 +135,7 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
         }
         if (!xtable.column(1).name().equals(TS_DATE) && !colnames.contains(TS_DATE)) {
             // considert that the first column is TS_TIME
-            xtable.column(0).setName(TS_DATE);
+            xtable.column(1).setName(TS_DATE);
         }
 
         // verify consistency and order
@@ -213,8 +215,18 @@ public class MinuteSeriesTable extends AbstractTimeSeriesTable implements TimeSe
      * @param dataIsDouble
      * @throws IOException
      */
-    public MinuteSeriesTable(final ConcurrentIO io, final IOPath iop, final boolean dataIsDouble) throws IOException {
-        this(TableParser.readCSV(io, iop), dataIsDouble);
+    public MinuteSeriesTable(final ConcurrentIO io, final IOPath iop, final int viewCount, final int metaCount, final int dataCount, final boolean dataIsDouble) throws IOException {
+        this(TableParser.readCSV(io, iop, true, Locale.ENGLISH, columnTypes4Table(viewCount, metaCount, dataCount, dataIsDouble)), dataIsDouble);
+    }
+
+    private static final ColumnType[] columnTypes4Table(final int viewCount, final int metaCount, final int dataCount, final boolean dataIsDouble) {
+        final ColumnType[] columnTypes = new ColumnType[2 + viewCount + metaCount + dataCount];
+        columnTypes[0] = ColumnType.INSTANT;
+        columnTypes[1] = ColumnType.LOCAL_DATE;
+        for (int i = 0; i < viewCount; i++) columnTypes[i + 2] = ColumnType.STRING;
+        for (int i = 0; i < metaCount; i++) columnTypes[i + 2 + viewCount] = ColumnType.STRING;
+        for (int i = 0; i < dataCount; i++) columnTypes[i + 2 + viewCount + metaCount] = dataIsDouble ? ColumnType.DOUBLE : ColumnType.LONG;
+        return columnTypes;
     }
 
     /**

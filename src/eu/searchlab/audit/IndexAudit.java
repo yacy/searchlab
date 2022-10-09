@@ -51,10 +51,10 @@ public class IndexAudit implements FrequencyTask {
         this.visitorsIOp = visitorsIOp;
         this.lastSeen = new ConcurrentHashMap<>();
         this.requestsTable = new MinuteSeriesTable(indexSizeViewColNames, indexSizeMetaColNames, indexSizeDataColNames, false);
-        if (io.exists(requestsIOp)) try {this.requestsTable = new MinuteSeriesTable(this.cio, requestsIOp, false);} catch (final IOException e) {}
+        if (io.exists(requestsIOp)) try {this.requestsTable = new MinuteSeriesTable(this.cio, requestsIOp, indexSizeViewColNames.length, indexSizeMetaColNames.length, indexSizeDataColNames.length, false);} catch (final IOException e) {}
         this.requestsTableModified = System.currentTimeMillis();
         this.visitorsTable = new MinuteSeriesTable(webViewColNames, webMetaColNames, webDataColNames, false);
-        if (io.exists(visitorsIOp)) try {this.visitorsTable = new MinuteSeriesTable(this.cio, visitorsIOp, false);} catch (final IOException e) {}
+        if (io.exists(visitorsIOp)) try {this.visitorsTable = new MinuteSeriesTable(this.cio, visitorsIOp, webViewColNames.length, webMetaColNames.length, webDataColNames.length, false);} catch (final IOException e) {}
         this.visitorsTableModified = System.currentTimeMillis();
     }
 
@@ -82,7 +82,7 @@ public class IndexAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.requestsIOp);
             if (modified > this.requestsTableModified) {
-                this.requestsTable = new MinuteSeriesTable(this.cio, this.requestsIOp, false);
+                this.requestsTable = new MinuteSeriesTable(this.cio, this.requestsIOp, indexSizeViewColNames.length, indexSizeMetaColNames.length, indexSizeDataColNames.length, false);
                 this.requestsTableModified = System.currentTimeMillis();
             }
         } catch (final IOException e) {
@@ -90,7 +90,7 @@ public class IndexAudit implements FrequencyTask {
         try {
             final long modified = this.cio.getIO().lastModified(this.visitorsIOp);
             if (modified > this.visitorsTableModified) {
-                this.visitorsTable = new MinuteSeriesTable(this.cio, this.visitorsIOp, false);
+                this.visitorsTable = new MinuteSeriesTable(this.cio, this.visitorsIOp, webViewColNames.length, webMetaColNames.length, webDataColNames.length, false);
                 this.visitorsTableModified = System.currentTimeMillis();
             }
         } catch (final IOException e) {
