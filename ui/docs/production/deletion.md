@@ -68,7 +68,7 @@ document.getElementById("CollectionSimulateDeletion").disabled = {{context.colle
 document.getElementById("CollectionDelete").disabled = {{context.collection_delete_disabled}};
 document.getElementById("DomainSimulateDeletion").disabled = {{context.domain_simulate_disabled}};
 document.getElementById("DomainDelete").disabled = {{context.domain_delete_disabled}};
-if (!{{context.all_delete_disabled}}) document.getElementById("DisabledWarning").remove();
+if (!{{context.all_simulate_disabled}}) document.getElementById("DisabledWarning").remove();
 if ({{context.simulated}} == 0) document.getElementById("SimulatedSuccess").remove();
 if ({{context.deleted}} == 0) document.getElementById("DeleteSuccess").remove();
 </script>

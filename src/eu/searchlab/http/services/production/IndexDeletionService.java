@@ -52,11 +52,11 @@ public class IndexDeletionService  extends AbstractService implements Service {
         try {
             context.put("forUser", user_id);
             context.put("forUser_disabled", !maintainer);
-            context.put("all_delete_disabled", !authorized);
+            context.put("all_delete_disabled", true);
             context.put("all_simulate_disabled", !authorized);
-            context.put("collection_delete_disabled", !authorized);
+            context.put("collection_delete_disabled", true);
             context.put("collection_simulate_disabled", !authorized);
-            context.put("domain_delete_disabled", !authorized);
+            context.put("domain_delete_disabled", true);
             context.put("domain_simulate_disabled", !authorized);
         	context.put("domain", "");
         	context.put("deleted", 0);
@@ -94,7 +94,10 @@ public class IndexDeletionService  extends AbstractService implements Service {
         if (authorized && allSimulateDeletion) {
             deleted = IndexDAO.getIndexDocumentsByUserID(user_id);
             Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id);
-            try {context.put("simulated", deleted);} catch (JSONException e) {}
+            try {
+            	context.put("simulated", deleted);
+                context.put("all_delete_disabled", false);
+            } catch (JSONException e) {}
         }
         if (authorized && allDelete) {
             deleted = IndexDAO.deleteIndexDocumentsByUserID(user_id);
@@ -111,7 +114,10 @@ public class IndexDeletionService  extends AbstractService implements Service {
                 deleted += IndexDAO.getIndexDocumentByCollectionCount(user_id, collection.trim());
                 Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", collection " + collection.trim());
             }
-            try {context.put("simulated", deleted);} catch (JSONException e) {}
+            try {
+            	context.put("simulated", deleted);
+                context.put("collection_delete_disabled", false);
+            } catch (JSONException e) {}
         }
         if (authorized && collectionDelete && collections.length > 0) {
         	try {context.put("domain", collectionss);} catch (JSONException e) {}
@@ -131,7 +137,10 @@ public class IndexDeletionService  extends AbstractService implements Service {
                 deleted += IndexDAO.getIndexDocumentsByDomainNameCount(user_id, domain.trim());
                 Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
             }
-            try {context.put("simulated", deleted);} catch (JSONException e) {}
+            try {
+            	context.put("simulated", deleted);
+                context.put("domain_delete_disabled", false);
+            } catch (JSONException e) {}
         }
         if (authorized && domainDelete && domains.length > 0) {
         	try {context.put("domain", domainss);} catch (JSONException e) {}
