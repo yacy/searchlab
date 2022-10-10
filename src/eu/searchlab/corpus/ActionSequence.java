@@ -119,11 +119,7 @@ public class ActionSequence extends JSONObject {
 
     @Override
     public String toString() {
-        try {
-            return super.toString(2); // thats here to get a better debugging output
-        } catch (final JSONException e) {
-        }
-        return "";
+        return super.toString(2); // thats here to get a better debugging output
     }
 
 }

@@ -20,7 +20,6 @@
 
 package eu.searchlab.http.services.index;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
@@ -28,7 +27,6 @@ import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
-import eu.searchlab.tools.Logger;
 
 /**
  * http://127.0.0.1:8400/en/api/indexstatus.json?query=where
@@ -49,11 +47,9 @@ public class IndexStatusService extends AbstractService implements Service {
         //final String indexName = call.optString("index", GridIndex.DEFAULT_INDEXNAME_WEB);
         final JSONObject json = new JSONObject(true);
 
-        try {
-            for (final String indexName: indexNames) {
-                json.put(indexName, Searchlab.ec.count(indexName));
-            }
-        } catch (final JSONException e) {Logger.warn(e);}
+        for (final String indexName: indexNames) {
+            json.put(indexName, Searchlab.ec.count(indexName));
+        }
         return new ServiceResponse(json);
     }
 

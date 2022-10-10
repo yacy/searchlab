@@ -105,13 +105,9 @@ public class AssetDirectoryService extends AbstractService implements Service {
             Logger.warn("attempt to list " + dirpath.toString(), e);
         }
         final JSONObject json = new JSONObject(true);
-        try {
-            json.put("path", path);
-            json.put("user_id", user_id);
-            json.put("dir", dirarray);
-        } catch (final JSONException e) {
-            Logger.warn(e);
-        }
+        json.put("path", path);
+        json.put("user_id", user_id);
+        json.put("dir", dirarray);
         return new ServiceResponse(json);
     }
 

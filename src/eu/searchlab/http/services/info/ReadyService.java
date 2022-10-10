@@ -21,7 +21,6 @@ package eu.searchlab.http.services.info;
 
 import java.io.IOException;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
@@ -41,11 +40,7 @@ public class ReadyService extends AbstractService implements Service {
  public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
      if (!Searchlab.ready) throw new IOException("not ready");
      final JSONObject json = new JSONObject();
-     try {
-        json.put("ready", true);
-    } catch (final JSONException e) {
-        throw new IOException(e.getMessage());
-    }
+     json.put("ready", true);
      return new ServiceResponse(json);
  }
 

@@ -21,7 +21,6 @@ package eu.searchlab.http.services.info;
 
 import java.io.IOException;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.aaaaa.Authorization;
@@ -29,7 +28,6 @@ import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
-import eu.searchlab.tools.Logger;
 
 public class ACLService extends AbstractService implements Service {
 
@@ -41,12 +39,8 @@ public class ACLService extends AbstractService implements Service {
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) throws IOException {
         final JSONObject json = new JSONObject(true);
-        try {
-            json.put("acl", serviceRequest.getACL());
-            json.put("aclall", Authorization.getACL());
-        } catch (final JSONException e) {
-            Logger.warn(e);
-        }
+        json.put("acl", serviceRequest.getACL());
+        json.put("aclall", Authorization.getACL());
         return new ServiceResponse(json);
     }
 

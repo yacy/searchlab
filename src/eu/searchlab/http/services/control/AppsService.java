@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.TreeMap;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.http.AbstractService;
@@ -55,7 +54,7 @@ public class AppsService extends AbstractService implements Service {
                 final JSONObject appj = AbstractTray.read(appf);
                 appj.put("path", path);
                 sortlist.put(appj.optString("name", "") + "|" + appj.optString("headline", ""), appj);
-            } catch (final IOException | JSONException e) {
+            } catch (final IOException e) {
                 e.printStackTrace();
             }
         }

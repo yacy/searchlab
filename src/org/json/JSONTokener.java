@@ -82,7 +82,7 @@ public class JSONTokener {
      */
     private int pos;
 
-    public JSONTokener(Reader reader) throws IOException {
+    public JSONTokener(final Reader reader) throws IOException {
         final char[] buffer = new char[2048];
         final StringBuilder out = new StringBuilder();
         int charsRead;
@@ -117,7 +117,7 @@ public class JSONTokener {
      * @throws JSONException if the input is malformed.
      */
     public Object nextValue() throws JSONException {
-        int c = nextCleanInternal();
+        final int c = nextCleanInternal();
         switch (c) {
             case -1:
                 throw syntaxError("End of input");
@@ -133,14 +133,14 @@ public class JSONTokener {
                 return nextString((char) c);
 
             default:
-                pos--;
+                this.pos--;
                 return readLiteral();
         }
     }
 
     private int nextCleanInternal() throws JSONException {
-        while (pos < in.length()) {
-            int c = in.charAt(pos++);
+        while (this.pos < this.in.length()) {
+            final int c = this.in.charAt(this.pos++);
             switch (c) {
                 case '\t':
                 case ' ':
@@ -149,25 +149,25 @@ public class JSONTokener {
                     continue;
 
                 case '/':
-                    if (pos == in.length()) {
+                    if (this.pos == this.in.length()) {
                         return c;
                     }
 
-                    char peek = in.charAt(pos);
+                    final char peek = this.in.charAt(this.pos);
                     switch (peek) {
                         case '*':
                             // skip a /* c-style comment */
-                            pos++;
-                            int commentEnd = in.indexOf("*/", pos);
+                            this.pos++;
+                            final int commentEnd = this.in.indexOf("*/", this.pos);
                             if (commentEnd == -1) {
                                 throw syntaxError("Unterminated comment");
                             }
-                            pos = commentEnd + 2;
+                            this.pos = commentEnd + 2;
                             continue;
 
                         case '/':
                             // skip a // end-of-line comment
-                            pos++;
+                            this.pos++;
                             skipToEndOfLine();
                             continue;
 
@@ -198,10 +198,10 @@ public class JSONTokener {
      * caller.
      */
     private void skipToEndOfLine() {
-        for (; pos < in.length(); pos++) {
-            char c = in.charAt(pos);
+        for (; this.pos < this.in.length(); this.pos++) {
+            final char c = this.in.charAt(this.pos);
             if (c == '\r' || c == '\n') {
-                pos++;
+                this.pos++;
                 break;
             }
         }
@@ -215,7 +215,7 @@ public class JSONTokener {
      *
      * @param quote either ' or ".
      */
-    public String nextString(char quote) throws JSONException {
+    public String nextString(final char quote) throws JSONException {
         /*
          * For strings that are free of escape sequences, we can just extract
          * the result as a substring of the input. But if we encounter an escape
@@ -224,29 +224,29 @@ public class JSONTokener {
         StringBuilder builder = null;
 
         /* the index of the first character not yet appended to the builder. */
-        int start = pos;
+        int start = this.pos;
 
-        while (pos < in.length()) {
-            int c = in.charAt(pos++);
+        while (this.pos < this.in.length()) {
+            final int c = this.in.charAt(this.pos++);
             if (c == quote) {
                 if (builder == null) {
                     // a new string avoids leaking memory
-                    return new String(in.substring(start, pos - 1));
+                    return new String(this.in.substring(start, this.pos - 1));
                 }
-                builder.append(in, start, pos - 1);
+                builder.append(this.in, start, this.pos - 1);
                 return builder.toString();
             }
 
             if (c == '\\') {
-                if (pos == in.length()) {
+                if (this.pos == this.in.length()) {
                     throw syntaxError("Unterminated escape sequence");
                 }
                 if (builder == null) {
                     builder = new StringBuilder();
                 }
-                builder.append(in, start, pos - 1);
+                builder.append(this.in, start, this.pos - 1);
                 builder.append(readEscapeCharacter());
-                start = pos;
+                start = this.pos;
             }
         }
 
@@ -260,17 +260,17 @@ public class JSONTokener {
      * escapes "\n".
      */
     private char readEscapeCharacter() throws JSONException {
-        char escaped = in.charAt(pos++);
+        final char escaped = this.in.charAt(this.pos++);
         switch (escaped) {
             case 'u':
-                if (pos + 4 > in.length()) {
+                if (this.pos + 4 > this.in.length()) {
                     throw syntaxError("Unterminated escape sequence");
                 }
-                String hex = in.substring(pos, pos + 4);
-                pos += 4;
+                final String hex = this.in.substring(this.pos, this.pos + 4);
+                this.pos += 4;
                 try {
                     return (char) Integer.parseInt(hex, 16);
-                } catch (NumberFormatException nfe) {
+                } catch (final NumberFormatException nfe) {
                     throw syntaxError("Invalid escape sequence: " + hex);
                 }
 
@@ -303,7 +303,7 @@ public class JSONTokener {
      * preference.
      */
     private Object readLiteral() throws JSONException {
-        String literal = nextToInternal("{}[]/\\:,=;# \t\f");
+        final String literal = nextToInternal("{}[]/\\:,=;# \t\f");
 
         if (literal.length() == 0) {
             throw syntaxError("Expected literal value");
@@ -327,12 +327,12 @@ public class JSONTokener {
                 base = 8;
             }
             try {
-                long longValue = Long.parseLong(number, base);
+                final long longValue = Long.parseLong(number, base);
                 if (longValue <= Integer.MAX_VALUE && longValue >= Integer.MIN_VALUE) {
                     return (int) longValue;
                 }
                 return longValue;
-            } catch (NumberFormatException e) {
+            } catch (final NumberFormatException e) {
                 /*
                  * This only happens for integral numbers greater than
                  * Long.MAX_VALUE, numbers in exponential form (5e-10) and
@@ -344,7 +344,7 @@ public class JSONTokener {
         /* ...next try to parse as a floating point... */
         try {
             return Double.valueOf(literal);
-        } catch (NumberFormatException ignored) {
+        } catch (final NumberFormatException ignored) {
         }
 
         /* ... finally give up. We have an unquoted string */
@@ -355,15 +355,15 @@ public class JSONTokener {
      * Returns the string up to but not including any of the given characters or
      * a newline character. This does not consume the excluded character.
      */
-    private String nextToInternal(String excluded) {
-        int start = pos;
-        for (; pos < in.length(); pos++) {
-            char c = in.charAt(pos);
+    private String nextToInternal(final String excluded) {
+        final int start = this.pos;
+        for (; this.pos < this.in.length(); this.pos++) {
+            final char c = this.in.charAt(this.pos);
             if (c == '\r' || c == '\n' || excluded.indexOf(c) != -1) {
-                return in.substring(start, pos);
+                return this.in.substring(start, this.pos);
             }
         }
-        return in.substring(start);
+        return this.in.substring(start);
     }
 
     /**
@@ -371,18 +371,18 @@ public class JSONTokener {
      * an object. The opening brace '{' should have already been read.
      */
     private JSONObject readObject() throws JSONException {
-        JSONObject result = new JSONObject();
+        final JSONObject result = new JSONObject();
 
         /* Peek to see if this is the empty object. */
-        int first = nextCleanInternal();
+        final int first = nextCleanInternal();
         if (first == '}') {
             return result;
         } else if (first != -1) {
-            pos--;
+            this.pos--;
         }
 
         while (true) {
-            Object name = nextValue();
+            final Object name = nextValue();
             if (!(name instanceof String)) {
                 if (name == null) {
                     throw syntaxError("Names cannot be null");
@@ -396,12 +396,12 @@ public class JSONTokener {
              * equals sign '=', or an arrow "=>". The last two are bogus but we
              * include them because that's what the original implementation did.
              */
-            int separator = nextCleanInternal();
+            final int separator = nextCleanInternal();
             if (separator != ':' && separator != '=') {
                 throw syntaxError("Expected ':' after " + name);
             }
-            if (pos < in.length() && in.charAt(pos) == '>') {
-                pos++;
+            if (this.pos < this.in.length() && this.in.charAt(this.pos) == '>') {
+                this.pos++;
             }
 
             result.put((String) name, nextValue());
@@ -425,7 +425,7 @@ public class JSONTokener {
      * equivalent to "[null,null]".
      */
     private JSONArray readArray() throws JSONException {
-        JSONArray result = new JSONArray();
+        final JSONArray result = new JSONArray();
 
         /* to cover input that ends with ",]". */
         boolean hasTrailingSeparator = false;
@@ -446,7 +446,7 @@ public class JSONTokener {
                     hasTrailingSeparator = true;
                     continue;
                 default:
-                    pos--;
+                    this.pos--;
             }
 
             result.put(nextValue());
@@ -468,7 +468,7 @@ public class JSONTokener {
      * Returns an exception containing the given message plus the current
      * position and the entire input string.
      */
-    public JSONException syntaxError(String message) {
+    public JSONException syntaxError(final String message) {
         return new JSONException(message + this);
     }
 
@@ -477,7 +477,7 @@ public class JSONTokener {
      */
     @Override public String toString() {
         // consistent with the original implementation
-        return " at character " + pos + " of " + in;
+        return " at character " + this.pos + " of " + this.in;
     }
 
     /*
@@ -492,7 +492,7 @@ public class JSONTokener {
      * Returns true until the input has been exhausted.
      */
     public boolean more() {
-        return pos < in.length();
+        return this.pos < this.in.length();
     }
 
     /**
@@ -501,15 +501,15 @@ public class JSONTokener {
      * for JSON strings that contain the character '\0'.
      */
     public char next() {
-        return pos < in.length() ? in.charAt(pos++) : '\0';
+        return this.pos < this.in.length() ? this.in.charAt(this.pos++) : '\0';
     }
 
     /**
      * Returns the next available character if it equals {@code c}. Otherwise an
      * exception is thrown.
      */
-    public char next(char c) throws JSONException {
-        char result = next();
+    public char next(final char c) throws JSONException {
+        final char result = next();
         if (result != c) {
             throw syntaxError("Expected " + c + " but was " + result);
         }
@@ -523,7 +523,7 @@ public class JSONTokener {
      * method is ambiguous for JSON strings that contain the character '\0'.
      */
     public char nextClean() throws JSONException {
-        int nextCleanInt = nextCleanInternal();
+        final int nextCleanInt = nextCleanInternal();
         return nextCleanInt == -1 ? '\0' : (char) nextCleanInt;
     }
 
@@ -538,12 +538,12 @@ public class JSONTokener {
      * @throws JSONException if the remaining input is not long enough to
      *     satisfy this request.
      */
-    public String next(int length) throws JSONException {
-        if (pos + length > in.length()) {
+    public String next(final int length) throws JSONException {
+        if (this.pos + length > this.in.length()) {
             throw syntaxError(length + " is out of bounds");
         }
-        String result = in.substring(pos, pos + length);
-        pos += length;
+        final String result = this.in.substring(this.pos, this.pos + length);
+        this.pos += length;
         return result;
     }
 
@@ -563,7 +563,7 @@ public class JSONTokener {
      *
      * @return a possibly-empty string
      */
-    public String nextTo(String excluded) {
+    public String nextTo(final String excluded) {
         if (excluded == null) {
             throw new NullPointerException("excluded == null");
         }
@@ -573,7 +573,7 @@ public class JSONTokener {
     /**
      * Equivalent to {@code nextTo(String.valueOf(excluded))}.
      */
-    public String nextTo(char excluded) {
+    public String nextTo(final char excluded) {
         return nextToInternal(String.valueOf(excluded)).trim();
     }
 
@@ -582,9 +582,9 @@ public class JSONTokener {
      * {@code thru}. If the remaining input doesn't contain {@code thru}, the
      * input is exhausted.
      */
-    public void skipPast(String thru) {
-        int thruStart = in.indexOf(thru, pos);
-        pos = thruStart == -1 ? in.length() : (thruStart + thru.length());
+    public void skipPast(final String thru) {
+        final int thruStart = this.in.indexOf(thru, this.pos);
+        this.pos = thruStart == -1 ? this.in.length() : (thruStart + thru.length());
     }
 
     /**
@@ -592,10 +592,10 @@ public class JSONTokener {
      * {@code to}. If the remaining input doesn't contain {@code to}, the input
      * is unchanged.
      */
-    public char skipTo(char to) {
-        int index = in.indexOf(to, pos);
+    public char skipTo(final char to) {
+        final int index = this.in.indexOf(to, this.pos);
         if (index != -1) {
-            pos = index;
+            this.pos = index;
             return to;
         }
         return '\0';
@@ -606,8 +606,8 @@ public class JSONTokener {
      * been read, the input is unchanged.
      */
     public void back() {
-        if (--pos == -1) {
-            pos = 0;
+        if (--this.pos == -1) {
+            this.pos = 0;
         }
     }
 
@@ -618,7 +618,7 @@ public class JSONTokener {
      * @param hex a character in the ranges [0-9], [A-F] or [a-f]. Any other
      *     character will yield a -1 result.
      */
-    public static int dehexchar(char hex) {
+    public static int dehexchar(final char hex) {
         if (hex >= '0' && hex <= '9') {
             return hex - '0';
         } else if (hex >= 'A' && hex <= 'F') {

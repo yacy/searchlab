@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
@@ -154,16 +153,14 @@ public class YaCySearchService extends AbstractService implements Service {
         final JSONArray channels = new JSONArray();
         final JSONObject channel = new JSONObject(true);
         final JSONArray items = new JSONArray();
-        try {
-            json.put("channels", channels);
-            channels.put(channel);
-            channel.put("title", "Search for " + q);
-            channel.put("description", "Search for " + q);
-            channel.put("startIndex", "" + startRecord);
-            channel.put("searchTerms", q);
-            channel.put("itemsPerPage", "" + itemsPerPage);
-            channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
-        } catch (final JSONException e) {Logger.error(e);}
+        json.put("channels", channels);
+        channels.put(channel);
+        channel.put("title", "Search for " + q);
+        channel.put("description", "Search for " + q);
+        channel.put("startIndex", "" + startRecord);
+        channel.put("searchTerms", q);
+        channel.put("itemsPerPage", "" + itemsPerPage);
+        channel.put("page", "" + ((startRecord / itemsPerPage) + 1)); // the current result page, first page has number 1
 
         // define the constraint for the user-id:
         // - authenticated users will use their own user-id if the self flag is set.
@@ -295,10 +292,8 @@ public class YaCySearchService extends AbstractService implements Service {
         } catch (final Exception e) {
             // any kind of exception can happen if the elastic index is not ready or index does not exist
             Logger.error(e);
-            try {
-                channel.put("totalResults", 0);
-                channel.put("pages", "0");
-            } catch (final JSONException ee) {Logger.error(ee);}
+            channel.put("totalResults", 0);
+            channel.put("pages", "0");
         }
         return new ServiceResponse(json);
     }

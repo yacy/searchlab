@@ -104,36 +104,30 @@ public class Authentication {
 
     @SuppressWarnings("deprecation")
     private void init() {
-        try {
-            final String sponsor_github = this.json.optString("sponsor_github");
-            if (sponsor_github == null || sponsor_github.length() == 0) {
-                this.json.put("sponsor_github", "");
-            }
-            final String sponsor_patreon = this.json.optString("sponsor_patreon");
-            if (sponsor_patreon == null || sponsor_patreon.length() == 0) {
-                this.json.put("sponsor_patreon", "");
-            }
-            if (!this.json.has("self")) this.json.put("self", true);
-            if (!this.json.has("anonymous_production")) this.json.put("anonymous_production", false);
+        final String sponsor_github = this.json.optString("sponsor_github");
+        if (sponsor_github == null || sponsor_github.length() == 0) {
+            this.json.put("sponsor_github", "");
+        }
+        final String sponsor_patreon = this.json.optString("sponsor_patreon");
+        if (sponsor_patreon == null || sponsor_patreon.length() == 0) {
+            this.json.put("sponsor_patreon", "");
+        }
+        if (!this.json.has("self")) this.json.put("self", true);
+        if (!this.json.has("anonymous_production")) this.json.put("anonymous_production", false);
 
-            final Date randomPast = new Date(System.currentTimeMillis() - ((Math.abs(random.nextLong())) % (90 * dayms)));
-            final String date_registration = this.json.optString("date_registration");
-            if (date_registration == null || date_registration.length() == 0) {
-                this.json.put("date_registration", DateParser.minuteDateFormatParser().format(randomPast));
-            }
-            final String date_visit = this.json.optString("date_visit");
-            if (date_visit == null || date_visit.length() == 0) {
-                this.json.put("date_visit", DateParser.minuteDateFormatParser().format(randomPast));
-            }
-        } catch (final JSONException e) {
-            Logger.error(e);
+        final Date randomPast = new Date(System.currentTimeMillis() - ((Math.abs(random.nextLong())) % (90 * dayms)));
+        final String date_registration = this.json.optString("date_registration");
+        if (date_registration == null || date_registration.length() == 0) {
+            this.json.put("date_registration", DateParser.minuteDateFormatParser().format(randomPast));
+        }
+        final String date_visit = this.json.optString("date_visit");
+        if (date_visit == null || date_visit.length() == 0) {
+            this.json.put("date_visit", DateParser.minuteDateFormatParser().format(randomPast));
         }
     }
 
     public Authentication setVisitDate(final Date date) throws RuntimeException {
-        try {this.json.put("date_visit", DateParser.minuteDateFormatParser().format(date));} catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("date_visit", DateParser.minuteDateFormatParser().format(date));
         return this;
     }
 
@@ -160,9 +154,7 @@ public class Authentication {
     public Authentication setEmail(final String email) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set email addresses");
         if (email.indexOf('@') < 0) throw new RuntimeException("email address invalid: " + email);
-        try {this.json.put("email", email);} catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("email", email);
         return this;
     }
 
@@ -194,9 +186,7 @@ public class Authentication {
      */
     private Authentication setID(final String id) throws RuntimeException {
         if (!isValid(id)) throw new RuntimeException("identifier invalid: " + id);
-        try {this.json.put("id", id);} catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("id", id);
         return this;
     }
 
@@ -208,15 +198,11 @@ public class Authentication {
 
     public Authentication setGithubLogin(final String github_login) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
-        try {
-            this.json.put("login_github", github_login);
-            final String sponsor_github = this.json.optString("sponsor_github");
-            if (sponsor_github == null || sponsor_github.length() == 0) {
-                // pre-set this as the same account, however that might change
-                this.json.put("sponsor_github", github_login);
-            }
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
+        this.json.put("login_github", github_login);
+        final String sponsor_github = this.json.optString("sponsor_github");
+        if (sponsor_github == null || sponsor_github.length() == 0) {
+            // pre-set this as the same account, however that might change
+            this.json.put("sponsor_github", github_login);
         }
         return this;
     }
@@ -228,11 +214,7 @@ public class Authentication {
 
     public Authentication setGithubSponsor(final String github_sponsor) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
-        try {
-            this.json.put("sponsor_github", github_sponsor);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("sponsor_github", github_sponsor);
         return this;
     }
 
@@ -243,12 +225,8 @@ public class Authentication {
 
     public Authentication setGithubSponsorApproved(final boolean approved) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
-        try {
-            this.json.put("sponsor_github_approved", approved);
-            this.json.put("sponsor_level", Authorization.Grade.L04_Level_Five.name()); // right now we can only approve level five
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("sponsor_github_approved", approved);
+        this.json.put("sponsor_level", Authorization.Grade.L04_Level_Five.name()); // right now we can only approve level five
         return this;
     }
 
@@ -270,15 +248,11 @@ public class Authentication {
 
     public Authentication setPatreonLogin(final String patreon_login) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
-        try {
-            this.json.put("login_patreon", patreon_login);
-            final String sponsor_patreon = this.json.optString("sponsor_patreon");
-            if (sponsor_patreon== null || sponsor_patreon.length() == 0) {
-                // pre-set this as the same account, however that might change
-                this.json.put("sponsor_patreon", patreon_login);
-            }
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
+        this.json.put("login_patreon", patreon_login);
+        final String sponsor_patreon = this.json.optString("sponsor_patreon");
+        if (sponsor_patreon== null || sponsor_patreon.length() == 0) {
+            // pre-set this as the same account, however that might change
+            this.json.put("sponsor_patreon", patreon_login);
         }
         return this;
     }
@@ -290,11 +264,7 @@ public class Authentication {
 
     public Authentication setPatreonId(final String patreon_id) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
-        try {
-            this.json.put("id_patreon", patreon_id);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("id_patreon", patreon_id);
         return this;
     }
 
@@ -305,11 +275,7 @@ public class Authentication {
 
     public Authentication setPatreonSponsor(final String patreon_sponsor) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
-        try {
-            this.json.put("sponsor_patreon", patreon_sponsor);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("sponsor_patreon", patreon_sponsor);
         return this;
     }
 
@@ -328,21 +294,12 @@ public class Authentication {
             final String patreonID = level.optString("patreonID");
             final String levelName = level.optString("level");
             if (rewardids.contains(patreonID)) {
-                try {
-                    this.json.put("sponsor_patreon_approved", true);
-                    this.json.put("sponsor_level", levelName);
-                } catch (final JSONException e) {
-                    throw new RuntimeException(e.getMessage());
-                }
+                this.json.put("sponsor_patreon_approved", true);
+                this.json.put("sponsor_level", levelName);
                 return this;
             }
         }
-        // fail;
-        try {
-            this.json.put("sponsor_patreon_approved", false);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("sponsor_patreon_approved", false);
         return this;
     }
 
@@ -353,11 +310,7 @@ public class Authentication {
 
     public Authentication setTwitterLogin(final String twitter_login) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set authentication providers");
-        try {
-            this.json.put("login_twitter", twitter_login);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("login_twitter", twitter_login);
         return this;
     }
 
@@ -370,9 +323,7 @@ public class Authentication {
      */
     public Authentication setName(final String name) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set names");
-        try {this.json.put("name", name);} catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("name", name);
         return this;
     }
 
@@ -390,9 +341,7 @@ public class Authentication {
      */
     public Authentication setSelf(final boolean self) throws RuntimeException {
         if (this.isAnonymous) throw new RuntimeException("anonmous accounts cannot set self");
-        try {this.json.put("self", self);} catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put("self", self);
         return this;
     }
 
@@ -415,11 +364,7 @@ public class Authentication {
 
     @Override
     public String toString() {
-        try {
-            return this.json.toString(2);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        return this.json.toString(2);
     }
 
     public static boolean isValid(final String userID) {

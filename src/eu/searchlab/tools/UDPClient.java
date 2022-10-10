@@ -29,8 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
 
-import org.json.JSONException;
-
 public class UDPClient {
 
     private final static byte GELF_MAGIC0 = (byte) 0x1e;
@@ -73,7 +71,7 @@ public class UDPClient {
     }
 
     public void sendGELF(final GELFObject gelf) {
-        try {send(gelf.toString(0));} catch (final JSONException e) {}
+        send(gelf.toString(0));
     }
 
     public void sendGELF(byte[] b) {

@@ -347,12 +347,8 @@ public class CrawlStartService  extends AbstractService implements Service {
         }
 
         final JSONObject json = new JSONObject(true);
-        try {
-            json.put("crawl", allCrawlstarts);
-            json.put("acl", aclLevel);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        json.put("crawl", allCrawlstarts);
+        json.put("acl", aclLevel);
 
         // finally add the crawl start on the queue
         return new ServiceResponse(json);

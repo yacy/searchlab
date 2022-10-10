@@ -19,7 +19,6 @@
 
 package eu.searchlab.http.services.production;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.aaaaa.Authorization.Grade;
@@ -49,34 +48,26 @@ public class IndexDeletionService  extends AbstractService implements Service {
         String user_id = serviceRequest.getUser();
         final boolean maintainer = serviceRequest.getAuthorizationGrade() == Grade.L08_Maintainer;
         final boolean authorized = serviceRequest.isAuthorized();
-        try {
-            context.put("forUser", user_id);
-            context.put("forUser_disabled", !maintainer);
-            context.put("all_delete_disabled", true);
-            context.put("all_simulate_disabled", !authorized);
-            context.put("collection_delete_disabled", true);
-            context.put("collection_simulate_disabled", !authorized);
-            context.put("domain_delete_disabled", true);
-            context.put("domain_simulate_disabled", !authorized);
-        	context.put("domain", "");
-        	context.put("deleted", 0);
-        	context.put("simulated", 0);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
-        
+        context.put("forUser", user_id);
+        context.put("forUser_disabled", !maintainer);
+        context.put("all_delete_disabled", true);
+        context.put("all_simulate_disabled", !authorized);
+        context.put("collection_delete_disabled", true);
+        context.put("collection_simulate_disabled", !authorized);
+        context.put("domain_delete_disabled", true);
+        context.put("domain_simulate_disabled", !authorized);
+        context.put("domain", "");
+        context.put("deleted", 0);
+        context.put("simulated", 0);
+
         // prepare result json
         final JSONObject json = new JSONObject(true);
-        try {
-            json.put("context", context);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        json.put("context", context);
 
         // admin settings to delete for another user
         final String for_user_id = serviceRequest.get("forUser", user_id);
         if (for_user_id.length() > 0 && maintainer) user_id = for_user_id;
-        
+
         // get selected feature
         final boolean allSimulateDeletion = !serviceRequest.get("AllSimulateDeletion", "").isEmpty();
         final boolean allDelete = !serviceRequest.get("AllDelete", "").isEmpty();
@@ -94,76 +85,66 @@ public class IndexDeletionService  extends AbstractService implements Service {
         if (authorized && allSimulateDeletion) {
             deleted = IndexDAO.getIndexDocumentsByUserID(user_id);
             Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id);
-            try {
-            	context.put("simulated", deleted);
-                context.put("all_delete_disabled", false);
-            } catch (JSONException e) {}
+            context.put("simulated", deleted);
+            context.put("all_delete_disabled", false);
         }
         if (authorized && allDelete) {
             deleted = IndexDAO.deleteIndexDocumentsByUserID(user_id);
             Logger.info("deleted " + deleted + " documents for user " + user_id);
-            try {context.put("deleted", deleted);} catch (JSONException e) {}
+            context.put("deleted", deleted);
         }
 
         // do the deletion for collections
         final String collectionss = serviceRequest.get("collection", "").trim();
         final String[] collections = collectionss.isEmpty() ? new String[0]: collectionss.split(",");
         if (authorized && collectionSimulateDeletion && collections.length > 0) {
-        	try {context.put("domain", collectionss);} catch (JSONException e) {}
+            context.put("domain", collectionss);
             for (final String collection: collections) {
                 deleted += IndexDAO.getIndexDocumentByCollectionCount(user_id, collection.trim());
                 Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", collection " + collection.trim());
             }
-            try {
-            	context.put("simulated", deleted);
-                context.put("collection_delete_disabled", false);
-            } catch (JSONException e) {}
+            context.put("simulated", deleted);
+            context.put("collection_delete_disabled", false);
         }
         if (authorized && collectionDelete && collections.length > 0) {
-        	try {context.put("domain", collectionss);} catch (JSONException e) {}
+            context.put("domain", collectionss);
             for (final String collection: collections) {
-            	deleted += IndexDAO.deleteIndexDocumentsByCollectionName(user_id, collection.trim());
+                deleted += IndexDAO.deleteIndexDocumentsByCollectionName(user_id, collection.trim());
                 Logger.info("deleted " + deleted + " documents for user " + user_id + ", collection " + collection.trim());
             }
-            try {context.put("deleted", deleted);} catch (JSONException e) {}
+            context.put("deleted", deleted);
         }
 
         // do the deletion for domains
         final String domainss = serviceRequest.get("domain", "").trim();
         final String[] domains = domainss.isEmpty() ? new String[0]: domainss.split(",");
         if (authorized && domainSimulateDeletion && domains.length > 0) {
-        	try {context.put("domain", domainss);} catch (JSONException e) {}
+            context.put("domain", domainss);
             for (final String domain: domains) {
                 deleted += IndexDAO.getIndexDocumentsByDomainNameCount(user_id, domain.trim());
                 Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
             }
-            try {
-            	context.put("simulated", deleted);
-                context.put("domain_delete_disabled", false);
-            } catch (JSONException e) {}
+            context.put("simulated", deleted);
+            context.put("domain_delete_disabled", false);
         }
         if (authorized && domainDelete && domains.length > 0) {
-        	try {context.put("domain", domainss);} catch (JSONException e) {}
+            context.put("domain", domainss);
             for (final String domain: domains) {
-            	deleted += IndexDAO.deleteIndexDocumentsByDomainName(user_id, domain.trim());
+                deleted += IndexDAO.deleteIndexDocumentsByDomainName(user_id, domain.trim());
                 Logger.info("deleted " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
             }
-            try {context.put("deleted", deleted);} catch (JSONException e) {}
+            context.put("deleted", deleted);
         }
 
         // prepare result
         final long documentCount = IndexDAO.getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
         final long collectionCount = IndexDAO.getIndexDocumentCollectionCount(user_id);
-        try {
-            final JSONObject assets = new JSONObject(true);
-            final JSONObject size = new JSONObject(true);
-            assets.put("size", size);
-            size.put("documents", documentCount);
-            size.put("collections", collectionCount);
-            json.put("assets", assets);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        final JSONObject assets = new JSONObject(true);
+        final JSONObject size = new JSONObject(true);
+        assets.put("size", size);
+        size.put("documents", documentCount);
+        size.put("collections", collectionCount);
+        json.put("assets", assets);
 
         // finally add the crawl start on the queue
         return new ServiceResponse(json);

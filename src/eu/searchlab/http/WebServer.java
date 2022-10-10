@@ -362,7 +362,7 @@ public class WebServer {
             // (1) only file, no service : serve the file as it is
             // (2) only service no file  : construct a result based on the service
             // (3) file and service      : treat the file as template and use the service to instantiate the template with content
-            
+
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
 
             if (b == null && service == null) {
@@ -375,14 +375,14 @@ public class WebServer {
             	// case (1) - serve the file
             	serviceResponse = new ServiceResponse(b); // sets Type.BINARY
             }
-            
+
             if (b == null && service != null) {
             	// case (2) - construct a result based on the service
             	serviceResponse = service.serve(serviceRequest);
-            	
+
             	// depending on the path extension the OBJECT or ARRAY content can be transformed
             	// to html in the shape of a table or a graph
-            	
+
                 String tablename = null;
                 int p = path.indexOf("/get/");
                 if (p > 0) {
@@ -399,11 +399,7 @@ public class WebServer {
                         final String callback = serviceRequest.get("callback", ""); //  used like "callback=?", which encapsulates then json into <callback> "([" <json> "]);"
                         final boolean minified = serviceRequest.get("minified", false);
                         String jsons = "";
-                        try {
-                            jsons = minified ? json.toString() : json.toString(2);
-                        } catch (final JSONException e) {
-                            throw new IOException(e.getMessage());
-                        }
+                        jsons = minified ? json.toString() : json.toString(2);
                         jsons = callback.length() > 0 ? (callback + "([" + jsons + "]);") : jsons;
                         serviceResponse.setValue(jsons);
                         return serviceResponse;
@@ -431,12 +427,8 @@ public class WebServer {
                     if (array == null) return null;
 
                     if (path.endsWith(".json")) {
-                        try {
-                            serviceResponse.setValue(array.toString(2));
-                            return serviceResponse;
-                        } catch (final JSONException e) {
-                            throw new IOException(e.getMessage());
-                        }
+                        serviceResponse.setValue(array.toString(2));
+                        return serviceResponse;
                     }
                     if (path.endsWith(".csv")) {
                         // write a csv file
@@ -519,11 +511,11 @@ public class WebServer {
                     new IOException("extension not appropriate for JSONArray");
                 }
             }
-            
+
             if (b != null && service != null) {
             	// case (3) - treat the file as template and use the service to instantiate the template with content
             	serviceResponse = service.serve(serviceRequest);
-            	
+
             	// apply template using the OBJECT or ARRAY content which the service produced
             	if (serviceResponse.getType() == Service.Type.OBJECT) {
                     final JSONObject json = serviceResponse.getObject();
@@ -555,7 +547,7 @@ public class WebServer {
                     }
                 }
             }
-            
+
 
             // check finally if the resulting byte array was defined
             // (either by a file or a service)
@@ -701,7 +693,7 @@ public class WebServer {
 
             final Map<String, Deque<String>> queryParams = exchange.getQueryParameters();
             for (final Map.Entry<String, Deque<String>> entry: queryParams.entrySet()) {
-                try {json.put(entry.getKey(), entry.getValue().getFirst());} catch (final JSONException e) {}
+                json.put(entry.getKey(), entry.getValue().getFirst());
             }
             String path = exchange.getRequestPath();
             final int q = path.indexOf('?');
@@ -709,13 +701,11 @@ public class WebServer {
             final String user = getUserPrefix(path);
             if (user != null) path = path.substring(user.length() + 1);
             final String query = exchange.getQueryString();
-            try {
-                json.put("IPID", ip_id);
-                json.put("IP00", ip_pseudonym);
-                json.put("USER", user);
-                json.put("PATH", path);
-                json.put("QUERY", query);
-            } catch (final JSONException e) {}
+            json.put("IPID", ip_id);
+            json.put("IP00", ip_pseudonym);
+            json.put("USER", user);
+            json.put("PATH", path);
+            json.put("QUERY", query);
             final Cookie cookie = exchange.getRequestCookie(COOKIE_USER_ID_NAME);
             final HeaderMap requestHeaders = exchange.getRequestHeaders();
             return new ServiceRequest(json, user, path, query, ip_id, ip_pseudonym, cookie, requestHeaders);
@@ -728,12 +718,12 @@ public class WebServer {
             if (q >= 0) {
                 final String qs = path.substring(q + 1);
                 path = path.substring(0, q);
-                try {json.put("PATH", path);} catch (final JSONException e) {}
+                json.put("PATH", path);
                 final String[] pm = qs.split("&");
                 for (final String pms: pm) {
                     final int r = pms.indexOf('=');
                     if (r < 0) continue;
-                    try {json.put(pms.substring(0, r), pms.substring(r + 1));} catch (final JSONException e) {}
+                    json.put(pms.substring(0, r), pms.substring(r + 1));
                 }
             }
             String user = getUserPrefix(path);
@@ -742,9 +732,9 @@ public class WebServer {
             } else {
                 path = path.substring(user.length() + 1);
             }
-            try {json.put("USER", user);} catch (final JSONException e) {} // TODO: delete
-            try {json.put("PATH", path);} catch (final JSONException e) {} // TODO: delete
-            try {json.put("QUERY", "");} catch (final JSONException e) {} // TODO: delete
+            json.put("USER", user);
+            json.put("PATH", path);
+            json.put("QUERY", "");
             return new ServiceRequest(json, user, path, "", ip_id, ip_pseudonym, null, null);
         }
 

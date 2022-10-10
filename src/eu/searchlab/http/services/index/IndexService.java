@@ -23,7 +23,6 @@ package eu.searchlab.http.services.index;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.aaaaa.Authentication;
@@ -63,66 +62,64 @@ public class IndexService extends AbstractService implements Service {
         final String q = request.get("query", request.get("q", "")).trim();
         final JSONObject json = new JSONObject(true);
 
-        try {
-            if (id.length() > 0) {
-                json.put("title", "Search for id = " + id);
-                json.put("description", "Search for id = " + id);
-                json.put("startIndex", "0");
-                json.put("searchTerms", id);
-                json.put("itemsPerPage", "1");
-                json.put("pages", "1");
-                json.put("page", "1");
+        if (id.length() > 0) {
+            json.put("title", "Search for id = " + id);
+            json.put("description", "Search for id = " + id);
+            json.put("startIndex", "0");
+            json.put("searchTerms", id);
+            json.put("itemsPerPage", "1");
+            json.put("pages", "1");
+            json.put("page", "1");
 
-                final Map<String, Object> map = IndexDAO.exportIndex(id);
-                final JSONList list = new JSONList();
-                if (map == null) {
-                    json.put("totalResults",  "0");
-                    json.put("itemsCount", 0);
-                    json.put("items", list.toArray());
-                } else {
-                    final WebDocument doc = new WebDocument(map); // this is an instance of JSONObject
-                    list.add(doc);
-                    json.put("totalResults",  "1");
-                    json.put("itemsCount", 1);
-                    json.put("items", list.toArray());
-                }
-            } else if (q.length() > 0) {
-                final int startRecord = request.get("startRecord", request.get("start", 0));
-                final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
-                String collection = request.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
-                collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
-                final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
-                final int timezoneOffset = request.get("timezoneOffset", -1);
-                final Sort sort = new Sort(request.get("sort", ""));
-                final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
-
-                final Authentication authentication = request.getAuthentication();
-                final boolean self = authentication == null ? false : authentication.getSelf();
-                final String user_id = self ? authentication.getID() : null;
-
-                final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
-                final ElasticsearchClient.Query query = IndexDAO.query(
-                        user_id, yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
-
-                final JSONList items = new JSONList();
-                final List<Map<String, Object>> qr = query.results;
-                for (int hitc = 0; hitc < qr.size(); hitc++) {
-                    final WebDocument doc = new WebDocument(qr.get(hitc)); // this is an instance of JSONObject
-                    items.add(doc);
-                }
-
-                json.put("title", "Search for " + q);
-                json.put("description", "Search for " + q);
-                json.put("startIndex", "" + startRecord);
-                json.put("searchTerms", q);
-                json.put("totalResults", hasReferer ? Integer.toString(query.hitCount) : Integer.toString(items.length()));
-                json.put("itemsPerPage", "" + itemsPerPage);
-                json.put("pages", "" + (hasReferer ? (query.hitCount / itemsPerPage) + 1 : 1));
-                json.put("page", "" + (hasReferer ? (startRecord / itemsPerPage) + 1 : 1)); // the current result page, first page has number 1
-                json.put("itemsCount", items.length());
-                json.put("items", items.toArray());
+            final Map<String, Object> map = IndexDAO.exportIndex(id);
+            final JSONList list = new JSONList();
+            if (map == null) {
+                json.put("totalResults",  "0");
+                json.put("itemsCount", 0);
+                json.put("items", list.toArray());
+            } else {
+                final WebDocument doc = new WebDocument(map); // this is an instance of JSONObject
+                list.add(doc);
+                json.put("totalResults",  "1");
+                json.put("itemsCount", 1);
+                json.put("items", list.toArray());
             }
-        } catch (final JSONException e) {e.printStackTrace();}
+        } else if (q.length() > 0) {
+            final int startRecord = request.get("startRecord", request.get("start", 0));
+            final Classification.ContentDomain contentdom = Classification.ContentDomain.contentdomParser(request.get("contentdom", "all"));
+            String collection = request.get("collection", ""); // important: call arguments may overrule parsed collection values if not empty. This can be used for authentified indexes!
+            collection = collection.replace(',', '|'); // to be compatible with the site-operator of GSA, we use a vertical pipe symbol here to divide collections.
+            final String[] collections = collection.length() == 0 ? new String[0] : collection.split("\\|");
+            final int timezoneOffset = request.get("timezoneOffset", -1);
+            final Sort sort = new Sort(request.get("sort", ""));
+            final int itemsPerPage = request.get("itemsPerPage", request.get("maximumRecords", request.get("rows", request.get("num", 10))));
+
+            final Authentication authentication = request.getAuthentication();
+            final boolean self = authentication == null ? false : authentication.getSelf();
+            final String user_id = self ? authentication.getID() : null;
+
+            final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
+            final ElasticsearchClient.Query query = IndexDAO.query(
+                    user_id, yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
+
+            final JSONList items = new JSONList();
+            final List<Map<String, Object>> qr = query.results;
+            for (int hitc = 0; hitc < qr.size(); hitc++) {
+                final WebDocument doc = new WebDocument(qr.get(hitc)); // this is an instance of JSONObject
+                items.add(doc);
+            }
+
+            json.put("title", "Search for " + q);
+            json.put("description", "Search for " + q);
+            json.put("startIndex", "" + startRecord);
+            json.put("searchTerms", q);
+            json.put("totalResults", hasReferer ? Integer.toString(query.hitCount) : Integer.toString(items.length()));
+            json.put("itemsPerPage", "" + itemsPerPage);
+            json.put("pages", "" + (hasReferer ? (query.hitCount / itemsPerPage) + 1 : 1));
+            json.put("page", "" + (hasReferer ? (startRecord / itemsPerPage) + 1 : 1)); // the current result page, first page has number 1
+            json.put("itemsCount", items.length());
+            json.put("items", items.toArray());
+        }
         return new ServiceResponse(json);
     }
 

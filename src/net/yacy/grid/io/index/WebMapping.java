@@ -25,10 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.json.JSONException;
 import org.json.JSONObject;
-
-import eu.searchlab.tools.Logger;
 
 public enum WebMapping implements MappingDeclaration {
 
@@ -330,15 +327,11 @@ public enum WebMapping implements MappingDeclaration {
         final JSONObject default_ = new JSONObject(true);
         final JSONObject properties = new JSONObject(true);
 
-        try {
-            json.put("mappings", mappings);
-            mappings.put("_default_", default_);
-            default_.put("properties", properties);
-            for (final WebMapping mapping: WebMapping.values()) {
-                properties.put(mapping.name(), mapping.mapping.toJSON());
-            }
-        } catch (final JSONException e) {
-            Logger.error(e);
+        json.put("mappings", mappings);
+        mappings.put("_default_", default_);
+        default_.put("properties", properties);
+        for (final WebMapping mapping: WebMapping.values()) {
+            properties.put(mapping.name(), mapping.mapping.toJSON());
         }
 
         return json;
@@ -358,12 +351,8 @@ public enum WebMapping implements MappingDeclaration {
      * @param args
      */
     public static void main(final String[] args) {
-        try {
-            //System.out.println(Mapping.elasticsearchMapping("web").toString(2));
-            System.out.println(getJSONMapping().toString(2));
-        } catch (final JSONException e) {
-            e.printStackTrace();
-        }
+        //System.out.println(Mapping.elasticsearchMapping("web").toString(2));
+        System.out.println(getJSONMapping().toString(2));
     }
 }
 

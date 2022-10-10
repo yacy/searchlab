@@ -100,7 +100,7 @@ public class Document extends JSONObject {
         return valid;
     }
 
-    public Document putInt(final MappingDeclaration declaration, final int i) throws JSONException {
+    public Document putInt(final MappingDeclaration declaration, final int i) {
         if (!isInt(declaration)) return this;
         this.put(declaration.getMapping().name(), i);
         return this;
@@ -139,7 +139,7 @@ public class Document extends JSONObject {
         return valid;
     }
 
-    public Document putLong(final MappingDeclaration declaration, final long l) throws JSONException {
+    public Document putLong(final MappingDeclaration declaration, final long l) {
         if (!isLong(declaration)) return this;
         this.put(declaration.getMapping().name(), l);
         return this;

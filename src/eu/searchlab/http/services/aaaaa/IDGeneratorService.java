@@ -20,7 +20,6 @@
 
 package eu.searchlab.http.services.aaaaa;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.aaaaa.Authentication;
@@ -38,10 +37,8 @@ public class IDGeneratorService  extends AbstractService implements Service {
 
     @Override
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
-    	final JSONObject json = new JSONObject(true);
-    	try {
-			json.put("id", Authentication.generateRandomID());
-		} catch (final JSONException e) {}
-    	return new ServiceResponse(json);
+        final JSONObject json = new JSONObject(true);
+        json.put("id", Authentication.generateRandomID());
+        return new ServiceResponse(json);
     }
 }

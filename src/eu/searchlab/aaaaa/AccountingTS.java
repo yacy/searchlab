@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.storage.io.ConcurrentIO;
@@ -64,13 +63,9 @@ public class AccountingTS {
         final IOPath userPath = getAssetsPathForUser(user_id);
         final IOPath crawlPath = userPath.append("crawl");
         final IOPath datePath =  crawlPath.append("crawlstart-" + DateParser.dayDateFormat.format(new Date()) + ".jsonlist");
-        try {
-            final String jsona = crawlStart.toString(0).replaceAll("\n", "") + "\n";
-            final byte[] b = jsona.getBytes(StandardCharsets.UTF_8);
-            this.cio.appendForced(datePath, b);
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
-        }
+        final String jsona = crawlStart.toString(0).replaceAll("\n", "") + "\n";
+        final byte[] b = jsona.getBytes(StandardCharsets.UTF_8);
+        this.cio.appendForced(datePath, b);
     }
 
     private final static String[] corpusViewColNames = new String[] {"view.user_id", "view.range", "view.host"};

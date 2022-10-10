@@ -93,14 +93,10 @@ public class Authorization {
         final JSONObject authorization = new JSONObject(true);
         final String session = Authentication.generateRandomID() + Authentication.generateRandomID();
 
-        try {
-            authorization.put("session", session);
-            authorization.put("id", id);
-            this.json.put("authorization", authorization);
-            this.json.put("signature", hashgen(authorization));
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
-        }
+        authorization.put("session", session);
+        authorization.put("id", id);
+        this.json.put("authorization", authorization);
+        this.json.put("signature", hashgen(authorization));
     }
 
     private static String hashgen(final JSONObject json) {
@@ -139,11 +135,7 @@ public class Authorization {
 
     @Override
     public String toString() {
-        try {
-            return this.json.toString(2);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        return this.json.toString(2);
     }
 
 }

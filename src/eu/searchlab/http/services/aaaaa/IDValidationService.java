@@ -20,7 +20,6 @@
 
 package eu.searchlab.http.services.aaaaa;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.aaaaa.Authentication;
@@ -42,9 +41,7 @@ public class IDValidationService  extends AbstractService implements Service {
         final String id = serviceRequest.get("id", "").trim();
         final JSONObject json = new JSONObject(true);
         final boolean isValid = Authentication.isValid(id);
-        try {
-            json.put("valid", isValid);
-        } catch (final JSONException e) {}
+        json.put("valid", isValid);
         final ServiceResponse serviceResponse = new ServiceResponse(json);
         if (isValid) {
             final String user_cookie = Long.toHexString(Math.abs(("hash" + System.currentTimeMillis()).hashCode())).toUpperCase();

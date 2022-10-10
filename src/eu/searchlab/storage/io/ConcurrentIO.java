@@ -91,15 +91,11 @@ public final class ConcurrentIO {
             assert !this.io.exists(lockFile);
             final InetAddress localhost = Domains.myLocalhostIP(); // InetAddress.getLocalHost();
             final long time = System.currentTimeMillis();
-            try {
-                final JSONObject json = new JSONObject(true)
-                        .put("host", localhost.getCanonicalHostName())
-                        .put("ip", localhost.getHostAddress())
-                        .put("time", time);
-                this.io.write(lockFile, json.toString(2).getBytes(StandardCharsets.UTF_8));
-            } catch (final JSONException e) {
-                throw new IOException(e.getMessage());
-            }
+            final JSONObject json = new JSONObject(true)
+                    .put("host", localhost.getCanonicalHostName())
+                    .put("ip", localhost.getHostAddress())
+                    .put("time", time);
+            this.io.write(lockFile, json.toString(2).getBytes(StandardCharsets.UTF_8));
         }
     }
 

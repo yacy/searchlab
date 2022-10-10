@@ -21,7 +21,6 @@ package eu.searchlab.http.services.aaaaa;
 
 import java.io.IOException;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.Searchlab;
@@ -114,21 +113,17 @@ public class HomeService  extends AbstractService implements Service {
         final long documents = IndexDAO.getIndexDocumentTimeCount(authentication.getID(), System.currentTimeMillis() - 10000).count;
         final long collections = IndexDAO.getIndexDocumentCollectionCount(authentication.getID());
 
-        try {
-            final JSONObject assets = new JSONObject(true);
-            final JSONObject size = new JSONObject(true);
-            assets.put("size", size);
-            size.put("documents", documents);
-            size.put("collections", collections);
-            json.put("assets", assets);
+        final JSONObject assets = new JSONObject(true);
+        final JSONObject size = new JSONObject(true);
+        assets.put("size", size);
+        size.put("documents", documents);
+        size.put("collections", collections);
+        json.put("assets", assets);
 
-            if (authorization != null) json.put("authorization", authorization.getJSON());
-            json.put("authentication", authentication.getJSON());
-            json.put("acl", serviceRequest.getACL());
-            //Logger.info("DEBUG json = " + json.toString(2));
-        } catch (final JSONException e) {
-            Logger.warn(e);
-        }
+        if (authorization != null) json.put("authorization", authorization.getJSON());
+        json.put("authentication", authentication.getJSON());
+        json.put("acl", serviceRequest.getACL());
+        //Logger.info("DEBUG json = " + json.toString(2));
         final ServiceResponse serviceResponse = new ServiceResponse(json);
         return serviceResponse;
     }

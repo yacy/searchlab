@@ -29,12 +29,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.searchlab.http.Service.Type;
 import eu.searchlab.storage.table.IndexedTable;
-import eu.searchlab.tools.Logger;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.CookieImpl;
 import io.undertow.util.Headers;
@@ -289,26 +287,18 @@ public class ServiceResponse {
     }
 
     public String toString(final boolean minified) throws IOException {
-        try {
-            if (isObject()) return getObject().toString(minified ? 0 : 2);
-            if (isArray()) return getArray().toString(minified ? 0 : 2);
-            if (isString()) return getString();
-            if (isByteArray()) return new String((byte[]) this.object, StandardCharsets.UTF_8);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        if (isObject()) return getObject().toString(minified ? 0 : 2);
+        if (isArray()) return getArray().toString(minified ? 0 : 2);
+        if (isString()) return getString();
+        if (isByteArray()) return new String((byte[]) this.object, StandardCharsets.UTF_8);
         return null;
     }
 
     public byte[] toByteArray(final boolean minified) throws IOException {
-        try {
-            if (isObject()) return getObject().toString(minified ? 0 : 2).getBytes(StandardCharsets.UTF_8);
-            if (isArray()) return getArray().toString(minified ? 0 : 2).getBytes(StandardCharsets.UTF_8);
-            if (isString()) return getString().getBytes(StandardCharsets.UTF_8);
-            if (isByteArray()) return (byte[]) this.object;
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        if (isObject()) return getObject().toString(minified ? 0 : 2).getBytes(StandardCharsets.UTF_8);
+        if (isArray()) return getArray().toString(minified ? 0 : 2).getBytes(StandardCharsets.UTF_8);
+        if (isString()) return getString().getBytes(StandardCharsets.UTF_8);
+        if (isByteArray()) return (byte[]) this.object;
         return null;
     }
 }

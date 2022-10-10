@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 
 import eu.searchlab.storage.io.ConcurrentIO;
 import eu.searchlab.storage.io.IOObject;
@@ -129,11 +128,7 @@ public class PersistentTables {
         if (this.io == null) throw new IOException("no io defined");
         if (this.iop == null) throw new IOException("no io path defined");
         final IOPath key = this.iop.append(tablename + ".json");
-        try {
-            this.io.writeForced(new IOObject(key, t.toJSON(true).toString(2).getBytes(StandardCharsets.UTF_8)));
-        } catch (final JSONException e) {
-            throw new IOException(e.getMessage());
-        }
+        this.io.writeForced(new IOObject(key, t.toJSON(true).toString(2).getBytes(StandardCharsets.UTF_8)));
     }
 
     /**

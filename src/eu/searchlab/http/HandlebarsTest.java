@@ -22,7 +22,6 @@ package eu.searchlab.http;
 import java.io.IOException;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.github.jknack.handlebars.Context;
@@ -49,7 +48,7 @@ public class HandlebarsTest {
             + "      </div>\n"
             + "    </div>";
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
 
             final Handlebars handlebars = new Handlebars();
@@ -68,7 +67,7 @@ public class HandlebarsTest {
             final Template template = handlebars.compileInline(html);
             final String htmlh = template.apply(context);
             System.out.println(htmlh);
-        } catch (final IOException | JSONException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
     }

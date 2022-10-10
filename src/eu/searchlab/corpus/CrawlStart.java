@@ -28,41 +28,38 @@ public class CrawlStart {
 
     public static JSONObject defaultValues = new JSONObject(true);
     static {
-        try {
-            defaultValues.put("crawlingMode", "url");
-            defaultValues.put("crawlingURL", "");
-            defaultValues.put("sitemapURL", "");
-            defaultValues.put("crawlingFile", "");
-            defaultValues.put("crawlingDepth", 2);
-            defaultValues.put("crawlingDepthExtension", "");
-            defaultValues.put("range", "domain");
-            defaultValues.put("mustmatch", ".*");
-            defaultValues.put("mustnotmatch", ".*\\.(js|css|jpg|jpeg|png|dmg|mpg|mpeg|zip|gz|exe|pkg)");
-            defaultValues.put("ipMustmatch", ".*");
-            defaultValues.put("ipMustnotmatch", "");
-            defaultValues.put("indexmustmatch", ".*");
-            defaultValues.put("indexmustnotmatch", "");
-            defaultValues.put("deleteold", "on");
-            defaultValues.put("deleteIfOlderNumber", 0);
-            defaultValues.put("deleteIfOlderUnit", "day");
-            defaultValues.put("recrawl", "nodoubles");
-            defaultValues.put("reloadIfOlderNumber", 0);
-            defaultValues.put("reloadIfOlderUnit", "day");
-            defaultValues.put("crawlingDomMaxCheck", "off");
-            defaultValues.put("crawlingDomMaxPages", 1000);
-            defaultValues.put("crawlingQ", "off");
-            defaultValues.put("cachePolicy", "if fresh");
-            defaultValues.put("collection", "user"); // corpus name
-            defaultValues.put("agentName", "");
-            defaultValues.put("priority", 0);
-            defaultValues.put("loaderHeadless", "false");
-            defaultValues.put("user_id", Authentication.ANONYMOUS_ID);
-            defaultValues.put("storeAssets", "false");
-            defaultValues.put("archiveWARC", "false");
-            defaultValues.put("archiveIndex", "false");
-            defaultValues.put("archiveGraph", "false");
-        } catch (final JSONException e) {
-        }
+        defaultValues.put("crawlingMode", "url");
+        defaultValues.put("crawlingURL", "");
+        defaultValues.put("sitemapURL", "");
+        defaultValues.put("crawlingFile", "");
+        defaultValues.put("crawlingDepth", 2);
+        defaultValues.put("crawlingDepthExtension", "");
+        defaultValues.put("range", "domain");
+        defaultValues.put("mustmatch", ".*");
+        defaultValues.put("mustnotmatch", ".*\\.(js|css|jpg|jpeg|png|dmg|mpg|mpeg|zip|gz|exe|pkg)");
+        defaultValues.put("ipMustmatch", ".*");
+        defaultValues.put("ipMustnotmatch", "");
+        defaultValues.put("indexmustmatch", ".*");
+        defaultValues.put("indexmustnotmatch", "");
+        defaultValues.put("deleteold", "on");
+        defaultValues.put("deleteIfOlderNumber", 0);
+        defaultValues.put("deleteIfOlderUnit", "day");
+        defaultValues.put("recrawl", "nodoubles");
+        defaultValues.put("reloadIfOlderNumber", 0);
+        defaultValues.put("reloadIfOlderUnit", "day");
+        defaultValues.put("crawlingDomMaxCheck", "off");
+        defaultValues.put("crawlingDomMaxPages", 1000);
+        defaultValues.put("crawlingQ", "off");
+        defaultValues.put("cachePolicy", "if fresh");
+        defaultValues.put("collection", "user"); // corpus name
+        defaultValues.put("agentName", "");
+        defaultValues.put("priority", 0);
+        defaultValues.put("loaderHeadless", "false");
+        defaultValues.put("user_id", Authentication.ANONYMOUS_ID);
+        defaultValues.put("storeAssets", "false");
+        defaultValues.put("archiveWARC", "false");
+        defaultValues.put("archiveIndex", "false");
+        defaultValues.put("archiveGraph", "false");
     }
 
     private final JSONObject json;
@@ -75,11 +72,7 @@ public class CrawlStart {
         final Object v = defaultValues.opt(key);
         if (v == null) throw new RuntimeException("key " + key + " not allowed as attribute key");
         if (!(v instanceof String)) throw new RuntimeException("value" + value + " not allowed as attribute value type for key " + key);
-        try {
-            this.json.put(key, value);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put(key, value);
         return this;
     }
 
@@ -87,11 +80,7 @@ public class CrawlStart {
         final Object v = defaultValues.opt(key);
         if (v == null) throw new RuntimeException("key " + key + " not allowed as attribute key");
         if (!(v instanceof Number)) throw new RuntimeException("value" + value + " not allowed as attribute value type for key " + key);
-        try {
-            this.json.put(key, value);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put(key, value);
         return this;
     }
 
@@ -99,11 +88,7 @@ public class CrawlStart {
         final Object v = defaultValues.opt(key);
         if (v == null) throw new RuntimeException("key " + key + " not allowed as attribute key");
         if (!(v instanceof Number)) throw new RuntimeException("value" + value + " not allowed as attribute value type for key " + key);
-        try {
-            this.json.put(key, value);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        this.json.put(key, value);
         return this;
     }
 
@@ -146,11 +131,7 @@ public class CrawlStart {
 
     @Override
     public String toString() {
-        try {
-            return this.json.toString(2);
-        } catch (final JSONException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        return this.json.toString(2);
     }
 
 }

@@ -97,43 +97,27 @@ public class GELFObject extends JSONObject {
     }
 
     private void init(final String host, final String short_message, final long timestamp) {
-        try {
-            this.put(VERSION, "1.1");
-            this.put(HOST, host);
-            this.put(TIMESTAMP, timestamp);
-            this.put(SHORT_MESSAGE, short_message);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        this.put(VERSION, "1.1");
+        this.put(HOST, host);
+        this.put(TIMESTAMP, timestamp);
+        this.put(SHORT_MESSAGE, short_message);
     }
 
     private void init(final String host, final String short_message, final String full_message) {
-        try {
-            this.put(VERSION, "1.1");
-            this.put(HOST, host);
-            this.put(TIMESTAMP, System.currentTimeMillis());
-            this.put(SHORT_MESSAGE, short_message);
-            this.put(FULL_MESSAGE, full_message);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        this.put(VERSION, "1.1");
+        this.put(HOST, host);
+        this.put(TIMESTAMP, System.currentTimeMillis());
+        this.put(SHORT_MESSAGE, short_message);
+        this.put(FULL_MESSAGE, full_message);
     }
 
     public GELFObject setFullMessage(final String full_message) {
-        try {
-            this.put(FULL_MESSAGE, full_message);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        this.put(FULL_MESSAGE, full_message);
         return this;
     }
 
     public GELFObject setLevel(final int level) {
-        try {
-            this.put(LEVEL, level);
-        } catch (final JSONException e) {
-            Logger.error(e);
-        }
+        this.put(LEVEL, level);
         return this;
     }
 

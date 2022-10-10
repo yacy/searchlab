@@ -19,7 +19,6 @@
 
 package net.yacy.grid.io.index;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Mapping {
@@ -145,25 +144,21 @@ public class Mapping {
 
     public final JSONObject toJSON() {
         final JSONObject json = new JSONObject();
-        try {
-            json.put("type", getType().elasticName());
-            //if (getType() == MappingType.string) json.put("index", "not_analyzed");
-            //json.put("include_in_all", isIndexed() || isSearchable() ? "true" : "false");
-        } catch (final JSONException e) {}
+        json.put("type", getType().elasticName());
+        //if (getType() == MappingType.string) json.put("index", "not_analyzed");
+        //json.put("include_in_all", isIndexed() || isSearchable() ? "true" : "false");
         return json;
     }
 
     public static JSONObject elasticsearchMapping(final String indexName) {
         final JSONObject properties = new JSONObject(true);
         final JSONObject json = new JSONObject();
-        try {
-            for (final WebMapping mapping: WebMapping.values()) {
-                properties.put(mapping.name(), mapping.getMapping().toJSON());
-            }
-            final JSONObject index = new JSONObject().put("properties", properties);
-            final JSONObject mappings = new JSONObject().put(indexName, index);
-            json.put("mappings", mappings);
-        } catch (final JSONException e) {}
+        for (final WebMapping mapping: WebMapping.values()) {
+            properties.put(mapping.name(), mapping.getMapping().toJSON());
+        }
+        final JSONObject index = new JSONObject().put("properties", properties);
+        final JSONObject mappings = new JSONObject().put(indexName, index);
+        json.put("mappings", mappings);
         return json;
     }
 
