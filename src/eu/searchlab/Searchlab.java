@@ -139,13 +139,16 @@ public class Searchlab {
             final String envkey1 = "SEARCHLAB_" + envkey0.toUpperCase();
             final String envval0 = sysenv.get(envkey0);
             final String envval1 = sysenv.get(envkey1);
-            final boolean secret = key.contains("secret") || key.contains("password");
+            final boolean secret = 
+            		key.contains("secret") || key.contains("password") || key.contains("token") ||
+            		key.contains("client.id") || key.contains("client_id") ||
+            		key.contains("address") || key.contains("authorization");
             if (envval0 != null) {
-                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value" + (secret ? "" : (" '" + envval0 + "'")));
+                Logger.debug("OVERWRITING CONFIG '" + key + "' with environment value" + (secret ? "" : (" '" + envval0 + "'")));
                 value = envval0;
             }
             if (envval1 != null) {
-                Logger.info("OVERWRITING CONFIG '" + key + "' with environment value" + (secret ? "" : (" '" + envval1 + "'")));
+                Logger.debug("OVERWRITING CONFIG '" + key + "' with environment value" + (secret ? "" : (" '" + envval1 + "'")));
                 value = envval1;
             }
 
@@ -165,6 +168,12 @@ public class Searchlab {
         boolean assertionenabled = false;
         assert (assertionenabled = true) == true; // compare to true to remove warning: "Possible accidental assignement"
         if (assertionenabled) Logger.info("Asserts are enabled");
+        
+        // Test of Loglevel
+        Logger.debug("DEBUG logger enabled");
+        Logger.info("INFO logger enabled");
+        Logger.warn("WARN logger enabled (this is not a warning)");
+        Logger.error("ERROR logger enabled (this is not an error)");
 
         // initialize persistency
         htmlPanel = new HTMLPanel(Searchlab.GRAPH_WIDTH, Searchlab.GRAPH_HEIGHT);

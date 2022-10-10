@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
@@ -53,7 +54,8 @@ public class Logger {
         for (final Handler handler: dfltHandlers) javaLogger.removeHandler(handler);
         sh.setFormatter(new LineFormatter());
         javaLogger.addHandler(sh);
-        javaLogger.log(java.util.logging.Level.INFO, "configured logging");
+        javaLogger.setLevel(Level.FINE);
+        javaLogger.log(java.util.logging.Level.INFO, "configured logging, loglevel " + javaLogger.getLevel());
     }
 
     /**
