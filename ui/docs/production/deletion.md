@@ -62,13 +62,13 @@ You can delete only documents that you created (i.e. by crawling) before.
 document.getElementById("forUser").value = "{{context.forUser}}";
 document.getElementById("forUser").disabled = {{context.forUser_disabled}};
 if ({{context.forUser_disabled}}) document.getElementById("forUserDiv").remove();
-document.getElementById("AllSimulateDeletion").disabled = {{context.all_simulate_disabled}};
+document.getElementById("AllSimulateDeletion").disabled = {{context.simulate_disabled}};
 document.getElementById("AllDelete").disabled = {{context.all_delete_disabled}};
-document.getElementById("CollectionSimulateDeletion").disabled = {{context.collection_simulate_disabled}};
+document.getElementById("CollectionSimulateDeletion").disabled = {{context.simulate_disabled}};
 document.getElementById("CollectionDelete").disabled = {{context.collection_delete_disabled}};
-document.getElementById("DomainSimulateDeletion").disabled = {{context.domain_simulate_disabled}};
+document.getElementById("DomainSimulateDeletion").disabled = {{context.simulate_disabled}};
 document.getElementById("DomainDelete").disabled = {{context.domain_delete_disabled}};
-if (!{{context.all_simulate_disabled}}) document.getElementById("DisabledWarning").remove();
+if (!{{context.simulate_disabled}}) document.getElementById("DisabledWarning").remove();
 if ({{context.simulated}} == 0) document.getElementById("SimulatedSuccess").remove();
 if ({{context.deleted}} == 0) document.getElementById("DeleteSuccess").remove();
 </script>

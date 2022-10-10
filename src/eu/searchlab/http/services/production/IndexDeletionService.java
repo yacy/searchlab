@@ -50,12 +50,10 @@ public class IndexDeletionService  extends AbstractService implements Service {
         final boolean authorized = serviceRequest.isAuthorized();
         context.put("forUser", user_id);
         context.put("forUser_disabled", !maintainer);
+        context.put("simulate_disabled", !authorized);
         context.put("all_delete_disabled", true);
-        context.put("all_simulate_disabled", !authorized);
         context.put("collection_delete_disabled", true);
-        context.put("collection_simulate_disabled", !authorized);
         context.put("domain_delete_disabled", true);
-        context.put("domain_simulate_disabled", !authorized);
         context.put("domain", "");
         context.put("deleted", 0);
         context.put("simulated", 0);
