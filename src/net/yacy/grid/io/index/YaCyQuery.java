@@ -60,7 +60,7 @@ public class YaCyQuery {
 
     public final static String FACET_DEFAULT_PARAMETER = "host_s,url_file_ext_s,author_sxt,dates_in_content_dts,language_s,url_protocol_s,collection_sxt";
 
-    public List<String> collectionTextFilterQuery(boolean noimages) {
+    public List<String> collectionTextFilterQuery(final boolean noimages) {
         final ArrayList<String> fqs = new ArrayList<>();
 
         // add filter to prevent that results come from failed urls
@@ -86,7 +86,11 @@ public class YaCyQuery {
     private final Classification.ContentDomain contentdom;
     private final int timezoneOffset;
 
-    public YaCyQuery(String q, String[] collections, Classification.ContentDomain contentdom, int timezoneOffset) {
+    public YaCyQuery(final String q) {
+        this(q, new String[0], Classification.ContentDomain.ALL, 0);
+    }
+
+    public YaCyQuery(final String q, final String[] collections, final Classification.ContentDomain contentdom, final int timezoneOffset) {
         // default values for since and util
         this.q = fixQueryMistakes(q);
         this.orGroupTerms = splitIntoORGroups(this.q); // OR binds stronger than AND
@@ -197,7 +201,7 @@ public class YaCyQuery {
         new String[] {"yacy", "_id"}
     };
 
-    private QueryBuilder parse(String q, int timezoneOffset) {
+    private QueryBuilder parse(String q, final int timezoneOffset) {
         // detect usage of OR ORconnective usage. Because of the preparse step we will have only OR or only AND here.
         q = q.replaceAll(" AND ", " "); // AND is default
         final boolean ORconnective = q.indexOf(" OR ") >= 0;
@@ -394,7 +398,7 @@ public class YaCyQuery {
         return b;
     }
 
-    public static QueryBuilder simpleQueryBuilder(String q, boolean or, Boosts boosts) {
+    public static QueryBuilder simpleQueryBuilder(final String q, final boolean or, final Boosts boosts) {
         if (q.equals("yacyall")) return new MatchAllQueryBuilder();
         final MultiMatchQueryBuilder qb = QueryBuilders
                 .multiMatchQuery(q)
@@ -404,7 +408,7 @@ public class YaCyQuery {
         return qb;
     }
 
-    public static QueryBuilder exactMatchQueryBuilder(String q, Boosts boosts) {
+    public static QueryBuilder exactMatchQueryBuilder(final String q, final Boosts boosts) {
         final BoolQueryBuilder qb = QueryBuilders.boolQuery();
         boosts.forEach((mapping, boost) -> qb.should(QueryBuilders.termQuery(mapping.getMapping().name(), q)));
         qb.minimumShouldMatch(1);

@@ -254,15 +254,33 @@ public class IndexDAO {
         return Searchlab.ec.query(index_name, q, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
     }
 
-    public final static long getIndexDocumentQueryCount(final String user_id) {
+    /**
+     *
+     * @param user_id
+     * @param queryString
+     * @param from - from index to start the search from, 1st entry has from-index 0.
+     * @param resultCount - the number of messages in the result; can be zero if only aggregations are wanted
+     * @return
+     */
+    public final static FulltextIndex.Query query(final String user_id, final String queryString, final int from, final int resultCount) {
+        final YaCyQuery yq = new YaCyQuery(queryString);
+        return query(user_id, yq, null, Sort.DEFAULT, null, 0, from, resultCount, 0, false);
+    }
+
+    public final static List<Map<String, Object>> getIndexDocumentsQueryResultList(final String user_id, final String queryString) {
+        final FulltextIndex.Query queryResult = query(user_id, queryString, 0, Integer.MAX_VALUE);
+        final List<Map<String, Object>> resultList = queryResult.results;
+        return resultList;
+    }
+
+    public final static int getIndexDocumentsQueryCount(final String user_id, final String queryString) {
+        final FulltextIndex.Query queryResult = query(user_id, queryString, 0, 1);
+        return queryResult.hitCount;
+    }
+
+    public final static long getIndexDocumentsTotalCount(final String user_id) {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final long collections = Searchlab.ec.aggregationCount(index_name, WebMapping.collection_sxt.getMapping().name(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         return collections;
-    }
-
-    public final static long deleteIndexDocumentsByQuery(final String user_id, final String collection_name) {
-        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final long deleted = Searchlab.ec.delete(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
-        return deleted;
     }
 }

@@ -96,11 +96,9 @@ public class Typeahead {
         final long totalTimeLimit = timeout >= 0 ? startTime + timeout : Long.MAX_VALUE;
         final SortedSet<String> result = new TreeSet<>();
         int count = 30;
-        final Classification.ContentDomain contentdom =  Classification.ContentDomain.contentdomParser("all");
-
 
         // run query against search index
-        final YaCyQuery yq = new YaCyQuery((head + " " + tail).trim(), new String[0], contentdom, 0);
+        final YaCyQuery yq = new YaCyQuery((head + " " + tail).trim(), new String[0], Classification.ContentDomain.ALL, 0);
         final ElasticsearchClient.Query query = IndexDAO.query(user_id, yq, null, new Sort(""), WebMapping.text_t, 0, 0, 100, 0, false);
 
         final OrderedScoreMap<String> snippets = new OrderedScoreMap<>(null);
