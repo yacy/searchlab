@@ -1,5 +1,5 @@
 /**
- *  CrawlStartService
+ *  IndexDeletionService
  *  Copyright 21.04.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or

@@ -20,6 +20,7 @@
 
 package net.yacy.grid.io.index;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -207,6 +208,11 @@ public class IndexDAO {
         return getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
     }
 
+    public final static long exportIndexDocumentsByUserID(final String user_id, File file) {
+        return 0;
+    }
+
+
     // domains
 
     public final static long deleteIndexDocumentsByDomainName(final String user_id, final String domain_name) {
@@ -220,6 +226,11 @@ public class IndexDAO {
         final long count = Searchlab.ec.count(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
         return count;
     }
+
+    public final static long exportIndexDocumentsByDomainName(final String user_id, final String domain, File file) {
+        return 0;
+    }
+
 
     // collections
 
@@ -240,6 +251,11 @@ public class IndexDAO {
         final long deleted = Searchlab.ec.delete(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
         return deleted;
     }
+
+    public final static long exportIndexDocumentsByCollectionName(final String user_id, final String collection, File file) {
+        return 0;
+    }
+
 
     // queries
 
@@ -293,4 +309,9 @@ public class IndexDAO {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         return Searchlab.ec.deleteByQuery(index_name, user_id, yq);
     }
+
+    public final static long exportIndexDocumentsByQuery(final String user_id, final String query, File file) {
+        return 0;
+    }
+
 }
