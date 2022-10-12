@@ -54,6 +54,7 @@ public class IndexDeletionService  extends AbstractService implements Service {
         context.put("all_delete_disabled", true);
         context.put("collection_delete_disabled", true);
         context.put("domain_delete_disabled", true);
+        context.put("query_delete_disabled", true);
         context.put("domain", "");
         context.put("deleted", 0);
         context.put("simulated", 0);
@@ -75,6 +76,9 @@ public class IndexDeletionService  extends AbstractService implements Service {
 
         final boolean domainSimulateDeletion = !serviceRequest.get("DomainSimulateDeletion", "").isEmpty();
         final boolean domainDelete = !serviceRequest.get("DomainDelete", "").isEmpty();
+
+        final boolean querySimulateDeletion = !serviceRequest.get("QuerySimulateDeletion", "").isEmpty();
+        final boolean queryDelete = !serviceRequest.get("QueryDelete", "").isEmpty();
 
         // perform the wanted feature
         long deleted = 0;
@@ -131,6 +135,22 @@ public class IndexDeletionService  extends AbstractService implements Service {
                 deleted += IndexDAO.deleteIndexDocumentsByDomainName(user_id, domain.trim());
                 Logger.info("deleted " + deleted + " documents for user " + user_id + ", domain " + domain.trim());
             }
+            context.put("deleted", deleted);
+        }
+
+        // do the deletion for queries
+        final String query = serviceRequest.get("query", "").trim();
+        if (authorized && querySimulateDeletion && query.length() > 0) {
+            context.put("query", query);
+            deleted += IndexDAO.getIndexDocumentsByQueryCount(user_id, query);
+            Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", query " + query.trim());
+            context.put("simulated", deleted);
+            context.put("query_delete_disabled", false);
+        }
+        if (authorized && queryDelete && query.length() > 0) {
+            context.put("query", query);
+            deleted += IndexDAO.deleteIndexDocumentsByQuery(user_id, query);
+            Logger.info("deleted " + deleted + " documents for user " + user_id + ", query " + query.trim());
             context.put("deleted", deleted);
         }
 

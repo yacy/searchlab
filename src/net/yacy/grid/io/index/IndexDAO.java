@@ -118,7 +118,7 @@ public class IndexDAO {
                     Logger.info(entry.getKey() + ": " + entry.getValue().toString());
                 }
             }
-            */
+             */
             final String dates = (String) map.get(dateField);
             try {
                 final Date date = iso8601MillisParser.parse(dates);
@@ -268,7 +268,7 @@ public class IndexDAO {
     }
 
     public final static List<Map<String, Object>> getIndexDocumentsQueryResultList(final String user_id, final String queryString) {
-        final FulltextIndex.Query queryResult = query(user_id, queryString, 0, Integer.MAX_VALUE);
+        final FulltextIndex.Query queryResult = query(user_id, queryString, 0, 10000); // maximum for search window
         final List<Map<String, Object>> resultList = queryResult.results;
         return resultList;
     }
@@ -282,5 +282,15 @@ public class IndexDAO {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final long collections = Searchlab.ec.aggregationCount(index_name, WebMapping.collection_sxt.getMapping().name(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         return collections;
+    }
+
+    public final static long getIndexDocumentsByQueryCount(String user_id, String query) {
+        return getIndexDocumentsQueryResultList(user_id, query).size();
+    }
+
+    public final static long deleteIndexDocumentsByQuery(String user_id, String query) {
+        final YaCyQuery yq = new YaCyQuery(query);
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        return Searchlab.ec.deleteByQuery(index_name, user_id, yq);
     }
 }
