@@ -19,6 +19,7 @@
 
 package eu.searchlab.storage.io;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
@@ -90,6 +91,14 @@ public interface GenericIO {
      */
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException;
 
+    /**
+     * write an object gzipped from a file
+     * @param iop
+     * @param object
+     * @throws IOException
+     */
+    public void writeGZIP(final IOPath iop, final File fromFile) throws IOException;
+    
     /**
      * write to an object until given PipedOutputStream is closed
      * @param bucketName

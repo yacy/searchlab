@@ -21,9 +21,12 @@ package eu.searchlab.storage.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +47,14 @@ public abstract class AbstractIO implements GenericIO {
         zipStream.close();
         baos.close();
         write(iop, baos.toByteArray());
+    }
+
+    @Override
+    public void writeGZIP(final IOPath iop, final File fromFile) throws IOException {
+    	// this should be replaced by a streaming version to be able to operate on large files
+    	Path path = fromFile.toPath();
+    	byte[] b = Files.readAllBytes(path);
+    	writeGZIP(iop, b);
     }
 
     @Override

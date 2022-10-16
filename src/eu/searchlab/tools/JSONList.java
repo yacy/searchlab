@@ -27,6 +27,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -107,6 +108,12 @@ public class JSONList implements Iterable<Object> {
         final StringBuffer sb = new StringBuffer();
         this.array.forEach(entry -> sb.append(entry.toString()).append("\n"));
         return sb.toString();
+    }
+
+    public void write(final OutputStream os) throws IOException {
+        OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+        write(osw);
+        osw.close();
     }
 
     public void write(final Writer writer) throws IOException {

@@ -86,6 +86,7 @@ import eu.searchlab.http.services.info.ReadyService;
 import eu.searchlab.http.services.info.ThreaddumpService;
 import eu.searchlab.http.services.production.CrawlStartService;
 import eu.searchlab.http.services.production.IndexDeletionService;
+import eu.searchlab.http.services.production.IndexExportService;
 import eu.searchlab.storage.io.AbstractIO;
 import eu.searchlab.storage.table.IndexedTable;
 import eu.searchlab.tools.DateParser;
@@ -165,6 +166,7 @@ public class WebServer {
         ServiceMap.register(new OAuthTwitterCallback());
         ServiceMap.register(new ACLService());
         ServiceMap.register(new IndexDeletionService());
+        ServiceMap.register(new IndexExportService());
         ServiceMap.register(new GraphGetService());
         ServiceMap.register(new IndexSizeHistogramService());
         ServiceMap.register(new CrawlStartHistogramService());
