@@ -74,7 +74,6 @@ import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -336,7 +335,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     public long count(final String indexName, final String key, final String value) {
-        final TermQueryBuilder q = QueryBuilders.termQuery(key, value);
+        final QueryBuilder q = QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(key, value));
         while (true) try {
             return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -348,10 +347,10 @@ public class ElasticsearchClient implements FulltextIndex {
 
     @SafeVarargs
     public final long count(final String indexName, final Cons<String, String>... constraints) {
-        final QueryBuilder bFilter = constraintQuery(constraints);
+        final QueryBuilder q = constraintQuery(constraints);
 
         while (true) try {
-            return countInternal(bFilter, indexName);
+            return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
             Logger.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
             try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
@@ -958,7 +957,8 @@ public class ElasticsearchClient implements FulltextIndex {
         return a;
     }
 
-    public final List<Map<String, Object>> queryWithConstraints(final String indexName, final Cons<String, String> constraints, final boolean latest) {
+    @SafeVarargs
+    public final List<Map<String, Object>> queryWithConstraints(final String indexName, final Cons<String, String>... constraints) {
         final SearchRequestBuilder request = constraintRequest(indexName, constraints);
 
         // get response
@@ -1004,6 +1004,8 @@ public class ElasticsearchClient implements FulltextIndex {
 
     @SafeVarargs
     private final QueryBuilder constraintQuery(final Cons<String, String>... constraints) {
+        if (constraints.length == 0) return QueryBuilders.boolQuery();
+        if (constraints.length == 1) return QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(constraints[0].getKey(), constraints[0].getValue()));
         return constraintQuery(QueryBuilders.boolQuery(), constraints);
     }
 
@@ -1011,10 +1013,8 @@ public class ElasticsearchClient implements FulltextIndex {
     public final QueryBuilder constraintQuery(final QueryBuilder qb, final Cons<String, String>... constraints) {
         if (constraints == null || constraints.length == 0) return qb;
         final BoolQueryBuilder bFilter = qb instanceof BoolQueryBuilder ? (BoolQueryBuilder) qb: QueryBuilders.boolQuery().must(qb);
-        for (final Map.Entry<?,?> entry : constraints) {
-            bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery((String) entry.getKey(), ((String) entry.getValue()).toLowerCase())));
-        }
-        return bFilter;
+        for (final Map.Entry<String,String> entry: constraints) bFilter.must(QueryBuilders.termQuery(entry.getKey(), entry.getValue()));
+        return QueryBuilders.constantScoreQuery(bFilter);
     }
 
     public List<Map<String, Object>> queryWithCompare(final String indexName, final String compvName, final Date afterDate, final String... fields) {

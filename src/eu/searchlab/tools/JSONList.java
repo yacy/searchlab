@@ -21,9 +21,15 @@ package eu.searchlab.tools;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
@@ -33,7 +39,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 /**
- * A JSONList is an objet which represents a list of json objects: that is
+ * A JSONList is an object which represents a list of json objects: that is
  * a popular file format which is used as elasticsearch bulk index format.
  * A jsonlist file is a text file where every line is a json object.
  * To bring a JSONArray into jsonlist format you have to do
@@ -42,53 +48,53 @@ import org.json.JSONTokener;
  */
 public class JSONList implements Iterable<Object> {
 
-    private JSONArray array;
+    private final JSONArray array;
 
     public JSONList() {
         this.array = new JSONArray();
     }
 
-    public JSONList(InputStream sourceStream) throws IOException {
+    public JSONList(final InputStream sourceStream) throws IOException {
         this();
-        BufferedReader br = new BufferedReader(new InputStreamReader(sourceStream, StandardCharsets.UTF_8));
+        final BufferedReader br = new BufferedReader(new InputStreamReader(sourceStream, StandardCharsets.UTF_8));
         String line;
         try {
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (line.length() == 0) continue;
-                JSONObject json = new JSONObject(new JSONTokener(line));
+                final JSONObject json = new JSONObject(new JSONTokener(line));
                 this.add(json);
             }
-        } catch (JSONException e) {
+        } catch (final JSONException e) {
             throw new IOException(e);
         }
     }
 
-    public JSONList(JSONArray a) throws IOException {
+    public JSONList(final JSONArray a) throws IOException {
         for (int i = 0; i < a.length(); i++) {
             try {
                 if (!(a.get(i) instanceof JSONObject)) throw new IOException("all objects in JSONArray must be JSONObject");
-            } catch (JSONException e) {
+            } catch (final JSONException e) {
                 throw new IOException(e.getMessage());
             }
         };
         this.array = a;
     }
 
-    public JSONList(byte[] b) throws IOException {
+    public JSONList(final byte[] b) throws IOException {
         this(new ByteArrayInputStream(b));
     }
 
-    public JSONList(String jsonlist) throws IOException {
+    public JSONList(final String jsonlist) throws IOException {
         this(jsonlist.getBytes(StandardCharsets.UTF_8));
     }
 
-    public JSONList add(JSONObject object) {
+    public JSONList add(final JSONObject object) {
         this.array.put(object);
         return this;
     }
 
-    public JSONObject get(int i) throws JSONException {
+    public JSONObject get(final int i) throws JSONException {
         return this.array.getJSONObject(i);
     }
 
@@ -98,9 +104,24 @@ public class JSONList implements Iterable<Object> {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer();
+        final StringBuffer sb = new StringBuffer();
         this.array.forEach(entry -> sb.append(entry.toString()).append("\n"));
         return sb.toString();
+    }
+
+    public void write(final Writer writer) throws IOException {
+        for (final Object entry: this.array) {
+            writer.write(entry.toString());
+            writer.write("\n");
+        }
+    }
+
+    public void write(final File file) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+        final FileOutputStream fos = new FileOutputStream(file);
+        final OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
+        write(osw);
+        osw.close();
+        fos.close();
     }
 
     public JSONArray toArray() {

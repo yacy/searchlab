@@ -21,6 +21,7 @@
 package net.yacy.grid.io.index;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -33,6 +34,7 @@ import eu.searchlab.Searchlab;
 import eu.searchlab.storage.table.MinuteSeriesTable;
 import eu.searchlab.tools.Cons;
 import eu.searchlab.tools.DateParser;
+import eu.searchlab.tools.JSONList;
 import eu.searchlab.tools.Logger;
 
 public class IndexDAO {
@@ -208,7 +210,7 @@ public class IndexDAO {
         return getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
     }
 
-    public final static long exportIndexDocumentsByUserID(final String user_id, File file) {
+    public final static long exportIndexDocumentsByUserID(final String user_id, final File file) {
         return 0;
     }
 
@@ -227,8 +229,12 @@ public class IndexDAO {
         return count;
     }
 
-    public final static long exportIndexDocumentsByDomainName(final String user_id, final String domain, File file) {
-        return 0;
+    public final static long exportIndexDocumentsByDomainName(final String user_id, final String domain, final File file) throws IOException {
+        final List<Map<String, Object>> all = Searchlab.ec.queryAll(user_id);
+        final JSONList items = new JSONList();
+        for (int hitc = 0; hitc < all.size(); hitc++) items.add(new WebDocument(all.get(hitc)));
+        items.write(file);
+        return all.size();
     }
 
 
@@ -252,8 +258,13 @@ public class IndexDAO {
         return deleted;
     }
 
-    public final static long exportIndexDocumentsByCollectionName(final String user_id, final String collection, File file) {
-        return 0;
+    public final static long exportIndexDocumentsByCollectionName(final String user_id, final String collection, final File file) throws IOException {
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.collection_sxt.getMapping().name(), collection), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
+        final JSONList items = new JSONList();
+        for (int hitc = 0; hitc < all.size(); hitc++) items.add(new WebDocument(all.get(hitc)));
+        items.write(file);
+        return all.size();
     }
 
 
@@ -300,17 +311,17 @@ public class IndexDAO {
         return collections;
     }
 
-    public final static long getIndexDocumentsByQueryCount(String user_id, String query) {
+    public final static long getIndexDocumentsByQueryCount(final String user_id, final String query) {
         return getIndexDocumentsQueryResultList(user_id, query).size();
     }
 
-    public final static long deleteIndexDocumentsByQuery(String user_id, String query) {
+    public final static long deleteIndexDocumentsByQuery(final String user_id, final String query) {
         final YaCyQuery yq = new YaCyQuery(query);
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         return Searchlab.ec.deleteByQuery(index_name, user_id, yq);
     }
 
-    public final static long exportIndexDocumentsByQuery(final String user_id, final String query, File file) {
+    public final static long exportIndexDocumentsByQuery(final String user_id, final String query, final File file) {
         return 0;
     }
 
