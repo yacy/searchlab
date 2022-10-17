@@ -9,6 +9,9 @@
 You can export only documents that you created (i.e. by crawling) before.
 
 <div id="DisabledWarning" class="alert alert-danger" role="alert">This service is disabled! Log-in to enable all functions.</div>
+<div id="SimulatedSuccess" class="alert alert-info" role="alert">Exported (simulation) {{context.simulated}} Documents</div>
+<div id="ExportSuccess" class="alert alert-warning" role="alert">Exported {{context.exported}} Documents</div>
+
 
 <form action=".">
 <div class="form-group" id="forUserDiv">
@@ -66,12 +69,6 @@ You can export only documents that you created (i.e. by crawling) before.
 <button type="submit" name="QuerySimulateExport" value="Simulate Export" id="QuerySimulateExport" class="btn btn-info" disabled/>Simulate Export</button>
 <button type="submit" name="QueryExport" value="Export" id="QueryExport" class="btn btn-danger" disabled/>Export</button>
 </form>
-
-
-<p>
-<div id="SimulatedSuccess" class="alert alert-info" role="alert">Exported (simulation) {{context.simulated}} Documents</div>
-<div id="ExportSuccess" class="alert alert-warning" role="alert">Exported {{context.exported}} Documents</div>
-</p>
 
 <script>
 document.getElementById("forUser").value = "{{context.forUser}}";

@@ -20,9 +20,9 @@
 
 package net.yacy.grid.io.index;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -35,7 +35,6 @@ import eu.searchlab.Searchlab;
 import eu.searchlab.storage.table.MinuteSeriesTable;
 import eu.searchlab.tools.Cons;
 import eu.searchlab.tools.DateParser;
-import eu.searchlab.tools.JSONList;
 import eu.searchlab.tools.Logger;
 
 public class IndexDAO {
@@ -182,7 +181,7 @@ public class IndexDAO {
     public static MinuteSeriesTable getCrawlstartHistogramAggregation() {
         // get list of all documents that have been created in the last 10 minutes
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.crawlstart", ElasticsearchClient.DEFAULT_INDEXNAME_CRAWLSTART);
-        final List<Map<String, Object>> documents = Searchlab.ec.queryAll(index_name);
+        final List<Map<String, Object>> documents = Searchlab.ec.queryWithConstraints(index_name);
         final String dateField = CrawlstartMapping.init_date_dt.getMapping().name(); // like "init_date_dt": "2022-08-18T21:58:28.918Z",
         MinuteSeriesTable tst = new MinuteSeriesTable(new String[] {}, new String[] {}, new String[] {"data.crawlstarts"}, false);
         for (final Map<String, Object> map: documents) {
@@ -211,8 +210,14 @@ public class IndexDAO {
         return getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
     }
 
-    public final static long exportIndexDocumentsByUserID(final String user_id, final OutputStream os) {
-        return 0;
+    public final static long exportIndexDocumentsByUserID(final String user_id, final OutputStream os) throws IOException {
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
+        for (int hitc = 0; hitc < all.size(); hitc++) {
+            os.write((new WebDocument(all.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
+            os.write('\n');
+        }
+        return all.size();
     }
 
 
@@ -230,11 +235,13 @@ public class IndexDAO {
         return count;
     }
 
-    public final static long exportIndexDocumentsByDomainName(final String user_id, final String domain, final OutputStream os) throws IOException {
-        final List<Map<String, Object>> all = Searchlab.ec.queryAll(user_id);
-        final JSONList items = new JSONList();
-        for (int hitc = 0; hitc < all.size(); hitc++) items.add(new WebDocument(all.get(hitc)));
-        items.write(os);
+    public final static long exportIndexDocumentsByDomainName(final String user_id, final String domain_name, final OutputStream os) throws IOException {
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
+        for (int hitc = 0; hitc < all.size(); hitc++) {
+            os.write((new WebDocument(all.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
+            os.write('\n');
+        }
         return all.size();
     }
 
@@ -259,12 +266,13 @@ public class IndexDAO {
         return deleted;
     }
 
-    public final static long exportIndexDocumentsByCollectionName(final String user_id, final String collection, final OutputStream os) throws IOException {
+    public final static long exportIndexDocumentsByCollectionName(final String user_id, final String collection_name, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.collection_sxt.getMapping().name(), collection), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
-        final JSONList items = new JSONList();
-        for (int hitc = 0; hitc < all.size(); hitc++) items.add(new WebDocument(all.get(hitc)));
-        items.write(os);
+        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
+        for (int hitc = 0; hitc < all.size(); hitc++) {
+            os.write((new WebDocument(all.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
+            os.write('\n');
+        }
         return all.size();
     }
 

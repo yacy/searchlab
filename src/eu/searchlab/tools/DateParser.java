@@ -39,6 +39,7 @@ public class DateParser {
     public final static String PATTERN_MONTHDAY                 = "yyyy-MM-dd"; // the twitter search modifier format
     public final static String PATTERN_MONTHDAYHOURMINUTE       = "yyyy-MM-dd HH:mm"; // this is the format which morris.js understands for date-histogram graphs
     public final static String PATTERN_MONTHDAYHOURMINUTESECOND = "yyyy-MM-dd HH:mm:ss";
+    public final static String YEARTOSECONDFILENAME = "yyyyMMddHHmmss";
     public final static String PATTERN_RFC1123 = "EEE, dd MMM yyyy HH:mm:ss Z"; // with numeric time zone indicator as defined in RFC5322
 
     /** Date formatter/non-sloppy parser for W3C datetime (ISO8601) in GMT/UTC */

@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -42,7 +41,7 @@ public abstract class AbstractIO implements GenericIO {
     @Override
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final GZIPOutputStream zipStream = new GZIPOutputStream(baos);
+        final GZIPOutputStream zipStream = new GZIPOutputStream(baos, 8192);
         zipStream.write(object);
         zipStream.close();
         baos.close();
@@ -50,11 +49,15 @@ public abstract class AbstractIO implements GenericIO {
     }
 
     @Override
+    public void write(final IOPath iop, final File fromFile) throws IOException {
+        // this should be replaced by a streaming version to be able to operate on large files
+        write(iop, Files.readAllBytes(fromFile.toPath()));
+    }
+
+    @Override
     public void writeGZIP(final IOPath iop, final File fromFile) throws IOException {
-    	// this should be replaced by a streaming version to be able to operate on large files
-    	Path path = fromFile.toPath();
-    	byte[] b = Files.readAllBytes(path);
-    	writeGZIP(iop, b);
+        // this should be replaced by a streaming version to be able to operate on large files
+        writeGZIP(iop, Files.readAllBytes(fromFile.toPath()));
     }
 
     @Override

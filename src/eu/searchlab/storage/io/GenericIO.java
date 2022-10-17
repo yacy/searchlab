@@ -92,13 +92,21 @@ public interface GenericIO {
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException;
 
     /**
+     * write an object from a file
+     * @param iop
+     * @param object
+     * @throws IOException
+     */
+    public void write(final IOPath iop, final File fromFile) throws IOException;
+
+    /**
      * write an object gzipped from a file
      * @param iop
      * @param object
      * @throws IOException
      */
     public void writeGZIP(final IOPath iop, final File fromFile) throws IOException;
-    
+
     /**
      * write to an object until given PipedOutputStream is closed
      * @param bucketName

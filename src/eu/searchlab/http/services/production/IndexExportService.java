@@ -22,7 +22,11 @@ package eu.searchlab.http.services.production;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
+import java.util.zip.GZIPOutputStream;
 
 import org.json.JSONObject;
 
@@ -76,40 +80,40 @@ public class IndexExportService  extends AbstractService implements Service {
         if (for_user_id.length() > 0 && maintainer) user_id = for_user_id;
 
         // get selected feature
-        final boolean allSimulateDeletion = !serviceRequest.get("AllSimulateDeletion", "").isEmpty();
+        final boolean allSimulateExport = !serviceRequest.get("AllSimulateExport", "").isEmpty();
         final boolean allExport = !serviceRequest.get("AllExport", "").isEmpty();
 
-        final boolean collectionSimulateDeletion = !serviceRequest.get("CollectionSimulateDeletion", "").isEmpty();
+        final boolean collectionSimulateExport = !serviceRequest.get("CollectionSimulateExport", "").isEmpty();
         final boolean collectionExport = !serviceRequest.get("CollectionExport", "").isEmpty();
 
-        final boolean domainSimulateDeletion = !serviceRequest.get("DomainSimulateDeletion", "").isEmpty();
+        final boolean domainSimulateExport = !serviceRequest.get("DomainSimulateExport", "").isEmpty();
         final boolean domainExport = !serviceRequest.get("DomainExport", "").isEmpty();
 
-        final boolean querySimulateDeletion = !serviceRequest.get("QuerySimulateDeletion", "").isEmpty();
+        final boolean querySimulateExport = !serviceRequest.get("QuerySimulateExport", "").isEmpty();
         final boolean queryExport = !serviceRequest.get("QueryExport", "").isEmpty();
 
         // perform the wanted feature
         long exported = 0;
-        final String prefix = "export-" + DateParser.secondDateFormatParser().format(new Date());
+        final String prefix = "export-" + new SimpleDateFormat(DateParser.YEARTOSECONDFILENAME, Locale.US).format(new Date());
         final IOPath assetsPath = Searchlab.accounting.getAssetsPathForUser(user_id);
         final IOPath exportPath = assetsPath.append("export");
-        
+
         // do the export for all documents
-        if (authorized && allSimulateDeletion) {
+        if (authorized && allSimulateExport) {
             exported = IndexDAO.getIndexDocumentsByUserID(user_id);
             Logger.info("exported (simulated) " + exported + " documents for user " + user_id);
             context.put("simulated", exported);
             context.put("all_export_disabled", false);
         }
         if (authorized && allExport) {
-        	String exportName = prefix + "-all";
-        	IOPath targetPath = exportPath.append(exportName);
+            final String exportName = prefix + "-all.jsonlist.gz";
+            final IOPath targetPath = exportPath.append(exportName);
             try {
-                final File tempFile = File.createTempFile(exportName, "jsonlist");
-                FileOutputStream fos = new FileOutputStream(tempFile);
-                exported = IndexDAO.exportIndexDocumentsByUserID(user_id, fos);
-                fos.close();
-                Searchlab.io.writeGZIP(targetPath, tempFile);
+                final File tempFile = File.createTempFile(exportName, null);
+                final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
+                exported = IndexDAO.exportIndexDocumentsByUserID(user_id, os);
+                os.close();
+                Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
                 Logger.info("exported all " + exported + " documents for user " + user_id + " to " + targetPath.toString());
                 context.put("exported", exported);
@@ -121,7 +125,7 @@ public class IndexExportService  extends AbstractService implements Service {
         // do the export for collections
         final String collectionss = serviceRequest.get("collection", "").trim();
         final String[] collections = collectionss.isEmpty() ? new String[0]: collectionss.split(",");
-        if (authorized && collectionSimulateDeletion && collections.length > 0) {
+        if (authorized && collectionSimulateExport && collections.length > 0) {
             context.put("domain", collectionss);
             for (final String collection: collections) {
                 exported += IndexDAO.getIndexDocumentByCollectionCount(user_id, collection.trim());
@@ -131,11 +135,11 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("collection_export_disabled", false);
         }
         if (authorized && collectionExport && collections.length > 0) {
-        	String exportName = prefix + "-collection";
-        	IOPath targetPath = exportPath.append(exportName);
+            final String exportName = prefix + "-collection";
+            final IOPath targetPath = exportPath.append(exportName);
             try {
                 final File tempFile = File.createTempFile(exportName, "jsonlist");
-                FileOutputStream fos = new FileOutputStream(tempFile);
+                final FileOutputStream fos = new FileOutputStream(tempFile);
                 context.put("domain", collectionss);
                 for (final String collection: collections) {
                     exported += IndexDAO.exportIndexDocumentsByCollectionName(user_id, collection.trim(), fos);
@@ -153,7 +157,7 @@ public class IndexExportService  extends AbstractService implements Service {
         // do the export for domains
         final String domainss = serviceRequest.get("domain", "").trim();
         final String[] domains = domainss.isEmpty() ? new String[0]: domainss.split(",");
-        if (authorized && domainSimulateDeletion && domains.length > 0) {
+        if (authorized && domainSimulateExport && domains.length > 0) {
             context.put("domain", domainss);
             for (final String domain: domains) {
                 exported += IndexDAO.getIndexDocumentsByDomainNameCount(user_id, domain.trim());
@@ -163,11 +167,11 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("domain_export_disabled", false);
         }
         if (authorized && domainExport && domains.length > 0) {
-        	String exportName = prefix + "-domain";
-        	IOPath targetPath = exportPath.append(exportName);
+            final String exportName = prefix + "-domain";
+            final IOPath targetPath = exportPath.append(exportName);
             try {
                 final File tempFile = File.createTempFile(exportName, "jsonlist");
-                FileOutputStream fos = new FileOutputStream(tempFile);
+                final FileOutputStream fos = new FileOutputStream(tempFile);
                 context.put("domain", domainss);
                 for (final String domain: domains) {
                     exported += IndexDAO.exportIndexDocumentsByDomainName(user_id, domain.trim(), fos);
@@ -184,7 +188,7 @@ public class IndexExportService  extends AbstractService implements Service {
 
         // do the export for queries
         final String query = serviceRequest.get("query", "").trim();
-        if (authorized && querySimulateDeletion && query.length() > 0) {
+        if (authorized && querySimulateExport && query.length() > 0) {
             context.put("query", query);
             exported += IndexDAO.getIndexDocumentsByQueryCount(user_id, query);
             Logger.info("exported (simulated) " + exported + " documents for user " + user_id + ", query " + query.trim());
@@ -192,11 +196,11 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("query_export_disabled", false);
         }
         if (authorized && queryExport && query.length() > 0) {
-        	String exportName = prefix + "-query";
-        	IOPath targetPath = exportPath.append(exportName);
+            final String exportName = prefix + "-query";
+            final IOPath targetPath = exportPath.append(exportName);
             try {
                 final File tempFile = File.createTempFile(exportName, "jsonlist");
-                FileOutputStream fos = new FileOutputStream(tempFile);
+                final FileOutputStream fos = new FileOutputStream(tempFile);
                 context.put("query", query);
                 exported = IndexDAO.exportIndexDocumentsByQuery(user_id, query, fos);
                 fos.close();
