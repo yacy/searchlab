@@ -50,6 +50,8 @@ public class AssetDownloadService extends AbstractService implements Service {
 
         final int p = path.lastIndexOf('.');
         final String ext = p < 0 ? "html" : path.substring(p + 1);
+        final int q = path.lastIndexOf('/');
+        final String filename = q < 0 ? path : path.substring(q + 1);
 
         final String user_id = serviceRequest.getUser();
         final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
@@ -62,9 +64,10 @@ public class AssetDownloadService extends AbstractService implements Service {
             Logger.warn("attempt to list " + apppath.toString(), e);
             b = new byte[] {};
         }
+
         final ServiceResponse serviceResponse = new ServiceResponse(b);
         serviceResponse.setMime(ServiceRequest.getMime(ext));
-        serviceResponse.setSpecial(200, Headers.CONTENT_DISPOSITION.toString(), "attachment; filename=\"" + path + "\"");
+        serviceResponse.setSpecial(200, Headers.CONTENT_DISPOSITION.toString(), "attachment; filename=\"" + filename + "\"");
         return serviceResponse;
     }
 

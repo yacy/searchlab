@@ -303,6 +303,7 @@ public class WebServer {
                         exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
                         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
                     }
+                    /*
                     if (query.endsWith(".jsonlist") || query.endsWith(".gz")) {
                         exchange.getResponseHeaders().remove(Headers.CONTENT_TYPE);
                         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
@@ -313,6 +314,7 @@ public class WebServer {
                             exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
                         }
                     }
+                    */
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
                     exchange.getResponseSender().send(ByteBuffer.wrap(b));
