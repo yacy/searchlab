@@ -59,12 +59,17 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
 
     /**
      * an IOPath is a folder if the last element of the path after the latest "/" does not contains a "."
+     * or the length of the extension is greater than 8
      * @return
      */
     public final boolean isFolder() {
         int p = this.path.lastIndexOf('/');
-        if (p < 0) p = 0;
-        return this.path.indexOf('.', p) < 0;
+        if (p < 0) p = 0; // no '/' inside, thats ok
+        int q = this.path.indexOf('.', p);
+        if (q < 0) return true; // no dot in last path -> not a file, therefore a dir
+        // q is now the length of the head part
+        int extlength = this.path.length() - q - 1; // length of the extension
+        return extlength > 8;
     }
 
     /**
@@ -93,7 +98,13 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
     public final String getPath() {
         return this.path;
     }
-
+    
+    public final IOPath getParent() {
+        int pp = this.path.lastIndexOf('/');
+        String p = pp < 0 ? this.path : this.path.substring(0, pp);
+        return new IOPath(this.bucket, p);
+    }
+    
     /**
      * Append a subpath to the existing path.
      * The new path should not have a beginnt "/" and no ending "/" but if it exist, it is cutted away.

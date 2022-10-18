@@ -51,12 +51,22 @@ public class AssetDirectoryService extends AbstractService implements Service {
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
         // evaluate request parameter
-        String path = IOPath.normalizePath(serviceRequest.get("path", ""));
+    	String paths= serviceRequest.get("path", "");
+    	String dels= serviceRequest.get("del", "");
+        String path = IOPath.normalizePath(paths);
         if (path.length() == 1 && path.equals("/")) path = "";
         final String user_id = serviceRequest.getUser();
         final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
         //final String assetsPath = assets.getPath();
         final IOPath dirpath = assets.append(path);
+        if (dirpath.isFolder() && dels.length() > 0) {
+        	IOPath del = dirpath.append(dels);
+        	try {
+				Searchlab.io.remove(del);
+			} catch (IOException e) {
+				Logger.warn(e);
+			}
+        }
         final JSONArray dirarray = new JSONArray();
         //final Set<String> knownDir = new HashSet<>();
         try {
@@ -84,6 +94,7 @@ public class AssetDirectoryService extends AbstractService implements Service {
                     d.put("size_p", "");
                     d.put("date", "");
                     d.put("time", 0);
+                    d.put("offerdel", false);
                 } else {
                     final String sizes = entry.size > gb ? (entry.size / mb) + " MB   " : entry.size > mb ? (entry.size / kb) + " KB   " : entry.size + " bytes";
                     d.put("size", entry.size);
@@ -91,6 +102,7 @@ public class AssetDirectoryService extends AbstractService implements Service {
                     max_size_len = Math.max(max_size_len, sizes.length());
                     d.put("date", DateParser.iso8601Format.format(new Date(entry.time)));
                     d.put("time", entry.time);
+                    d.put("offerdel", true);
                 }
                 dirarray.put(d);
             }

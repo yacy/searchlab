@@ -37,6 +37,7 @@ import eu.searchlab.tools.Logger;
 
 public abstract class AbstractIO implements GenericIO {
 
+    protected final ConcurrentHashMap<IOPath, IODirList> dirListCache = new ConcurrentHashMap<>();
 
     @Override
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException {
@@ -157,8 +158,6 @@ public abstract class AbstractIO implements GenericIO {
         final List<IOPathMeta> list = list(path.getBucket(), path.getPath());
         return list;
     }
-
-    private final static ConcurrentHashMap<IOPath, IODirList> dirListCache = new ConcurrentHashMap<>();
 
     @Override
     public IODirList dirList(final IOPath dirpath) throws IOException {

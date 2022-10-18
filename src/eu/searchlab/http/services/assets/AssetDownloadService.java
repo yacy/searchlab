@@ -29,6 +29,7 @@ import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.Logger;
+import io.undertow.util.Headers;
 
 // http://localhost:8400/en/api/assetget.json?path=/index/fsfe.org-2022-05-20-19-01-53-0/d003-t0520170345973-p041.index.jsonlist
 public class AssetDownloadService extends AbstractService implements Service {
@@ -63,6 +64,7 @@ public class AssetDownloadService extends AbstractService implements Service {
         }
         final ServiceResponse serviceResponse = new ServiceResponse(b);
         serviceResponse.setMime(ServiceRequest.getMime(ext));
+        serviceResponse.setSpecial(200, Headers.CONTENT_DISPOSITION.toString(), "attachment; filename=\"" + path + "\"");
         return serviceResponse;
     }
 

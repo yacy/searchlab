@@ -380,6 +380,8 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     public void remove(final IOPath iop) throws IOException {
         try {
             this.mc.removeObject(RemoveObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            super.dirListCache.remove(iop);
+            super.dirListCache.remove(iop.getParent());
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException
