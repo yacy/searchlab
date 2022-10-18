@@ -47,6 +47,7 @@ public abstract class AbstractIO implements GenericIO {
         zipStream.close();
         baos.close();
         write(iop, baos.toByteArray());
+        this.dirListCache.remove(iop.getParent());
     }
 
     @Override
@@ -121,6 +122,7 @@ public abstract class AbstractIO implements GenericIO {
             is.close();
         } catch (final IOException e) {}
         pos.close();
+        this.dirListCache.remove(toIOp.getParent());
     }
 
     @Override
@@ -144,6 +146,7 @@ public abstract class AbstractIO implements GenericIO {
             is.close();
         }
         pos.close();
+        this.dirListCache.remove(iop.getParent());
     }
 
     @Override
@@ -151,6 +154,8 @@ public abstract class AbstractIO implements GenericIO {
         // there is unfortunately no server-side move
         this.copy(fromIOp, toIOp);
         this.remove(fromIOp);
+        this.dirListCache.remove(fromIOp.getParent());
+        this.dirListCache.remove(toIOp.getParent());
     }
 
     @Override

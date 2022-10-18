@@ -184,6 +184,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 this.setName("S3IO writer for " + iop.toString());
                 try {
                     MinioS3IO.this.write(iop, is, len);
+                    MinioS3IO.super.dirListCache.remove(iop.getParent());
                 } catch (final IOException e) {
                     e.printStackTrace();
                     ea[0] = e;
@@ -222,6 +223,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                         .contentType("application/octet-stream")
                         .build());
             }
+            super.dirListCache.remove(iop.getParent());
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException
@@ -256,6 +258,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                             .bucket(fromIOp.getBucket())
                             .object(fromIOp.getPath()).build())
                     .build());
+            super.dirListCache.remove(toIOp.getParent());
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException
