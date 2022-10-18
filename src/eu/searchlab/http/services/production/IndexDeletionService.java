@@ -100,7 +100,7 @@ public class IndexDeletionService  extends AbstractService implements Service {
         final String collectionss = serviceRequest.get("collection", "").trim();
         final String[] collections = collectionss.isEmpty() ? new String[0]: collectionss.split(",");
         if (authorized && collectionSimulateDeletion && collections.length > 0) {
-            context.put("domain", collectionss);
+            context.put("collection", collectionss);
             for (final String collection: collections) {
                 deleted += IndexDAO.getIndexDocumentByCollectionCount(user_id, collection.trim());
                 Logger.info("deleted (simulated) " + deleted + " documents for user " + user_id + ", collection " + collection.trim());

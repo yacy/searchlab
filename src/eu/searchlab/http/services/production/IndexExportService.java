@@ -126,7 +126,7 @@ public class IndexExportService  extends AbstractService implements Service {
         final String collectionss = serviceRequest.get("collection", "").trim();
         final String[] collections = collectionss.isEmpty() ? new String[0]: collectionss.split(",");
         if (authorized && collectionSimulateExport && collections.length > 0) {
-            context.put("domain", collectionss);
+            context.put("collection", collectionss);
             for (final String collection: collections) {
                 exported += IndexDAO.getIndexDocumentByCollectionCount(user_id, collection.trim());
                 Logger.info("exported (simulated) " + exported + " documents for user " + user_id + ", collection " + collection.trim());
@@ -135,18 +135,18 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("collection_export_disabled", false);
         }
         if (authorized && collectionExport && collections.length > 0) {
-            final String exportName = prefix + "-collection";
+            final String exportName = prefix + "-collection.jsonlist.gz";
             final IOPath targetPath = exportPath.append(exportName);
             try {
-                final File tempFile = File.createTempFile(exportName, "jsonlist");
-                final FileOutputStream fos = new FileOutputStream(tempFile);
+                final File tempFile = File.createTempFile(exportName, null);
+                final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
                 context.put("domain", collectionss);
                 for (final String collection: collections) {
-                    exported += IndexDAO.exportIndexDocumentsByCollectionName(user_id, collection.trim(), fos);
+                    exported += IndexDAO.exportIndexDocumentsByCollectionName(user_id, collection.trim(), os);
                     Logger.info("exported " + exported + " documents for user " + user_id + ", collection " + collection.trim() + " to " + targetPath.toString());
                 }
-                fos.close();
-                Searchlab.io.writeGZIP(targetPath, tempFile);
+                os.close();
+                Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
                 context.put("exported", exported);
             } catch (final IOException e) {
@@ -167,18 +167,18 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("domain_export_disabled", false);
         }
         if (authorized && domainExport && domains.length > 0) {
-            final String exportName = prefix + "-domain";
+            final String exportName = prefix + "-domain.jsonlist.gz";
             final IOPath targetPath = exportPath.append(exportName);
             try {
-                final File tempFile = File.createTempFile(exportName, "jsonlist");
-                final FileOutputStream fos = new FileOutputStream(tempFile);
+                final File tempFile = File.createTempFile(exportName, null);
+                final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
                 context.put("domain", domainss);
                 for (final String domain: domains) {
-                    exported += IndexDAO.exportIndexDocumentsByDomainName(user_id, domain.trim(), fos);
+                    exported += IndexDAO.exportIndexDocumentsByDomainName(user_id, domain.trim(), os);
                     Logger.info("exported " + exported + " documents for user " + user_id + ", domain " + domain.trim() + " to " + targetPath.toString());
                 }
-                fos.close();
-                Searchlab.io.writeGZIP(targetPath, tempFile);
+                os.close();
+                Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
                 context.put("exported", exported);
             } catch (final IOException e) {
@@ -196,15 +196,15 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("query_export_disabled", false);
         }
         if (authorized && queryExport && query.length() > 0) {
-            final String exportName = prefix + "-query";
+            final String exportName = prefix + "-query.jsonlist.gz";
             final IOPath targetPath = exportPath.append(exportName);
             try {
-                final File tempFile = File.createTempFile(exportName, "jsonlist");
-                final FileOutputStream fos = new FileOutputStream(tempFile);
+                final File tempFile = File.createTempFile(exportName, null);
+                final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
                 context.put("query", query);
-                exported = IndexDAO.exportIndexDocumentsByQuery(user_id, query, fos);
-                fos.close();
-                Searchlab.io.writeGZIP(targetPath, tempFile);
+                exported = IndexDAO.exportIndexDocumentsByQuery(user_id, query, os);
+                os.close();
+                Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
                 Logger.info("exported " + exported + " documents for user " + user_id + ", query " + query.trim() + " to " + targetPath.toString());
                 context.put("exported", exported);

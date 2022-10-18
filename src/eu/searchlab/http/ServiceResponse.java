@@ -198,7 +198,7 @@ public class ServiceResponse {
         return this.cookies;
     }
 
-    private ServiceResponse setSpecial(final int statusCode, final String hkey, final String hval) {
+    public ServiceResponse setSpecial(final int statusCode, final String hkey, final String hval) {
         this.statusCode = statusCode;
         if (this.xtraHeaders == null) this.xtraHeaders = new LinkedHashMap<>();
         this.xtraHeaders.put(hkey, hval);

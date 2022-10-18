@@ -187,7 +187,7 @@ public class IndexDAO {
         for (final Map<String, Object> map: documents) {
             final String dates = (String) map.get(dateField);
             try {
-                final Date date =DateParser.iso8601MillisParser().parse(dates);
+                final Date date = DateParser.iso8601MillisParser().parse(dates);
                 tst.addValues(date.getTime(), new String[0], new String[0], new long[] {1});
             } catch (final Exception e) {
                 Logger.warn(e);
