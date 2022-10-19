@@ -127,9 +127,9 @@ public interface FulltextIndex {
      *            the unique identifier of a document
      * @return the document as json, matched on a Map<String, Object> object instance
      */
-    public Map<String, Object> readMap(final String indexName, final String id);
+    public Map<String, Object> readDocument(final String indexName, final String id);
 
-    public Map<String, Map<String, Object>> readMapBulk(final String indexName, final Collection<String> ids);
+    public Map<String, Map<String, Object>> readDocumentsBulk(final String indexName, final Collection<String> ids);
 
     /**
      * Write a json document into the search index. The id must be calculated by the calling environment.
@@ -142,7 +142,7 @@ public interface FulltextIndex {
      * @param jsonMap the json document to be indexed in elasticsearch
      * @return true if the document with given id did not exist before, false if it existed and was overwritten
      */
-    public boolean writeMap(String indexName, String typeName, String id, final Map<String, Object> jsonMap);
+    public boolean writeDocument(String indexName, String typeName, String id, final Map<String, Object> jsonMap);
 
     /**
      * bulk message write
@@ -157,7 +157,7 @@ public interface FulltextIndex {
      *            The method was only successful if this list is empty.
      *            This must be a list, because keys may appear several times.
      */
-    public BulkWriteResult writeMapBulk(final String indexName, final List<BulkEntry> jsonMapList);
+    public BulkWriteResult writeDocumentBulk(final String indexName, final List<BulkEntry> jsonMapList);
 
     public static class BulkWriteResult {
         public final Map<String, String> errors;

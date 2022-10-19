@@ -71,7 +71,7 @@ public class IndexService extends AbstractService implements Service {
             json.put("pages", "1");
             json.put("page", "1");
 
-            final Map<String, Object> map = IndexDAO.exportIndex(id);
+            final Map<String, Object> map = IndexDAO.readDocument(id);
             final JSONList list = new JSONList();
             if (map == null) {
                 json.put("totalResults",  "0");
@@ -100,7 +100,7 @@ public class IndexService extends AbstractService implements Service {
 
             final YaCyQuery yq = new YaCyQuery(q, collections, contentdom, timezoneOffset);
             final ElasticsearchClient.Query query = IndexDAO.query(
-                    user_id, yq, null, sort, WebMapping.text_t, timezoneOffset, startRecord, itemsPerPage, 1, false); // no facet computation here
+                    user_id, yq, sort, WebMapping.text_t, startRecord, itemsPerPage, false); // no facet computation here
 
             final JSONList items = new JSONList();
             final List<Map<String, Object>> qr = query.results;

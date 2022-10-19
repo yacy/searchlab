@@ -109,7 +109,7 @@ public class IndexDeletionService  extends AbstractService implements Service {
             context.put("collection_delete_disabled", false);
         }
         if (authorized && collectionDelete && collections.length > 0) {
-            context.put("domain", collectionss);
+            context.put("collection", collectionss);
             for (final String collection: collections) {
                 deleted += IndexDAO.deleteIndexDocumentsByCollectionName(user_id, collection.trim());
                 Logger.info("deleted " + deleted + " documents for user " + user_id + ", collection " + collection.trim());

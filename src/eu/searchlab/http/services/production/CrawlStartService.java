@@ -268,7 +268,7 @@ public class CrawlStartService  extends AbstractService implements Service {
                         .setInitDate(now)
                         .setData(singlecrawl);
                 String crawlid = crawlstartDoc.getCrawlID();
-                final boolean success = Searchlab.ec.writeMap(Searchlab.crawlstartIndexName, Searchlab.crawlstartTypeName, crawlid, crawlstartDoc.toMap());
+                final boolean success = Searchlab.ec.writeDocument(Searchlab.crawlstartIndexName, Searchlab.crawlstartTypeName, crawlid, crawlstartDoc.toMap());
                 if (!success) {
                     Logger.warn("NOT CRAWLED: " + url.toString());
                     continue crawlstarturls;

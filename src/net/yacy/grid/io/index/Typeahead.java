@@ -99,7 +99,7 @@ public class Typeahead {
 
         // run query against search index
         final YaCyQuery yq = new YaCyQuery((head + " " + tail).trim(), new String[0], Classification.ContentDomain.ALL, 0);
-        final ElasticsearchClient.Query query = IndexDAO.query(user_id, yq, null, new Sort(""), WebMapping.text_t, 0, 0, 100, 0, false);
+        final ElasticsearchClient.Query query = IndexDAO.query(user_id, yq, Sort.DEFAULT, WebMapping.text_t, 0, 100, false);
 
         final OrderedScoreMap<String> snippets = new OrderedScoreMap<>(null);
         final List<Map<String, Object>> qr = query.results;

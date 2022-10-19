@@ -140,7 +140,7 @@ public class IndexExportService  extends AbstractService implements Service {
             try {
                 final File tempFile = File.createTempFile(exportName, null);
                 final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
-                context.put("domain", collectionss);
+                context.put("collection", collectionss);
                 for (final String collection: collections) {
                     exported += IndexDAO.exportIndexDocumentsByCollectionName(user_id, collection.trim(), os);
                     Logger.info("exported " + exported + " documents for user " + user_id + ", collection " + collection.trim() + " to " + targetPath.toString());

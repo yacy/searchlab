@@ -196,25 +196,25 @@ public class DumpIndex implements FulltextIndex {
     }
 
     @Override
-    public Map<String, Object> readMap(final String indexName, final String id) {
+    public Map<String, Object> readDocument(final String indexName, final String id) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public Map<String, Map<String, Object>> readMapBulk(final String indexName, final Collection<String> ids) {
+    public Map<String, Map<String, Object>> readDocumentsBulk(final String indexName, final Collection<String> ids) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public boolean writeMap(final String indexName, final String typeName, final String id, final Map<String, Object> jsonMap) {
+    public boolean writeDocument(final String indexName, final String typeName, final String id, final Map<String, Object> jsonMap) {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public BulkWriteResult writeMapBulk(final String indexName, final List<BulkEntry> jsonMapList) {
+    public BulkWriteResult writeDocumentBulk(final String indexName, final List<BulkEntry> jsonMapList) {
         // TODO Auto-generated method stub
         return null;
     }

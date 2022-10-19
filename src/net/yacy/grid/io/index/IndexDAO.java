@@ -237,12 +237,12 @@ public class IndexDAO {
 
     public final static long exportIndexDocumentsByDomainName(final String user_id, final String domain_name, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
-        for (int hitc = 0; hitc < all.size(); hitc++) {
-            os.write((new WebDocument(all.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
+        final List<Map<String, Object>> resultList = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
+        for (int hitc = 0; hitc < resultList.size(); hitc++) {
+            os.write((new WebDocument(resultList.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
             os.write('\n');
         }
-        return all.size();
+        return resultList.size();
     }
 
 
@@ -268,20 +268,33 @@ public class IndexDAO {
 
     public final static long exportIndexDocumentsByCollectionName(final String user_id, final String collection_name, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
-        for (int hitc = 0; hitc < all.size(); hitc++) {
-            os.write((new WebDocument(all.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
+        final List<Map<String, Object>> resultList = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
+        for (int hitc = 0; hitc < resultList.size(); hitc++) {
+            os.write((new WebDocument(resultList.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
             os.write('\n');
         }
-        return all.size();
+        return resultList.size();
     }
 
 
     // queries
 
-    public final static Map<String, Object> exportIndex(final String id) {
+    public final static Map<String, Object> readDocument(final String id) {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        return Searchlab.ec.readMap(index_name, id);
+        return Searchlab.ec.readDocument(index_name, id);
+    }
+
+    public final static long getIndexDocumentsByQueryCount(final String user_id, final String queryString) {
+    	final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+    	final YaCyQuery yq = new YaCyQuery(queryString);
+    	FulltextIndex.Query queryResult = Searchlab.ec.query(index_name, yq, Sort.DEFAULT, null, false, 0, 1);
+        return queryResult.hitCount;
+    }
+    
+    public final static long deleteIndexDocumentsByQuery(final String user_id, final String query) {
+        final YaCyQuery yq = new YaCyQuery(query);
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        return Searchlab.ec.deleteByQuery(index_name, user_id, yq);
     }
 
     public final static FulltextIndex.Query query(final String user_id, final YaCyQuery yq, final YaCyQuery postFilter, final Sort sort, final WebMapping highlightField, final int timezoneOffset, final int from, final int resultCount, final int aggregationLimit, final boolean explain, final WebMapping... aggregationFields) {
@@ -290,48 +303,32 @@ public class IndexDAO {
         return Searchlab.ec.query(index_name, q, postFilter, sort, highlightField, timezoneOffset, from, resultCount, aggregationLimit, explain, aggregationFields);
     }
 
-    /**
-     *
-     * @param user_id
-     * @param queryString
-     * @param from - from index to start the search from, 1st entry has from-index 0.
-     * @param resultCount - the number of messages in the result; can be zero if only aggregations are wanted
-     * @return
-     */
-    public final static FulltextIndex.Query query(final String user_id, final String queryString, final int from, final int resultCount) {
-        final YaCyQuery yq = new YaCyQuery(queryString);
-        return query(user_id, yq, null, Sort.DEFAULT, null, 0, from, resultCount, 0, false);
-    }
-
-    public final static List<Map<String, Object>> getIndexDocumentsQueryResultList(final String user_id, final String queryString) {
-        final FulltextIndex.Query queryResult = query(user_id, queryString, 0, 10000); // maximum for search window
-        final List<Map<String, Object>> resultList = queryResult.results;
-        return resultList;
-    }
-
-    public final static int getIndexDocumentsQueryCount(final String user_id, final String queryString) {
-        final FulltextIndex.Query queryResult = query(user_id, queryString, 0, 1);
-        return queryResult.hitCount;
-    }
-
-    public final static long getIndexDocumentsTotalCount(final String user_id) {
+    public final static FulltextIndex.Query query(final String user_id, final YaCyQuery yq, final Sort sort, final WebMapping highlightField, final int from, final int resultCount, final boolean explain) {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final long collections = Searchlab.ec.aggregationCount(index_name, WebMapping.collection_sxt.getMapping().name(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
-        return collections;
+        final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : Searchlab.ec.constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
+        return Searchlab.ec.query(index_name, q, sort, highlightField, explain, from, resultCount);
     }
-
-    public final static long getIndexDocumentsByQueryCount(final String user_id, final String query) {
-        return getIndexDocumentsQueryResultList(user_id, query).size();
-    }
-
-    public final static long deleteIndexDocumentsByQuery(final String user_id, final String query) {
-        final YaCyQuery yq = new YaCyQuery(query);
-        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        return Searchlab.ec.deleteByQuery(index_name, user_id, yq);
-    }
-
-    public final static long exportIndexDocumentsByQuery(final String user_id, final String query, final OutputStream os) {
-        return 0;
+    
+    public final static long exportIndexDocumentsByQuery(final String user_id, final String queryString, final OutputStream os) throws IOException {
+    	final YaCyQuery yq = new YaCyQuery(queryString);
+    	int pos = 0;
+        int window = 10000; // 10000 is max
+        long count = 0;
+        
+        // fetch all documents: loop until result array is complete
+        while (true) {
+	    	final FulltextIndex.Query queryResult = query(user_id, yq, Sort.DEFAULT, null, pos, window, false);
+	        final List<Map<String, Object>> resultList = queryResult.results;
+	        if (resultList.size() == 0) break;
+	        for (int hitc = 0; hitc < resultList.size(); hitc++) {
+	            os.write((new WebDocument(resultList.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
+	            os.write('\n');
+	        }
+	        count += resultList.size();
+	        if (resultList.size() < window) break;
+	        pos += window;
+        }
+        return count;
     }
 
 }
