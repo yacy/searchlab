@@ -70,13 +70,13 @@ import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -86,6 +86,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.elasticsearch.xcontent.XContentType;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
@@ -363,7 +364,7 @@ public class ElasticsearchClient implements FulltextIndex {
 
     private long countInternal(final QueryBuilder q, final String indexName) {
         final SearchResponse response = this.elasticsearchClient.prepareSearch(indexName).setQuery(q).setSize(0).execute().actionGet();
-        return response.getHits().getTotalHits();
+        return response.getHits().getTotalHits().value;
     }
 
 
@@ -761,7 +762,10 @@ public class ElasticsearchClient implements FulltextIndex {
             .setFrom(from)
             .setSize(resultCount);
             if (highlightField != null) {
-                final HighlightBuilder hb = new HighlightBuilder().field(highlightField.getMapping().name()).preTags("").postTags("").fragmentSize(140);
+                final HighlightBuilder hb = new HighlightBuilder()
+                		.boundaryMaxScan(100).maxAnalyzedOffset(10000)
+                		.field(highlightField.getMapping().name())
+                		.preTags("").postTags("").fragmentSize(140);
                 request.highlighter(hb);
             }
 
@@ -773,7 +777,7 @@ public class ElasticsearchClient implements FulltextIndex {
             // get response
             final SearchResponse response = request.execute().actionGet();
             final SearchHits searchHits = response.getHits();
-            query.hitCount = (int) searchHits.getTotalHits();
+            query.hitCount = (int) searchHits.getTotalHits().value;
 
             // evaluate search result
             //long totalHitCount = response.getHits().getTotalHits();
@@ -834,7 +838,10 @@ public class ElasticsearchClient implements FulltextIndex {
             .setFrom(from)
             .setSize(resultCount);
             if (highlightField != null) {
-                final HighlightBuilder hb = new HighlightBuilder().field(highlightField.getMapping().name()).preTags("").postTags("").fragmentSize(140);
+                final HighlightBuilder hb = new HighlightBuilder()
+                		.boundaryMaxScan(100).maxAnalyzedOffset(10000)
+                		.field(highlightField.getMapping().name())
+                		.preTags("").postTags("").fragmentSize(140);
                 request.highlighter(hb);
             }
             //HighlightBuilder hb = new HighlightBuilder().field("message").preTags("<foo>").postTags("<bar>");
@@ -849,7 +856,7 @@ public class ElasticsearchClient implements FulltextIndex {
             // get response
             final SearchResponse response = request.execute().actionGet();
             final SearchHits searchHits = response.getHits();
-            query.hitCount = (int) searchHits.getTotalHits();
+            query.hitCount = (int) searchHits.getTotalHits().value;
 
             // evaluate search result
             //long totalHitCount = response.getHits().getTotalHits();

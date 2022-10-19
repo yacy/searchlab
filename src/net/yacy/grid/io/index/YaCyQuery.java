@@ -41,7 +41,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.search.MatchQuery.ZeroTermsQuery;
+import org.elasticsearch.index.query.ZeroTermsQueryOption;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -403,7 +403,7 @@ public class YaCyQuery {
         final MultiMatchQueryBuilder qb = QueryBuilders
                 .multiMatchQuery(q)
                 .operator(or ? Operator.OR : Operator.AND)
-                .zeroTermsQuery(ZeroTermsQuery.ALL);
+                .zeroTermsQuery(ZeroTermsQueryOption.ALL);
         boosts.forEach((mapping, boost) -> qb.field(mapping.getMapping().name(), boost));
         return qb;
     }
