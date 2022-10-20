@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import org.apache.lucene.search.Explanation;
 import org.elasticsearch.action.DocWriteResponse;
@@ -43,9 +44,7 @@ import org.elasticsearch.action.admin.cluster.stats.ClusterStatsNodes;
 import org.elasticsearch.action.admin.cluster.stats.ClusterStatsRequest;
 import org.elasticsearch.action.admin.cluster.stats.ClusterStatsRequestBuilder;
 import org.elasticsearch.action.admin.cluster.stats.ClusterStatsResponse;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -56,14 +55,12 @@ import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetRequestBuilder;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchPhaseExecutionException;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.block.ClusterBlockException;
@@ -76,14 +73,12 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.elasticsearch.xcontent.XContentType;
@@ -351,8 +346,19 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @Override
-    public long count(final String indexName, final String user_id, final YaCyQuery yq) {
-        final QueryBuilder q = constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
+    public long count(final String indexName, final QueryBuilder queryBuilder) {
+        while (true) try {
+            return countInternal(queryBuilder, indexName);
+        } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
+            Logger.info("ElasticsearchClient count failed with " + e.getMessage() + ", retrying to connect node...");
+            try {Thread.sleep(1000);} catch (final InterruptedException ee) {}
+            connect();
+        }
+    }
+
+    @Override
+    public long count(final String indexName, final String user_id, final QueryBuilder queryBuilder) {
+        final QueryBuilder q = constraintQuery(queryBuilder, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         while (true) try {
             return countInternal(q, indexName);
         } catch (NoNodeAvailableException | IllegalStateException | ClusterBlockException | SearchPhaseExecutionException e) {
@@ -366,7 +372,6 @@ public class ElasticsearchClient implements FulltextIndex {
         final SearchResponse response = this.elasticsearchClient.prepareSearch(indexName).setQuery(q).setSize(0).execute().actionGet();
         return response.getHits().getTotalHits().value;
     }
-
 
     /**
      * Get the document for a given id.
@@ -744,10 +749,6 @@ public class ElasticsearchClient implements FulltextIndex {
 
     private final static DateTimeFormatter utcFormatter = ISODateTimeFormat.dateTime().withZoneUTC();
 
-    public FulltextIndex.Query query(final String indexName, final YaCyQuery yq, final Sort sort, final WebMapping highlightField, final boolean explain, final int from, final int resultCount) {
-        return query(indexName, yq.getQueryBuilder(), sort, highlightField, explain, from, resultCount);
-    }
-
     public FulltextIndex.Query query(final String indexName, final QueryBuilder queryBuilder, final Sort sort, final WebMapping highlightField, final boolean explain, final int from, final int resultCount) {
         final FulltextIndex.Query query = new FulltextIndex.Query();
         for (int t = 0; t < 10; t++) try {
@@ -763,9 +764,9 @@ public class ElasticsearchClient implements FulltextIndex {
             .setSize(resultCount);
             if (highlightField != null) {
                 final HighlightBuilder hb = new HighlightBuilder()
-                		.boundaryMaxScan(100).maxAnalyzedOffset(10000)
-                		.field(highlightField.getMapping().name())
-                		.preTags("").postTags("").fragmentSize(140);
+                        .boundaryMaxScan(100).maxAnalyzedOffset(10000)
+                        .field(highlightField.getMapping().name())
+                        .preTags("").postTags("").fragmentSize(140);
                 request.highlighter(hb);
             }
 
@@ -839,9 +840,9 @@ public class ElasticsearchClient implements FulltextIndex {
             .setSize(resultCount);
             if (highlightField != null) {
                 final HighlightBuilder hb = new HighlightBuilder()
-                		.boundaryMaxScan(100).maxAnalyzedOffset(10000)
-                		.field(highlightField.getMapping().name())
-                		.preTags("").postTags("").fragmentSize(140);
+                        .boundaryMaxScan(100).maxAnalyzedOffset(10000)
+                        .field(highlightField.getMapping().name())
+                        .preTags("").postTags("").fragmentSize(140);
                 request.highlighter(hb);
             }
             //HighlightBuilder hb = new HighlightBuilder().field("message").preTags("<foo>").postTags("<bar>");
@@ -918,7 +919,7 @@ public class ElasticsearchClient implements FulltextIndex {
         }
         return query;
     }
-    
+
     public int aggregationCount(final String indexName, final String aggregationField, final Cons<String, String> field) {
         return aggregation(indexName, aggregationField, field).size();
     }
@@ -927,11 +928,11 @@ public class ElasticsearchClient implements FulltextIndex {
     public final Map<String, Long> aggregation(final String indexName, final String aggregationField, final Cons<String, String>... constraints) {
         final Map<String, Long> a = new HashMap<>();
         try {
-			final QueryBuilder bFilter = constraintQuery(constraints);
-			final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-			        .setSearchType(SearchType.QUERY_THEN_FETCH)
-			        .setFrom(0)
-			        .setQuery(bFilter);
+            final QueryBuilder bFilter = constraintQuery(constraints);
+            final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                    .setSearchType(SearchType.QUERY_THEN_FETCH)
+                    .setFrom(0)
+                    .setQuery(bFilter);
             request.addAggregation(AggregationBuilders.terms(aggregationField).field(aggregationField).minDocCount(1).size(1000));
 
             // Fielddata is disabled on text fields by default.
@@ -959,52 +960,37 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @SafeVarargs
-    public final List<Map<String, Object>> queryWithConstraints(final String indexName, final Cons<String, String>... constraints) {
+    public final void consumeAllWithConstraints(Consumer<Map<String, Object>> consumer, final String indexName, final Cons<String, String>... constraints) {
         final QueryBuilder bFilter = constraintQuery(constraints);
-        SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-		        .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setScroll(new TimeValue(60000))
-                .setQuery(bFilter)
-                .setSize(100);
-        return scrollResults(request.get());
-    }
-    
-    public List<Map<String, Object>> queryWithCompare(final String indexName, final String compvName, final Date afterDate, final String... fields) {
-    	final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
-        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gte(DateParser.iso8601MillisParser().format(afterDate)).includeLower(true))); // value like "2014-10-21T20:03:12.963" "2022-03-30T02:03:03.214Z"
-        SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-		        .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setScroll(new TimeValue(60000))
-                .setQuery(bFilter)
-                .setSize(100);
-        if (fields != null && fields.length > 0) request.setFetchSource(fields, null);
-        return scrollResults(request.get());
+        consumeAllWithQuery(consumer, indexName, bFilter);
     }
 
-    public List<Map<String, Object>> queryWithCompare(final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue, final String... fields) {
+    public void consumeAllWithCompare(Consumer<Map<String, Object>> consumer, final String indexName, final String compvName, final Date afterDate, final String... fields) {
+        final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
+        bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gte(DateParser.iso8601MillisParser().format(afterDate)).includeLower(true))); // value like "2014-10-21T20:03:12.963" "2022-03-30T02:03:03.214Z"
+        consumeAllWithQuery(consumer, indexName, bFilter, fields);
+    }
+
+    public void consumeAllWithCompare(Consumer<Map<String, Object>> consumer, final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue, final String... fields) {
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(facetName, facetValue)));
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(DateParser.iso8601MillisParser().format(compvValue)).includeLower(true)));
-        SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-		        .setSearchType(SearchType.QUERY_THEN_FETCH)
+        consumeAllWithQuery(consumer, indexName, bFilter, fields);
+    }
+
+    public void consumeAllWithQuery(Consumer<Map<String, Object>> consumer, final String indexName, final QueryBuilder queryBuilder, final String... fields) {
+        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setScroll(new TimeValue(60000))
-                .setQuery(bFilter)
+                .setQuery(queryBuilder)
                 .setSize(100);
         if (fields != null && fields.length > 0) request.setFetchSource(fields, null);
-        return scrollResults(request.get());
-    }
-    
-    private final List<Map<String, Object>> scrollResults(SearchResponse scrollResp) {
+        SearchResponse scrollResp = request.get();
         // fetch all documents: loop until result array is complete
-        final ArrayList<Map<String, Object>> result = new ArrayList<>();
         do {
-            for (SearchHit hit : scrollResp.getHits().getHits()) {
-            	result.add(hit.getSourceAsMap());
-            }
+            for (final SearchHit hit : scrollResp.getHits().getHits()) consumer.accept(hit.getSourceAsMap());
             scrollResp = this.elasticsearchClient.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
         } while(scrollResp.getHits().getHits().length != 0); // Zero hits mark the end of the scroll and the while loop.
-        
-        return result;
     }
 
     @SafeVarargs

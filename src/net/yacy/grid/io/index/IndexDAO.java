@@ -25,15 +25,18 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.elasticsearch.index.query.QueryBuilder;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.storage.table.MinuteSeriesTable;
+import eu.searchlab.tools.AbstractCountingConsumer;
 import eu.searchlab.tools.Cons;
+import eu.searchlab.tools.CountingConsumer;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
 
@@ -105,16 +108,11 @@ public class IndexDAO {
         final String[] dataFields = new String[] {WebMapping.load_date_dt.getMapping().name()};
         //final String[] dataFields = new String[] {WebMapping.fresh_date_dt.getMapping().name(), WebMapping.last_modified.getMapping().name(), WebMapping.load_date_dt.getMapping().name()};
 
-        final List<Map<String, Object>> documents = user_id.equals("en") ? Searchlab.ec.queryWithCompare(index_name, dateField, fromDate, dataFields) : Searchlab.ec.queryWithCompare(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate, dataFields);
-
-        Logger.info("CountHistogram for " + timeframe.name() + " from " + fromDate.toString() + " to " + (new Date(now)).toString() + ": " + documents.size() + " documents.");
-
-        // aggregate the documents to counts per second
+        final SimpleDateFormat iso8601MillisParser = DateParser.iso8601MillisParser();
         final long[] counts = new long[timeframe.stepcount];
         for (int i = 0; i < timeframe.stepcount; i++) counts[i] = 0L;
-
-        final SimpleDateFormat iso8601MillisParser = DateParser.iso8601MillisParser();
-        docreader: for (final Map<String, Object> map: documents) {
+        final AtomicLong count = new AtomicLong(0);
+        final Consumer<Map<String, Object>> consumer = (map) -> {
             /*
             for (final Map.Entry<String, Object> entry: map.entrySet()) {
                 if (entry.getKey().endsWith("_dt") || entry.getKey().equals("last_modified")) {
@@ -130,19 +128,31 @@ public class IndexDAO {
                 if (date != null) {
                     // the increment time is a number from 0..599 which represents the time 0:=now/last minute; 599:=oldest == x minutes/days/years in the past
                     final long datetime = date.getTime(); // milliseconds since epoch
-                    if (datetime < afterTime || now < datetime) continue docreader; // not valid for statistical collection
-                    assert datetime >= afterTime : "date is before required period by " + (afterTime - datetime) + " milliseconds";
-                    assert now > datetime: "datetime is " + (datetime - now) + " milliseconds too large: " + dates;  // the document time must be in the past always
-                    final long pasttime = now - datetime;
-                    final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) (pasttime / timeframe.steplength)));
-                    // we increment the count at the incrementTime to reflect
-                    counts[indexTime]++;
-                    assert counts[indexTime] >= 0;
+                    if (datetime >= afterTime && now >= datetime) {
+                        // valid for statistical collection
+                        assert datetime >= afterTime : "date is before required period by " + (afterTime - datetime) + " milliseconds";
+                        assert now > datetime: "datetime is " + (datetime - now) + " milliseconds too large: " + dates;  // the document time must be in the past always
+                        final long pasttime = now - datetime;
+                        final int indexTime = Math.min(timeframe.stepcount - 1, Math.max(0, (int) (pasttime / timeframe.steplength)));
+                        // we increment the count at the incrementTime to reflect
+                        counts[indexTime]++;
+                        assert counts[indexTime] >= 0;
+                    }
                 }
+                count.incrementAndGet();
             } catch (final Exception e) {
                 Logger.warn("Date parsing error with " + dates, e);
             }
+        };
+
+        // aggregate the documents to counts per second
+        if (user_id.equals("en")) {
+            Searchlab.ec.consumeAllWithCompare(consumer, index_name, dateField, fromDate, dataFields);
+        } else {
+            Searchlab.ec.consumeAllWithCompare(consumer, index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate, dataFields);
         }
+        Logger.info("CountHistogram for " + timeframe.name() + " from " + fromDate.toString() + " to " + (new Date(now)).toString() + ": " + count.get() + " documents.");
+
 
         // get a total index count for user: that is used to reconstruct the actual number of index entries from the aggregated number
         final TimeCount tc = getIndexDocumentTimeCount(user_id, now - timeframe.framelength);
@@ -181,21 +191,20 @@ public class IndexDAO {
     public static MinuteSeriesTable getCrawlstartHistogramAggregation() {
         // get list of all documents that have been created in the last 10 minutes
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.crawlstart", ElasticsearchClient.DEFAULT_INDEXNAME_CRAWLSTART);
-        final List<Map<String, Object>> documents = Searchlab.ec.queryWithConstraints(index_name);
         final String dateField = CrawlstartMapping.init_date_dt.getMapping().name(); // like "init_date_dt": "2022-08-18T21:58:28.918Z",
-        MinuteSeriesTable tst = new MinuteSeriesTable(new String[] {}, new String[] {}, new String[] {"data.crawlstarts"}, false);
-        for (final Map<String, Object> map: documents) {
-            final String dates = (String) map.get(dateField);
+        final MinuteSeriesTable tst = new MinuteSeriesTable(new String[] {}, new String[] {}, new String[] {"data.crawlstarts"}, false);
+        final Consumer<Map<String, Object>> consumer = (document) -> {
+            final String dates = (String) document.get(dateField);
             try {
                 final Date date = DateParser.iso8601MillisParser().parse(dates);
                 tst.addValues(date.getTime(), new String[0], new String[0], new long[] {1});
             } catch (final Exception e) {
                 Logger.warn(e);
             }
-        }
+        };
+        Searchlab.ec.consumeAllWithConstraints(consumer, index_name);
         tst.sort();
-        tst = tst.aggregation();
-        return tst;
+        return tst.aggregation();
     }
 
     // no constraints - all docs for a user
@@ -212,12 +221,9 @@ public class IndexDAO {
 
     public final static long exportIndexDocumentsByUserID(final String user_id, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final List<Map<String, Object>> all = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
-        for (int hitc = 0; hitc < all.size(); hitc++) {
-            os.write((new WebDocument(all.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
-            os.write('\n');
-        }
-        return all.size();
+        final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
+        Searchlab.ec.consumeAllWithConstraints(consumer, index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
+        return consumer.getCount();
     }
 
 
@@ -237,12 +243,9 @@ public class IndexDAO {
 
     public final static long exportIndexDocumentsByDomainName(final String user_id, final String domain_name, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final List<Map<String, Object>> resultList = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
-        for (int hitc = 0; hitc < resultList.size(); hitc++) {
-            os.write((new WebDocument(resultList.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
-            os.write('\n');
-        }
-        return resultList.size();
+        final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
+        Searchlab.ec.consumeAllWithConstraints(consumer, index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
+        return consumer.getCount();
     }
 
 
@@ -268,14 +271,10 @@ public class IndexDAO {
 
     public final static long exportIndexDocumentsByCollectionName(final String user_id, final String collection_name, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-        final List<Map<String, Object>> resultList = Searchlab.ec.queryWithConstraints(index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
-        for (int hitc = 0; hitc < resultList.size(); hitc++) {
-            os.write((new WebDocument(resultList.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
-            os.write('\n');
-        }
-        return resultList.size();
+        final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
+        Searchlab.ec.consumeAllWithConstraints(consumer, index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
+        return consumer.getCount();
     }
-
 
     // queries
 
@@ -285,12 +284,11 @@ public class IndexDAO {
     }
 
     public final static long getIndexDocumentsByQueryCount(final String user_id, final String queryString) {
-    	final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-    	final YaCyQuery yq = new YaCyQuery(queryString);
-    	FulltextIndex.Query queryResult = Searchlab.ec.query(index_name, yq, Sort.DEFAULT, null, false, 0, 1);
-        return queryResult.hitCount;
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final YaCyQuery yq = new YaCyQuery(queryString);
+        return Searchlab.ec.count(index_name, user_id, yq.getQueryBuilder());
     }
-    
+
     public final static long deleteIndexDocumentsByQuery(final String user_id, final String query) {
         final YaCyQuery yq = new YaCyQuery(query);
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
@@ -308,27 +306,28 @@ public class IndexDAO {
         final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : Searchlab.ec.constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         return Searchlab.ec.query(index_name, q, sort, highlightField, explain, from, resultCount);
     }
-    
+
     public final static long exportIndexDocumentsByQuery(final String user_id, final String queryString, final OutputStream os) throws IOException {
-    	final YaCyQuery yq = new YaCyQuery(queryString);
-    	int pos = 0;
-        int window = 10000; // 10000 is max
-        long count = 0;
-        
-        // fetch all documents: loop until result array is complete
-        while (true) {
-	    	final FulltextIndex.Query queryResult = query(user_id, yq, Sort.DEFAULT, null, pos, window, false);
-	        final List<Map<String, Object>> resultList = queryResult.results;
-	        if (resultList.size() == 0) break;
-	        for (int hitc = 0; hitc < resultList.size(); hitc++) {
-	            os.write((new WebDocument(resultList.get(hitc))).toString().getBytes(StandardCharsets.UTF_8));
-	            os.write('\n');
-	        }
-	        count += resultList.size();
-	        if (resultList.size() < window) break;
-	        pos += window;
-        }
-        return count;
+        final YaCyQuery yq = new YaCyQuery(queryString);
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : Searchlab.ec.constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
+        final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
+        Searchlab.ec.consumeAllWithQuery(consumer, index_name, q);
+        return consumer.getCount();
+    }
+
+    public final static CountingConsumer<Map<String, Object>> outputStreamWriterConsumer(final OutputStream os) {
+        final CountingConsumer<Map<String, Object>> consumer = new AbstractCountingConsumer<Map<String, Object>>() {
+            @Override
+            public void accept(Map<String, Object> document) {
+                try {
+                    os.write((new WebDocument(document)).toString().getBytes(StandardCharsets.UTF_8));
+                    os.write('\n');
+                    this.incCount();
+                } catch (final IOException e) {}
+            }
+        };
+        return consumer;
     }
 
 }

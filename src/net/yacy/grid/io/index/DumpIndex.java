@@ -146,11 +146,16 @@ public class DumpIndex implements FulltextIndex {
 
     @Override
     public void close() {
-     // do nothing
+        // do nothing
     }
 
     @Override
-    public long count(final String indexName, final String user_id, final YaCyQuery yq) {
+    public long count(final String indexName, final QueryBuilder qb) {
+        return 0;
+    }
+
+    @Override
+    public long count(final String indexName, final String user_id, final QueryBuilder qb) {
         /*
         Directory d = getDirectory(indexName);
         try {
@@ -161,13 +166,13 @@ public class DumpIndex implements FulltextIndex {
         } catch (IOException e) {
             return 0;
         }
-        */
+         */
         /*
         List<Document> documents = new ArrayList<>();
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
             documents.add(searcher.doc(scoreDoc.doc));
         }
-        */
+         */
         return 0;
     }
 

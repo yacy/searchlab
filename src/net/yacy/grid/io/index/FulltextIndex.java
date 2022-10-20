@@ -72,6 +72,8 @@ public interface FulltextIndex {
      */
     public void close();
 
+    public long count(final String indexName, final QueryBuilder queryBuilder);
+
     /**
      * Get the number of documents in the search index for a given search query
      *
@@ -79,7 +81,7 @@ public interface FulltextIndex {
      *            the query
      * @return the count of all documents in the index which matches with the query
      */
-    public long count(final String indexName, final String user_id, final YaCyQuery yq);
+    public long count(final String indexName, final String user_id, final QueryBuilder queryBuilder);
 
 
     /**
