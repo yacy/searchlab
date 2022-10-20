@@ -16,8 +16,8 @@ nav:
   - Production:
     - Crawler: production/crawler.md
 #    - Network Scanner: production/network_scanner.md
-    - Index Deletion: production/deletion.md
     - Index Export: production/export.md
+    - Index Deletion: production/deletion.md
   - Data Warehouse:
     - Assets: data_warehouse/assets.md
   - Monitoring:
