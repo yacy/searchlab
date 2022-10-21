@@ -85,9 +85,12 @@ import org.elasticsearch.xcontent.XContentType;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
+import eu.searchlab.tools.AbstractProgress;
 import eu.searchlab.tools.Cons;
+import eu.searchlab.tools.CountingConsumer;
 import eu.searchlab.tools.DateParser;
 import eu.searchlab.tools.Logger;
+import eu.searchlab.tools.Progress;
 /**
  * To get data out of the elasticsearch index which is written with this client, try:
  * http://localhost:9200/web/_search?q=*:*
@@ -960,37 +963,47 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @SafeVarargs
-    public final void consumeAllWithConstraints(Consumer<Map<String, Object>> consumer, final String indexName, final Cons<String, String>... constraints) {
+    public final Progress<Long> consumeAllWithConstraints(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final Cons<String, String>... constraints) {
         final QueryBuilder bFilter = constraintQuery(constraints);
-        consumeAllWithQuery(consumer, indexName, bFilter);
+        return consumeAllWithQuery(target, consumer, indexName, bFilter);
     }
 
-    public void consumeAllWithCompare(Consumer<Map<String, Object>> consumer, final String indexName, final String compvName, final Date afterDate, final String... fields) {
+    public Progress<Long> consumeAllWithCompare(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final String compvName, final Date afterDate, final String... fields) {
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gte(DateParser.iso8601MillisParser().format(afterDate)).includeLower(true))); // value like "2014-10-21T20:03:12.963" "2022-03-30T02:03:03.214Z"
-        consumeAllWithQuery(consumer, indexName, bFilter, fields);
+        return consumeAllWithQuery(target, consumer, indexName, bFilter, fields);
     }
 
-    public void consumeAllWithCompare(Consumer<Map<String, Object>> consumer, final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue, final String... fields) {
+    public Progress<Long> consumeAllWithCompare(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue, final String... fields) {
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(facetName, facetValue)));
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(DateParser.iso8601MillisParser().format(compvValue)).includeLower(true)));
-        consumeAllWithQuery(consumer, indexName, bFilter, fields);
+        return consumeAllWithQuery(target, consumer, indexName, bFilter, fields);
     }
 
-    public void consumeAllWithQuery(Consumer<Map<String, Object>> consumer, final String indexName, final QueryBuilder queryBuilder, final String... fields) {
-        final SearchRequestBuilder request = this.elasticsearchClient.prepareSearch(indexName)
-                .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setScroll(new TimeValue(60000))
-                .setQuery(queryBuilder)
-                .setSize(100);
-        if (fields != null && fields.length > 0) request.setFetchSource(fields, null);
-        SearchResponse scrollResp = request.get();
-        // fetch all documents: loop until result array is complete
-        do {
-            for (final SearchHit hit : scrollResp.getHits().getHits()) consumer.accept(hit.getSourceAsMap());
-            scrollResp = this.elasticsearchClient.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
-        } while(scrollResp.getHits().getHits().length != 0); // Zero hits mark the end of the scroll and the while loop.
+    public Progress<Long> consumeAllWithQuery(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final QueryBuilder queryBuilder, final String... fields) {
+        return new AbstractProgress<Long>() {
+            @Override
+            public Long call() {
+                this.setTarget(target); // MUST be done first
+                final SearchRequestBuilder request = ElasticsearchClient.this.elasticsearchClient.prepareSearch(indexName)
+                        .setSearchType(SearchType.QUERY_THEN_FETCH)
+                        .setScroll(new TimeValue(60000))
+                        .setQuery(queryBuilder)
+                        .setSize(100);
+                if (fields != null && fields.length > 0) request.setFetchSource(fields, null);
+                SearchResponse scrollResp = request.get();
+                // fetch all documents: loop until result array is complete
+                do {
+                    for (final SearchHit hit: scrollResp.getHits().getHits()) {
+                        consumer.accept(hit.getSourceAsMap());
+                        if (consumer instanceof CountingConsumer) this.setProgress(((CountingConsumer<?>) consumer).getCount());
+                    }
+                    scrollResp = ElasticsearchClient.this.elasticsearchClient.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
+                } while (scrollResp.getHits().getHits().length != 0); // Zero hits mark the end of the scroll and the while loop.
+                return (consumer instanceof CountingConsumer) ? ((CountingConsumer<?>) consumer).getCount() : scrollResp.getHits().getTotalHits().value;
+            }
+        };
     }
 
     @SafeVarargs
