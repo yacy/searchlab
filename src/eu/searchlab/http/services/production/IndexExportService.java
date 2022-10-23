@@ -106,7 +106,7 @@ public class IndexExportService  extends AbstractService implements Service {
 
         // perform the wanted feature
         long exported = 0;
-        final String prefix = "export-" + new SimpleDateFormat(DateParser.YEARTOSECONDFILENAME, Locale.US).format(new Date());
+        final String prefix = "searchlab-export-" + new SimpleDateFormat(DateParser.YEARTOSECONDFILENAME, Locale.US).format(new Date());
         final IOPath assetsPath = Searchlab.accounting.getAssetsPathForUser(user_id);
         final IOPath exportPath = assetsPath.append("export");
 

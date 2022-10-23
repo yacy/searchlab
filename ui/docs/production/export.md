@@ -27,7 +27,7 @@ You can export only documents that you created (i.e. by crawling) before.
 <form action=".">
 <input type="hidden" id="expected" name="expected" value="{{context.simulated}}">
 <button type="submit" name="AllSimulateExport" value="Simulate Export" id="AllSimulateExport" class="btn btn-info" disabled/>Simulate Export</button>
-<button type="submit" name="AllExport" value="Export" id="AllExport" class="btn btn-danger" disabled/>Export</button>
+<button type="submit" name="AllExport" value="Export" id="AllExport" class="btn btn-success" disabled/>Export</button>
 </form>
 
 
@@ -42,7 +42,7 @@ You can export only documents that you created (i.e. by crawling) before.
 </div>
 
 <button type="submit" name="CollectionSimulateExport" value="Simulate Export" id="CollectionSimulateExport" class="btn btn-info" disabled/>Simulate Export</button>
-<button type="submit" name="CollectionExport" value="Export" id="CollectionExport" class="btn btn-danger" disabled/>Export</button>
+<button type="submit" name="CollectionExport" value="Export" id="CollectionExport" class="btn btn-success" disabled/>Export</button>
 </form>
 
 
@@ -57,7 +57,7 @@ You can export only documents that you created (i.e. by crawling) before.
 </div>
 
 <button type="submit" name="DomainSimulateExport" value="Simulate Export" id="DomainSimulateExport" class="btn btn-info" disabled/>Simulate Export</button>
-<button type="submit" name="DomainExport" value="Export" id="DomainExport" class="btn btn-danger" disabled/>Export</button>
+<button type="submit" name="DomainExport" value="Export" id="DomainExport" class="btn btn-success" disabled/>Export</button>
 </form>
 
 
@@ -72,7 +72,7 @@ You can export only documents that you created (i.e. by crawling) before.
 </div>
 
 <button type="submit" name="QuerySimulateExport" value="Simulate Export" id="QuerySimulateExport" class="btn btn-info" disabled/>Simulate Export</button>
-<button type="submit" name="QueryExport" value="Export" id="QueryExport" class="btn btn-danger" disabled/>Export</button>
+<button type="submit" name="QueryExport" value="Export" id="QueryExport" class="btn btn-success" disabled/>Export</button>
 </form>
 
 <script>
