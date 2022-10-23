@@ -20,6 +20,7 @@
 package net.yacy.grid.io.index;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 import org.apache.lucene.search.Explanation;
@@ -963,25 +965,25 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     @SafeVarargs
-    public final Progress<Long> consumeAllWithConstraints(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final Cons<String, String>... constraints) {
+    public final Progress<Long> consumeAllWithConstraints(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final Runnable finalizer, final Cons<String, String>... constraints) {
         final QueryBuilder bFilter = constraintQuery(constraints);
-        return consumeAllWithQuery(target, consumer, indexName, bFilter);
+        return consumeAllWithQuery(target, consumer, indexName, bFilter, finalizer);
     }
 
-    public Progress<Long> consumeAllWithCompare(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final String compvName, final Date afterDate, final String... fields) {
+    public Progress<Long> consumeAllWithCompare(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final String compvName, final Date afterDate, final Runnable finalizer, final String... fields) {
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gte(DateParser.iso8601MillisParser().format(afterDate)).includeLower(true))); // value like "2014-10-21T20:03:12.963" "2022-03-30T02:03:03.214Z"
-        return consumeAllWithQuery(target, consumer, indexName, bFilter, fields);
+        return consumeAllWithQuery(target, consumer, indexName, bFilter, finalizer, fields);
     }
 
-    public Progress<Long> consumeAllWithCompare(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue, final String... fields) {
+    public Progress<Long> consumeAllWithCompare(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final String facetName, final String facetValue, final String compvName, final Date compvValue, final Runnable finalizer, final String... fields) {
         final BoolQueryBuilder bFilter = QueryBuilders.boolQuery();
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(facetName, facetValue)));
         bFilter.must(QueryBuilders.constantScoreQuery(QueryBuilders.rangeQuery(compvName).gt(DateParser.iso8601MillisParser().format(compvValue)).includeLower(true)));
-        return consumeAllWithQuery(target, consumer, indexName, bFilter, fields);
+        return consumeAllWithQuery(target, consumer, indexName, bFilter, finalizer, fields);
     }
 
-    public Progress<Long> consumeAllWithQuery(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final QueryBuilder queryBuilder, final String... fields) {
+    public Progress<Long> consumeAllWithQuery(final long target, final Consumer<Map<String, Object>> consumer, final String indexName, final QueryBuilder queryBuilder, final Runnable finalizer, final String... fields) {
         return new AbstractProgress<Long>() {
             @Override
             public Long call() {
@@ -1001,6 +1003,7 @@ public class ElasticsearchClient implements FulltextIndex {
                     }
                     scrollResp = ElasticsearchClient.this.elasticsearchClient.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
                 } while (scrollResp.getHits().getHits().length != 0); // Zero hits mark the end of the scroll and the while loop.
+                if (finalizer != null) finalizer.run();
                 return (consumer instanceof CountingConsumer) ? ((CountingConsumer<?>) consumer).getCount() : scrollResp.getHits().getTotalHits().value;
             }
         };

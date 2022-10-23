@@ -149,9 +149,9 @@ public class IndexDAO {
         // aggregate the documents to counts per second
         try {
             if (user_id.equals("en")) {
-                Searchlab.ec.consumeAllWithCompare(0, consumer, index_name, dateField, fromDate, dataFields).call();
+                Searchlab.ec.consumeAllWithCompare(0, consumer, index_name, dateField, fromDate, null,  dataFields).call();
             } else {
-                Searchlab.ec.consumeAllWithCompare(0, consumer, index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate, dataFields).call();
+                Searchlab.ec.consumeAllWithCompare(0, consumer, index_name, WebMapping.user_id_sxt.getMapping().name(), user_id, dateField, fromDate, null, dataFields).call();
             }
         } catch (final Exception e) {Logger.warn(e);}
         Logger.info("CountHistogram for " + timeframe.name() + " from " + fromDate.toString() + " to " + (new Date(now)).toString() + ": " + count.get() + " documents.");
@@ -209,7 +209,7 @@ public class IndexDAO {
             }
         };
         try {
-            Searchlab.ec.consumeAllWithConstraints(0, consumer, index_name).call();
+            Searchlab.ec.consumeAllWithConstraints(0, consumer, index_name, null).call();
             tst.sort();
             return tst.aggregation();
         } catch (final Exception e) {
@@ -233,7 +233,8 @@ public class IndexDAO {
     public final static Progress<Long> exportIndexDocumentsByUserID(final long expected, final String user_id, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
-        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
+        Runnable finalizer = new Runnable() {@Override public void run() {try {os.close();} catch (IOException e) {}}};
+        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
     }
 
 
@@ -254,7 +255,8 @@ public class IndexDAO {
     public final static Progress<Long> exportIndexDocumentsByDomainName(final long expected, final String user_id, final String domain_name, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
-        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
+        Runnable finalizer = new Runnable() {@Override public void run() {try {os.close();} catch (IOException e) {}}};
+        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
     }
 
 
@@ -281,7 +283,8 @@ public class IndexDAO {
     public final static Progress<Long> exportIndexDocumentsByCollectionName(final long expected, final String user_id, final String collection_name, final OutputStream os) throws IOException {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
-        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
+        Runnable finalizer = new Runnable() {@Override public void run() {try {os.close();} catch (IOException e) {}}};
+        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
     }
 
     // queries
@@ -320,7 +323,8 @@ public class IndexDAO {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : Searchlab.ec.constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
-        return Searchlab.ec.consumeAllWithQuery(expected, consumer, index_name, q);
+        Runnable finalizer = new Runnable() {@Override public void run() {try {os.close();} catch (IOException e) {}}};
+        return Searchlab.ec.consumeAllWithQuery(expected, consumer, index_name, q, finalizer);
     }
 
     private final static CountingConsumer<Map<String, Object>> outputStreamWriterConsumer(final OutputStream os) {

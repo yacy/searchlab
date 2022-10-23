@@ -88,7 +88,7 @@ document.getElementById("DomainExport").disabled = {{context.domain_export_disab
 document.getElementById("QuerySimulateExport").disabled = {{context.simulate_disabled}};
 document.getElementById("QueryExport").disabled = {{context.query_export_disabled}};
 if (!{{context.simulate_disabled}}) document.getElementById("DisabledWarning").remove();
-if ({{context.simulated}} == 0) document.getElementById("SimulatedSuccess").remove();
-if ({{context.exportTimeRemaining}} == 0) document.getElementById("ExportRunning").remove();
-if ({{context.exported}} == 0) document.getElementById("ExportSuccess").remove();
+if (!{{context.showSimulated}}) document.getElementById("SimulatedSuccess").remove();
+if (!{{context.showExporting}}) document.getElementById("ExportRunning").remove();
+if (!{{context.showExported}}) document.getElementById("ExportSuccess").remove();
 </script>

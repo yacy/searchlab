@@ -27,6 +27,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.GZIPOutputStream;
 
@@ -52,6 +54,8 @@ import net.yacy.grid.io.index.IndexDAO;
  */
 public class IndexExportService  extends AbstractService implements Service {
 
+    private final static ExecutorService executorService = Executors.newCachedThreadPool();
+    
     // we maintain a static object to track already running export threads
     private static Map<String, Cons<Progress<Long>, Future<Long>>> exportRunners = new ConcurrentHashMap<>(); // only one runner for each user at the same time
 
@@ -75,6 +79,9 @@ public class IndexExportService  extends AbstractService implements Service {
         context.put("domain_export_disabled", true);
         context.put("query_export_disabled", true);
         context.put("domain", "");
+        context.put("showSimulated", false);
+        context.put("showExporting", false);
+        context.put("showExported", false);
         context.put("exported", 0);
         context.put("simulated", 0);
         context.put("exportedSoFar", 0);
@@ -115,6 +122,7 @@ public class IndexExportService  extends AbstractService implements Service {
             exported = IndexDAO.getIndexDocumentsByUserID(user_id);
             Logger.info("exported (simulated) " + exported + " documents for user " + user_id);
             context.put("simulated", exported);
+            context.put("showSimulated", true);
             context.put("all_export_disabled", false);
         }
         if (authorized && allExport) {
@@ -123,11 +131,15 @@ public class IndexExportService  extends AbstractService implements Service {
             try {
                 final File tempFile = File.createTempFile(exportName, null);
                 final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
-                exported = IndexDAO.exportIndexDocumentsByUserID(expected, user_id, os).call();
-                os.close();
+                // create a progress and future object to work on the task
+                Progress<Long> callable = IndexDAO.exportIndexDocumentsByUserID(expected, user_id, os);
+                Future<Long> exportThread = executorService.submit(callable);
+                exportRunners.put(user_id, Cons.of(callable, exportThread));
+                exported = exportThread.get();
                 Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
                 Logger.info("exported all " + exported + " documents for user " + user_id + " to " + targetPath.toString());
+                context.put("showExported", true);
                 context.put("exported", exported);
             } catch (final Exception e) {
                 Logger.warn("failed to export");
@@ -144,6 +156,7 @@ public class IndexExportService  extends AbstractService implements Service {
                 Logger.info("exported (simulated) " + exported + " documents for user " + user_id + ", collection " + collection.trim());
             }
             context.put("simulated", exported);
+            context.put("showSimulated", true);
             context.put("collection_export_disabled", false);
         }
         if (authorized && collectionExport && collections.length > 0) {
@@ -160,6 +173,7 @@ public class IndexExportService  extends AbstractService implements Service {
                 os.close();
                 Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
+                context.put("showExported", true);
                 context.put("exported", exported);
             } catch (final Exception e) {
                 Logger.warn("failed to export");
@@ -176,6 +190,7 @@ public class IndexExportService  extends AbstractService implements Service {
                 Logger.info("exported (simulated) " + exported + " documents for user " + user_id + ", domain " + domain.trim());
             }
             context.put("simulated", exported);
+            context.put("showSimulated", true);
             context.put("domain_export_disabled", false);
         }
         if (authorized && domainExport && domains.length > 0) {
@@ -192,6 +207,7 @@ public class IndexExportService  extends AbstractService implements Service {
                 os.close();
                 Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
+                context.put("showExported", true);
                 context.put("exported", exported);
             } catch (final Exception e) {
                 Logger.warn("failed to export");
@@ -205,6 +221,7 @@ public class IndexExportService  extends AbstractService implements Service {
             exported += IndexDAO.getIndexDocumentsByQueryCount(user_id, query);
             Logger.info("exported (simulated) " + exported + " documents for user " + user_id + ", query " + query.trim());
             context.put("simulated", exported);
+            context.put("showSimulated", true);
             context.put("query_export_disabled", false);
         }
         if (authorized && queryExport && query.length() > 0) {
@@ -219,6 +236,7 @@ public class IndexExportService  extends AbstractService implements Service {
                 Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
                 Logger.info("exported " + exported + " documents for user " + user_id + ", query " + query.trim() + " to " + targetPath.toString());
+                context.put("showExported", true);
                 context.put("exported", exported);
             } catch (final Exception e) {
                 Logger.warn("failed to export");
