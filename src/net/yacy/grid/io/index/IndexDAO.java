@@ -238,7 +238,7 @@ public class IndexDAO {
         final OutputStream os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(tempFile), 8192), 8192);
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
-        Runnable finalizer = new Runnable() {@Override public void run() {try {
+        final Runnable finalizer = new Runnable() {@Override public void run() {try {
         	os.close();
         	Searchlab.io.write(targetPath, tempFile);
         	tempFile.delete();
@@ -268,6 +268,18 @@ public class IndexDAO {
         return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
     }
 
+    public final static Progress<Long> exportIndexDocumentsByDomainName(final long expected, final String user_id, final String domain_name, final File tempFile, IOPath targetPath) throws IOException {
+    	final OutputStream os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(tempFile), 8192), 8192);
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
+        final Runnable finalizer = new Runnable() {@Override public void run() {try {
+        	os.close();
+        	Searchlab.io.write(targetPath, tempFile);
+        	tempFile.delete();
+        } catch (IOException e) {}}};
+        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.host_s.getMapping().name(), domain_name.trim()));
+    }
+
 
     // collections
 
@@ -293,6 +305,18 @@ public class IndexDAO {
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
         Runnable finalizer = new Runnable() {@Override public void run() {try {os.close();} catch (IOException e) {}}};
+        return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
+    }
+
+    public final static Progress<Long> exportIndexDocumentsByCollectionName(final long expected, final String user_id, final String collection_name, final File tempFile, IOPath targetPath) throws IOException {
+    	final OutputStream os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(tempFile), 8192), 8192);
+        final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
+        final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
+        final Runnable finalizer = new Runnable() {@Override public void run() {try {
+        	os.close();
+        	Searchlab.io.write(targetPath, tempFile);
+        	tempFile.delete();
+        } catch (IOException e) {}}};
         return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id), Cons.of(WebMapping.collection_sxt.getMapping().name(), collection_name.trim()));
     }
 
@@ -326,13 +350,18 @@ public class IndexDAO {
         final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : Searchlab.ec.constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         return Searchlab.ec.query(index_name, q, sort, highlightField, explain, from, resultCount);
     }
-
-    public final static Progress<Long> exportIndexDocumentsByQuery(final long expected, final String user_id, final String queryString, final OutputStream os) throws IOException {
+    
+    public final static Progress<Long> exportIndexDocumentsByQuery(final long expected, final String user_id, final String queryString, final File tempFile, IOPath targetPath) throws IOException {
+    	final OutputStream os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(tempFile), 8192), 8192);
         final YaCyQuery yq = new YaCyQuery(queryString);
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final QueryBuilder q = user_id == null || "en".equals(user_id) ? yq.getQueryBuilder() : Searchlab.ec.constraintQuery(yq.getQueryBuilder(), Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
-        Runnable finalizer = new Runnable() {@Override public void run() {try {os.close();} catch (IOException e) {}}};
+        final Runnable finalizer = new Runnable() {@Override public void run() {try {
+        	os.close();
+        	Searchlab.io.write(targetPath, tempFile);
+        	tempFile.delete();
+        } catch (IOException e) {}}};
         return Searchlab.ec.consumeAllWithQuery(expected, consumer, index_name, q, finalizer);
     }
 
