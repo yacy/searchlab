@@ -10,7 +10,7 @@ You can export only documents that you created (i.e. by crawling) before.
 
 <div id="DisabledWarning" class="alert alert-danger" role="alert">This service is disabled! Log-in to enable all functions.</div>
 <div id="SimulatedSuccess" class="alert alert-warning" role="alert">Exported (simulation) {{context.simulated}} Documents</div>
-<div id="ExportRunning" class="alert alert-info" role="alert">Exported process is running, {{context.exportedSoFar}} of {{context.exportedOf}} documents so far. Remaining Time: {{context.exportTimeRemaining}} seconds.</div>
+<div id="ExportRunning" class="alert alert-info" role="alert">Export process is running, {{context.exportProgressDocs}} of {{context.exportTargetDocs}} documents, {{context.exportProgressPercent}}% so far. {{context.exportDocsPerMinute}} per minute. Remaining Time: {{context.exportRemainingSeconds}} seconds.</div>
 <div id="ExportSuccess" class="alert alert-info" role="alert">Exported {{context.exported}} Documents. Download from <a href="/data_warehouse/assets/?path=/export">Asset Export</a> folder.</div>
 
 
@@ -89,6 +89,11 @@ document.getElementById("QuerySimulateExport").disabled = {{context.simulate_dis
 document.getElementById("QueryExport").disabled = {{context.query_export_disabled}};
 if (!{{context.simulate_disabled}}) document.getElementById("DisabledWarning").remove();
 if (!{{context.showSimulated}}) document.getElementById("SimulatedSuccess").remove();
-if (!{{context.showExporting}}) document.getElementById("ExportRunning").remove();
 if (!{{context.showExported}}) document.getElementById("ExportSuccess").remove();
+if ({{context.showExporting}}) {
+  function refreshPage() {window.location = window.location.toString().substring(0, window.location.toString().indexOf('?'));}
+  setInterval('refreshPage()', 5000);
+} else {
+  document.getElementById("ExportRunning").remove();
+}
 </script>

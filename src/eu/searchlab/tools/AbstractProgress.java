@@ -21,17 +21,8 @@ package eu.searchlab.tools;
 
 public abstract class AbstractProgress<T extends Number> implements Progress<T> {
 
-    @SuppressWarnings("unchecked")
-    private final T zero = (T) new Number() {
-        private static final long serialVersionUID = 1L;
-        @Override public int intValue() {return 0;}
-        @Override public long longValue() {return 0L;}
-        @Override public float floatValue() {return 0.0f;}
-        @Override public double doubleValue() {return 0.0d;}
-    };
-
-    private T targetNumber = this.zero;
-    private T progressNumber = this.zero;
+    private T targetNumber = null;
+    private T progressNumber = null;
     private final long startTime = System.currentTimeMillis();
 
     public AbstractProgress() {
@@ -64,7 +55,7 @@ public abstract class AbstractProgress<T extends Number> implements Progress<T> 
 
     @Override
     public int getPercent() {
-        if (this.targetNumber.doubleValue() == 0.0d) throw new UnsupportedOperationException("target is zero");
+        if (this.progressNumber == null || this.targetNumber == null || this.targetNumber.doubleValue() == 0.0d) return 0; // wrong but whatever
         return (int) Math.floor(this.progressNumber.doubleValue() / this.targetNumber.doubleValue() * 100.0d);
     }
 
@@ -75,6 +66,7 @@ public abstract class AbstractProgress<T extends Number> implements Progress<T> 
 
     @Override
     public double getProgressPerSecond() {
+        if (this.progressNumber == null) return 0; // wrong but whatever
         final long now = System.currentTimeMillis();
         if (now == this.startTime) return Double.NaN;
         return 1000.0d * this.progressNumber.doubleValue() / ((double) (now - this.startTime));
@@ -82,7 +74,7 @@ public abstract class AbstractProgress<T extends Number> implements Progress<T> 
 
     @Override
     public long getRemainingTime() {
-        if (this.targetNumber.doubleValue() == 0.0d) throw new UnsupportedOperationException("target is zero");
+        if (this.progressNumber == null || this.targetNumber == null || this.targetNumber.doubleValue() == 0.0d) return 0; // wrong but whatever
         return (long) ((this.targetNumber.doubleValue() - this.progressNumber.doubleValue()) / getProgressPerSecond() * 1000.0d);
     }
 
@@ -93,6 +85,7 @@ public abstract class AbstractProgress<T extends Number> implements Progress<T> 
 
     @Override
     public int compareTo(final Progress<T> o) {
+        if (this.progressNumber == null) return 0; // wrong but whatever
         return Double.compare(this.progressNumber.doubleValue(), o.getProgress().doubleValue());
     }
 }

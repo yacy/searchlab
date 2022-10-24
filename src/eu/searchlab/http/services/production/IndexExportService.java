@@ -55,7 +55,7 @@ import net.yacy.grid.io.index.IndexDAO;
 public class IndexExportService  extends AbstractService implements Service {
 
     private final static ExecutorService executorService = Executors.newCachedThreadPool();
-    
+
     // we maintain a static object to track already running export threads
     private static Map<String, Cons<Progress<Long>, Future<Long>>> exportRunners = new ConcurrentHashMap<>(); // only one runner for each user at the same time
 
@@ -84,9 +84,6 @@ public class IndexExportService  extends AbstractService implements Service {
         context.put("showExported", false);
         context.put("exported", 0);
         context.put("simulated", 0);
-        context.put("exportedSoFar", 0);
-        context.put("exportedOf", 0);
-        context.put("exportTimeRemaining", 0);
 
         // prepare result json
         final JSONObject json = new JSONObject(true);
@@ -117,30 +114,34 @@ public class IndexExportService  extends AbstractService implements Service {
         final IOPath assetsPath = Searchlab.accounting.getAssetsPathForUser(user_id);
         final IOPath exportPath = assetsPath.append("export");
 
+        // get running export data (1st time we retieve this to enable/disable functions; we read this again later aftter functions have performed)
+        Cons<Progress<Long>, Future<Long>> exportStatus = exportRunners.get(user_id);
+        Progress<Long> exportProgress = exportStatus == null ? null : exportStatus.car;
+        Future<Long> exportFuture = exportStatus == null ? null : exportStatus.cdr;
+        boolean exportRunning = exportProgress != null && exportFuture != null && !exportFuture.isDone();
+
         // do the export for all documents
-        if (authorized && allSimulateExport) {
+        if (authorized && !exportRunning && allSimulateExport) {
             exported = IndexDAO.getIndexDocumentsByUserID(user_id);
             Logger.info("exported (simulated) " + exported + " documents for user " + user_id);
             context.put("simulated", exported);
             context.put("showSimulated", true);
             context.put("all_export_disabled", false);
         }
-        if (authorized && allExport) {
+        if (authorized && !exportRunning && allExport) {
             final String exportName = prefix + "-all.jsonlist.gz";
             final IOPath targetPath = exportPath.append(exportName);
             try {
                 final File tempFile = File.createTempFile(exportName, null);
                 final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
                 // create a progress and future object to work on the task
-                Progress<Long> callable = IndexDAO.exportIndexDocumentsByUserID(expected, user_id, os);
-                Future<Long> exportThread = executorService.submit(callable);
+                final Progress<Long> callable = IndexDAO.exportIndexDocumentsByUserID(expected, user_id, os);
+                final Future<Long> exportThread = executorService.submit(callable);
                 exportRunners.put(user_id, Cons.of(callable, exportThread));
-                exported = exportThread.get();
                 Searchlab.io.write(targetPath, tempFile);
                 tempFile.delete();
-                Logger.info("exported all " + exported + " documents for user " + user_id + " to " + targetPath.toString());
+                Logger.info("starting exported of " + expected + " documents for user " + user_id + " to " + targetPath.toString());
                 context.put("showExported", true);
-                context.put("exported", exported);
             } catch (final Exception e) {
                 Logger.warn("failed to export");
             }
@@ -149,7 +150,7 @@ public class IndexExportService  extends AbstractService implements Service {
         // do the export for collections
         final String collectionss = serviceRequest.get("collection", "").trim();
         final String[] collections = collectionss.isEmpty() ? new String[0]: collectionss.split(",");
-        if (authorized && collectionSimulateExport && collections.length > 0) {
+        if (authorized && !exportRunning && collectionSimulateExport && collections.length > 0) {
             context.put("collection", collectionss);
             for (final String collection: collections) {
                 exported += IndexDAO.getIndexDocumentByCollectionCount(user_id, collection.trim());
@@ -159,7 +160,7 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("showSimulated", true);
             context.put("collection_export_disabled", false);
         }
-        if (authorized && collectionExport && collections.length > 0) {
+        if (authorized && !exportRunning && collectionExport && collections.length > 0) {
             final String exportName = prefix + "-collection.jsonlist.gz";
             final IOPath targetPath = exportPath.append(exportName);
             try {
@@ -183,7 +184,7 @@ public class IndexExportService  extends AbstractService implements Service {
         // do the export for domains
         final String domainss = serviceRequest.get("domain", "").trim();
         final String[] domains = domainss.isEmpty() ? new String[0]: domainss.split(",");
-        if (authorized && domainSimulateExport && domains.length > 0) {
+        if (authorized && !exportRunning && domainSimulateExport && domains.length > 0) {
             context.put("domain", domainss);
             for (final String domain: domains) {
                 exported += IndexDAO.getIndexDocumentsByDomainNameCount(user_id, domain.trim());
@@ -193,7 +194,7 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("showSimulated", true);
             context.put("domain_export_disabled", false);
         }
-        if (authorized && domainExport && domains.length > 0) {
+        if (authorized && !exportRunning && domainExport && domains.length > 0) {
             final String exportName = prefix + "-domain.jsonlist.gz";
             final IOPath targetPath = exportPath.append(exportName);
             try {
@@ -216,7 +217,7 @@ public class IndexExportService  extends AbstractService implements Service {
 
         // do the export for queries
         final String query = serviceRequest.get("query", "").trim();
-        if (authorized && querySimulateExport && query.length() > 0) {
+        if (authorized && !exportRunning && querySimulateExport && query.length() > 0) {
             context.put("query", query);
             exported += IndexDAO.getIndexDocumentsByQueryCount(user_id, query);
             Logger.info("exported (simulated) " + exported + " documents for user " + user_id + ", query " + query.trim());
@@ -224,7 +225,7 @@ public class IndexExportService  extends AbstractService implements Service {
             context.put("showSimulated", true);
             context.put("query_export_disabled", false);
         }
-        if (authorized && queryExport && query.length() > 0) {
+        if (authorized && !exportRunning && queryExport && query.length() > 0) {
             final String exportName = prefix + "-query.jsonlist.gz";
             final IOPath targetPath = exportPath.append(exportName);
             try {
@@ -241,6 +242,28 @@ public class IndexExportService  extends AbstractService implements Service {
             } catch (final Exception e) {
                 Logger.warn("failed to export");
             }
+        }
+
+        // get running export data
+        exportStatus = exportRunners.get(user_id);
+        exportProgress = exportStatus == null ? null : exportStatus.car;
+        exportFuture = exportStatus == null ? null : exportStatus.cdr;
+        context.put("exportProgressDocs", exportProgress == null ? 0 : exportProgress.getProgress() == null ? 0 : exportProgress.getProgress().longValue()); // count of records
+        context.put("exportTargetDocs", exportProgress == null ? 0 : exportProgress.getTarget() == null ? 0 : exportProgress.getTarget().longValue()); // count of records
+        context.put("exportProgressPercent", exportProgress == null ? 0 : exportProgress.getPercent()); // percent
+        context.put("exportRemainingSeconds", exportProgress == null ? 0 : exportProgress.getRemainingTime() / 1000); // milliseconds
+        context.put("exportDocsPerMinute", exportProgress == null ? 0 : (int) exportProgress.getProgressPerSecond() * 60); // records per second
+        exportRunning = exportProgress != null && exportFuture != null && !exportFuture.isDone();
+        final boolean exportDone = exportProgress != null && exportFuture != null && exportFuture.isDone();
+        if (exportRunning) {
+            // Exported process is running, {{context.exportProgressDocs}} of {{context.exportTargetDocs}} documents, {{context.exportProgressPercent}}% so far. {{context.exportDocsPerMinute}} per minute. Remaining Time: {{context.exportRemainingSeconds}} seconds.
+            context.put("exported",  exportProgress.getProgress() == null ? 0 : exportProgress.getProgress().longValue());
+            context.put("showExporting", true);
+        }
+        if (exportDone) {
+            // Exported {{context.exported}} Documents. Download from <a href="/data_warehouse/assets/?path=/export">Asset Export</a> folder.
+            context.put("exported", exportProgress.getProgress() == null ? 0 : exportProgress.getProgress().longValue());
+            context.put("showExported", true);
         }
 
         // prepare result
