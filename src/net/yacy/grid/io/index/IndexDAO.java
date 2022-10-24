@@ -20,6 +20,9 @@
 
 package net.yacy.grid.io.index;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -29,10 +32,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.zip.GZIPOutputStream;
 
 import org.elasticsearch.index.query.QueryBuilder;
 
 import eu.searchlab.Searchlab;
+import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.table.MinuteSeriesTable;
 import eu.searchlab.tools.AbstractCountingConsumer;
 import eu.searchlab.tools.Cons;
@@ -65,15 +70,14 @@ public class IndexDAO {
      * @param maxtime the time (millis since epoch) as upper border for the age of the time within the TimeCount
      * @return
      */
-    public static TimeCount getIndexDocumentTimeCount(final String user_id, final double maxtime) {
+    public static TimeCount getIndexDocumentTimeCount(String user_id, final double maxtime) {
         TimeCount tc = knownDocumentCount.get(user_id);
         if (tc == null || tc.time <= maxtime) {
-            String user_id1 = user_id;
-            if (user_id1 == null || user_id1.length() == 0) user_id1 = "en";
+            if (user_id == null || user_id.length() == 0) user_id = "en";
             final long now = System.currentTimeMillis();
             final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
-            final long documents = user_id1.equals("en") ? Searchlab.ec.count(index_name) : Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id1);
-            knownDocumentCount.put(user_id1, new TimeCount(now, documents));
+            final long documents = user_id.equals("en") ? Searchlab.ec.count(index_name) : Searchlab.ec.count(index_name, WebMapping.user_id_sxt.getMapping().name(), user_id);
+            knownDocumentCount.put(user_id, new TimeCount(now, documents));
             tc = knownDocumentCount.get(user_id);
         }
         return tc;
@@ -230,10 +234,15 @@ public class IndexDAO {
         return getIndexDocumentTimeCount(user_id, System.currentTimeMillis() - 10000).count;
     }
 
-    public final static Progress<Long> exportIndexDocumentsByUserID(final long expected, final String user_id, final OutputStream os) throws IOException {
+    public final static Progress<Long> exportIndexDocumentsByUserID(final long expected, final String user_id, final File tempFile, IOPath targetPath) throws IOException {
+        final OutputStream os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(tempFile), 8192), 8192);
         final String index_name = System.getProperties().getProperty("grid.elasticsearch.indexName.web", ElasticsearchClient.DEFAULT_INDEXNAME_WEB);
         final CountingConsumer<Map<String, Object>> consumer = outputStreamWriterConsumer(os);
-        Runnable finalizer = new Runnable() {@Override public void run() {try {os.close();} catch (IOException e) {}}};
+        Runnable finalizer = new Runnable() {@Override public void run() {try {
+        	os.close();
+        	Searchlab.io.write(targetPath, tempFile);
+        	tempFile.delete();
+        } catch (IOException e) {}}};
         return Searchlab.ec.consumeAllWithConstraints(expected, consumer, index_name, finalizer, Cons.of(WebMapping.user_id_sxt.getMapping().name(), user_id));
     }
 

@@ -133,14 +133,11 @@ public class IndexExportService  extends AbstractService implements Service {
             final IOPath targetPath = exportPath.append(exportName);
             try {
                 final File tempFile = File.createTempFile(exportName, null);
-                final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
                 // create a progress and future object to work on the task
-                final Progress<Long> callable = IndexDAO.exportIndexDocumentsByUserID(expected, user_id, os);
+                final Progress<Long> callable = IndexDAO.exportIndexDocumentsByUserID(expected, user_id, tempFile, targetPath);
                 final Future<Long> exportThread = executorService.submit(callable);
                 exportRunners.put(user_id, Cons.of(callable, exportThread));
-                Searchlab.io.write(targetPath, tempFile);
-                tempFile.delete();
-                Logger.info("starting exported of " + expected + " documents for user " + user_id + " to " + targetPath.toString());
+                Logger.info("starting export of " + expected + " documents for user " + user_id + " to " + targetPath.toString());
                 context.put("showExported", true);
             } catch (final Exception e) {
                 Logger.warn("failed to export");
@@ -254,7 +251,7 @@ public class IndexExportService  extends AbstractService implements Service {
         context.put("exportRemainingSeconds", exportProgress == null ? 0 : exportProgress.getRemainingTime() / 1000); // milliseconds
         context.put("exportDocsPerMinute", exportProgress == null ? 0 : (int) exportProgress.getProgressPerSecond() * 60); // records per second
         exportRunning = exportProgress != null && exportFuture != null && !exportFuture.isDone();
-        final boolean exportDone = exportProgress != null && exportFuture != null && exportFuture.isDone();
+        final boolean exportDone = exportProgress != null && exportFuture != null && exportProgress.getProgress() != null && exportFuture.isDone();
         if (exportRunning) {
             // Exported process is running, {{context.exportProgressDocs}} of {{context.exportTargetDocs}} documents, {{context.exportProgressPercent}}% so far. {{context.exportDocsPerMinute}} per minute. Remaining Time: {{context.exportRemainingSeconds}} seconds.
             context.put("exported",  exportProgress.getProgress() == null ? 0 : exportProgress.getProgress().longValue());

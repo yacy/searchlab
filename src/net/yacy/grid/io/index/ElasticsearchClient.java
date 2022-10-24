@@ -374,7 +374,7 @@ public class ElasticsearchClient implements FulltextIndex {
     }
 
     private long countInternal(final QueryBuilder q, final String indexName) {
-        final SearchResponse response = this.elasticsearchClient.prepareSearch(indexName).setQuery(q).setSize(0).execute().actionGet();
+        final SearchResponse response = this.elasticsearchClient.prepareSearch(indexName).setQuery(q).setSize(0).setTrackTotalHits(true).get();
         return response.getHits().getTotalHits().value;
     }
 
