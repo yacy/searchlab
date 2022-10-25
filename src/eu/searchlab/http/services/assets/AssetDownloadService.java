@@ -27,6 +27,7 @@ import eu.searchlab.http.AbstractService;
 import eu.searchlab.http.Service;
 import eu.searchlab.http.ServiceRequest;
 import eu.searchlab.http.ServiceResponse;
+import eu.searchlab.http.services.production.IndexExportService;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.tools.Logger;
 import io.undertow.util.Headers;
@@ -64,6 +65,8 @@ public class AssetDownloadService extends AbstractService implements Service {
             Logger.warn("attempt to list " + apppath.toString(), e);
             b = new byte[] {};
         }
+
+        if (path.indexOf("export") >= 0) IndexExportService.exportRunnersCleanup(user_id);
 
         final ServiceResponse serviceResponse = new ServiceResponse(b);
         serviceResponse.setMime(ServiceRequest.getMime(ext));

@@ -59,6 +59,15 @@ public class IndexExportService  extends AbstractService implements Service {
     // we maintain a static object to track already running export threads
     private static Map<String, Cons<Progress<Long>, Future<Long>>> exportRunners = new ConcurrentHashMap<>(); // only one runner for each user at the same time
 
+    public static void exportRunnersCleanup(final String user_id) {
+        final Cons<Progress<Long>, Future<Long>> exportStatus = exportRunners.get(user_id);
+        if (exportStatus == null) return;
+        final Progress<Long> exportProgress = exportStatus.car;
+        final Future<Long> exportFuture = exportStatus.cdr;
+        final boolean exportDone = exportProgress.getProgress() != null && exportProgress.getProgress().longValue() > 0 && exportProgress.getProgress() != null && exportFuture.isDone();
+        if (exportDone) exportRunners.remove(user_id);
+    }
+
     @Override
     public String[] getPaths() {
         return new String[] {"/api/export.json", "/production/export/"};
@@ -158,30 +167,30 @@ public class IndexExportService  extends AbstractService implements Service {
         }
         if (authorized && !exportRunning && collectionExport && collections.length > 0) {
             try {
-            	if (collections.length == 1) {
+                if (collections.length == 1) {
                     final String exportName = prefix + "-collection-" + collections[0].trim() + ".jsonlist.gz";
                     final IOPath targetPath = exportPath.append(exportName);
                     final File tempFile = File.createTempFile(exportName, null);
-            		final Progress<Long> callable = IndexDAO.exportIndexDocumentsByCollectionName(expected, user_id, collections[0].trim(), tempFile, targetPath);
-            		final Future<Long> exportThread = executorService.submit(callable);
+                    final Progress<Long> callable = IndexDAO.exportIndexDocumentsByCollectionName(expected, user_id, collections[0].trim(), tempFile, targetPath);
+                    final Future<Long> exportThread = executorService.submit(callable);
                     exportRunners.put(user_id, Cons.of(callable, exportThread));
                     Logger.info("starting export of " + expected + " documents for user " + user_id + ", collection " + collections[0].trim() + " to " + targetPath.toString());
-            	} else {
+                } else {
                     final String exportName = prefix + "-collections.jsonlist.gz";
                     final IOPath targetPath = exportPath.append(exportName);
                     final File tempFile = File.createTempFile(exportName, null);
-	                final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
-	                context.put("collection", collectionss);
-	                for (final String collection: collections) {
-	                    exported += IndexDAO.exportIndexDocumentsByCollectionName(expected, user_id, collection.trim(), os).call();
-	                    Logger.info("exported " + exported + " documents for user " + user_id + ", collection " + collection.trim() + " to " + targetPath.toString());
-	                }
-	                os.close();
-	                Searchlab.io.write(targetPath, tempFile);
-	                tempFile.delete();
-	                context.put("showExported", true);
-	                context.put("exported", exported);
-            	}
+                    final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
+                    context.put("collection", collectionss);
+                    for (final String collection: collections) {
+                        exported += IndexDAO.exportIndexDocumentsByCollectionName(expected, user_id, collection.trim(), os).call();
+                        Logger.info("exported " + exported + " documents for user " + user_id + ", collection " + collection.trim() + " to " + targetPath.toString());
+                    }
+                    os.close();
+                    Searchlab.io.write(targetPath, tempFile);
+                    tempFile.delete();
+                    context.put("showExported", true);
+                    context.put("exported", exported);
+                }
             } catch (final Exception e) {
                 Logger.warn("failed to export");
             }
@@ -202,30 +211,30 @@ public class IndexExportService  extends AbstractService implements Service {
         }
         if (authorized && !exportRunning && domainExport && domains.length > 0) {
             try {
-            	if (domains.length == 1) {
+                if (domains.length == 1) {
                     final String exportName = prefix + "-domain-" + domains[0].trim() + ".jsonlist.gz";
                     final IOPath targetPath = exportPath.append(exportName);
                     final File tempFile = File.createTempFile(exportName, null);
-            		final Progress<Long> callable = IndexDAO.exportIndexDocumentsByDomainName(expected, user_id, domains[0].trim(), tempFile, targetPath);
-            		final Future<Long> exportThread = executorService.submit(callable);
+                    final Progress<Long> callable = IndexDAO.exportIndexDocumentsByDomainName(expected, user_id, domains[0].trim(), tempFile, targetPath);
+                    final Future<Long> exportThread = executorService.submit(callable);
                     exportRunners.put(user_id, Cons.of(callable, exportThread));
                     Logger.info("starting export of " + expected + " documents for user " + user_id + ", domain " + domains[0].trim() + " to " + targetPath.toString());
-            	} else {
+                } else {
                     final String exportName = prefix + "-domains.jsonlist.gz";
                     final IOPath targetPath = exportPath.append(exportName);
                     final File tempFile = File.createTempFile(exportName, null);
-	                final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
-	                context.put("domain", domainss);
-	                for (final String domain: domains) {
-	                    exported += IndexDAO.exportIndexDocumentsByDomainName(expected, user_id, domain.trim(), os).call();
-	                    Logger.info("exported " + exported + " documents for user " + user_id + ", domain " + domain.trim() + " to " + targetPath.toString());
-	                }
-	                os.close();
-	                Searchlab.io.write(targetPath, tempFile);
-	                tempFile.delete();
-	                context.put("showExported", true);
-	                context.put("exported", exported);
-            	}
+                    final OutputStream os = new GZIPOutputStream(new FileOutputStream(tempFile), 8192);
+                    context.put("domain", domainss);
+                    for (final String domain: domains) {
+                        exported += IndexDAO.exportIndexDocumentsByDomainName(expected, user_id, domain.trim(), os).call();
+                        Logger.info("exported " + exported + " documents for user " + user_id + ", domain " + domain.trim() + " to " + targetPath.toString());
+                    }
+                    os.close();
+                    Searchlab.io.write(targetPath, tempFile);
+                    tempFile.delete();
+                    context.put("showExported", true);
+                    context.put("exported", exported);
+                }
             } catch (final Exception e) {
                 Logger.warn("failed to export");
             }
