@@ -271,6 +271,7 @@ public class WebServer {
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date(d))); // like a proper file server
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
                     exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
+                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, bb.remaining());
                     exchange.getResponseSender().send(bb);
                     log(serviceRequest.getIP00(), client, user, method, path, StatusCodes.OK, f.length(), referer, userAgent);
                 } catch (final IOException e) {
@@ -317,6 +318,7 @@ public class WebServer {
                     */
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
+                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, b.length);
                     exchange.getResponseSender().send(ByteBuffer.wrap(b));
                 }
                 log(serviceRequest.getIP00(), client, user, method,
@@ -370,22 +372,22 @@ public class WebServer {
             // in case that html and service is defined by a static page and a json service is defined, we use handlebars to template the html
 
             if (b == null && service == null) {
-            	// case (0) - error
+                // case (0) - error
                 throw new FileNotFoundException("not found:" + path);
             }
 
             ServiceResponse serviceResponse = null;
             if (b != null && service == null) {
-            	// case (1) - serve the file
-            	serviceResponse = new ServiceResponse(b); // sets Type.BINARY
+                // case (1) - serve the file
+                serviceResponse = new ServiceResponse(b); // sets Type.BINARY
             }
 
             if (b == null && service != null) {
-            	// case (2) - construct a result based on the service
-            	serviceResponse = service.serve(serviceRequest);
+                // case (2) - construct a result based on the service
+                serviceResponse = service.serve(serviceRequest);
 
-            	// depending on the path extension the OBJECT or ARRAY content can be transformed
-            	// to html in the shape of a table or a graph
+                // depending on the path extension the OBJECT or ARRAY content can be transformed
+                // to html in the shape of a table or a graph
 
                 String tablename = null;
                 int p = path.indexOf("/get/");
@@ -394,7 +396,7 @@ public class WebServer {
                     p = tablename.indexOf('.');
                     if (p > 0) tablename = tablename.substring(0, p); else tablename = null;
                 }
-            	if (serviceResponse.getType() == Service.Type.OBJECT) {
+                if (serviceResponse.getType() == Service.Type.OBJECT) {
                     final JSONObject json = serviceResponse.getObject();
                     assert json != null;
                     if (json == null) return null;
@@ -517,11 +519,11 @@ public class WebServer {
             }
 
             if (b != null && service != null) {
-            	// case (3) - treat the file as template and use the service to instantiate the template with content
-            	serviceResponse = service.serve(serviceRequest);
+                // case (3) - treat the file as template and use the service to instantiate the template with content
+                serviceResponse = service.serve(serviceRequest);
 
-            	// apply template using the OBJECT or ARRAY content which the service produced
-            	if (serviceResponse.getType() == Service.Type.OBJECT) {
+                // apply template using the OBJECT or ARRAY content which the service produced
+                if (serviceResponse.getType() == Service.Type.OBJECT) {
                     final JSONObject json = serviceResponse.getObject();
                     final Handlebars handlebars = new Handlebars();
                     final Context context = Context
