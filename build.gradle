@@ -1,7 +1,7 @@
 plugins {
   id 'java'
   id 'maven-publish'
-  id 'com.github.johnrengelman.shadow' version '5.1.0'
+  id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 apply plugin: 'java'
@@ -43,16 +43,14 @@ repositories {
 
 dependencies {
   implementation 'org.elasticsearch.client:transport:7.17.+'
-  implementation 'io.swagger.core.v3:swagger-jaxrs2:2.1.2'
-  implementation 'io.undertow:undertow-core:2.2.18.Final'
+  implementation 'io.undertow:undertow-core:2.3.0.Final'
   implementation 'tech.tablesaw:tablesaw-jsplot:0.43.+'
   implementation 'tech.tablesaw:tablesaw-json:0.43.+'
   implementation 'tech.tablesaw:tablesaw-core:0.43.+'
-  implementation 'com.github.jknack:handlebars:4.2.+'
+  implementation 'com.github.jknack:handlebars:4.3.+'
   implementation 'com.rabbitmq:amqp-client:5.14.+'
-  implementation 'com.hazelcast:hazelcast:4.1.+'
-  implementation 'org.slf4j:log4j-over-slf4j:1.7.+'
-  implementation 'org.slf4j:slf4j-jdk14:1.7.+'
+  implementation 'org.slf4j:log4j-over-slf4j:2.0.+'
+  implementation 'org.slf4j:slf4j-jdk14:2.0.+'
   implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.17.+'
   implementation 'io.minio:minio:8.4.+'
   implementation 'com.amazonaws:aws-java-sdk-s3:1.12.+'
