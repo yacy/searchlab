@@ -20,6 +20,7 @@
 package eu.searchlab.storage.queues;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Interface for a Message Queue
@@ -48,6 +49,22 @@ public interface Queue {
      * @throws IOException
      */
     public MessageContainer receive(long timeout, boolean autoAck) throws IOException;
+
+    /**
+     * peek into the queue and return a copy of the top message of the queue
+     * @param count
+     * @return one message from the top of the queue without removing them
+     * @throws IOException
+     */
+    public byte[] peek() throws IOException;
+
+    /**
+     * peek into the queue and return a copy of the count-n number of messages in a list
+     * @param count
+     * @return count entries in the queue without removing them
+     * @throws IOException
+     */
+    public List<byte[]> peek(int count) throws IOException;
 
     /**
      * acknowledge a message. This MUST be used to remove a message from the broker if

@@ -20,6 +20,8 @@
 package eu.searchlab.storage.queues;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class AbstractQueue implements Queue {
 
@@ -29,4 +31,27 @@ public abstract class AbstractQueue implements Queue {
         while (count-- > 0) {if  (receive(100, true) == null) break;}
     }
 
+    @Override
+    public byte[] peek() throws IOException {
+        this.recover();
+        final MessageContainer m = this.receive(-1, false);
+        if (m == null) return null;
+        this.recover();
+        return m.getPayload();
+    }
+
+
+    @Override
+    public List<byte[]> peek(int count) throws IOException {
+        final List<byte[]> p = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            final MessageContainer m = this.receive(-1, false);
+            if (m == null) {
+                this.recover();
+                return p;
+            }
+        }
+        this.recover();
+        return p;
+    }
 }
