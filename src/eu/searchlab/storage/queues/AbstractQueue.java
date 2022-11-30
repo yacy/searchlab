@@ -24,7 +24,7 @@ import java.io.IOException;
 public abstract class AbstractQueue implements Queue {
 
     @Override
-    public void clear() throws IOException {
+    public void purge() throws IOException {
         long count = available();
         while (count-- > 0) {if  (receive(100, true) == null) break;}
     }

@@ -238,6 +238,16 @@ public class RabbitQueue extends AbstractQueue implements Queue {
     }
 
     @Override
+    public void purge() throws IOException {
+        /*final PurgeOk ok =*/ this.channel.queuePurge(this.queueName);
+    }
+
+    @Override
+    public void delete() throws IOException {
+        /*final DeleteOk ok =*/ this.channel.queueDelete(this.queueName);
+    }
+
+    @Override
     public void close() throws IOException {
         if (this.channel != null) try {
             this.channel.close();

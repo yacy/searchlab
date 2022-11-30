@@ -82,10 +82,16 @@ public interface Queue {
     public long available() throws IOException;
 
     /**
-     * clear a queue
+     * purge a queue (all of its messages deleted):
      * @throws IOException
      */
-    public void clear() throws IOException;
+    public void purge() throws IOException;
+
+    /**
+     * delete a queue with all messages:
+     * @throws IOException
+     */
+    public void delete() throws IOException;
 
     /**
      * close a queue
