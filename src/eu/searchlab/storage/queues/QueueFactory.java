@@ -1,6 +1,6 @@
 /**
- *  QueueConnector
- *  Copyright 14.01.2017 by Michael Peter Christen, @orbiterlab
+ *  QueueFactory
+ *  Copyright 30.11.2022 by Michael Peter Christen, @orbiterlab
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,7 @@
 package eu.searchlab.storage.queues;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * A factory for a queue.
@@ -35,6 +36,30 @@ public interface QueueFactory {
      * @throws IOException
      */
     public Queue getQueue(String queueName) throws IOException;
+
+    /**
+     * Get all available queues of that QueueFactory with the number of available messages
+     * @return a map of all queue names with the QueueStats for the queue
+     * @throws IOException
+     */
+    public Map<String, QueueStats> getAllQueues() throws IOException;
+
+    /**
+     * Get all queues which had been opened with getQueue
+     * @return a map of all existing Queue objects, mapped by name
+     * @throws IOException
+     */
+    public Map<String, Queue> getOpenQueues() throws IOException;
+
+    /**
+     * Get statistics for all queues:
+     * - the total number of messages in all queues,
+     * - the total number of messages that are ready and
+     * - the total number of messages that are unacknowledged.
+     * @return one QueueStats object for the aggregation of all queues
+     * @throws IOException
+     */
+    public QueueStats getAggregatedStats() throws IOException;
 
     /**
      * Close the Factory

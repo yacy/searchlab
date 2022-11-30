@@ -19,12 +19,31 @@
 
 package eu.searchlab.storage.queues;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -47,7 +66,7 @@ public class RabbitQueueFactory implements QueueFactory {
 
 
     private final String server, username, password;
-    private final int port;
+    private final int managementPort, nodePort;
     private final ConnectionFactory connectionFactory;
     protected Connection connection;
     private Map<String, Queue> queues;
@@ -64,9 +83,10 @@ public class RabbitQueueFactory implements QueueFactory {
      * @param queueLimit maximum number of entries for the queue, 0 = unlimited
      * @throws IOException
      */
-    public RabbitQueueFactory(final String server, final int port, final String username, final String password, final boolean lazy, final int queueLimit) throws IOException {
+    public RabbitQueueFactory(final String server, final int managementPort, final int nodePort, final String username, final String password, final boolean lazy, final int queueLimit) throws IOException {
         this.server = server;
-        this.port = port;
+        this.managementPort = managementPort;
+        this.nodePort = nodePort;
         this.username = username;
         this.password = password;
         this.lazy = new AtomicBoolean(lazy);
@@ -76,7 +96,7 @@ public class RabbitQueueFactory implements QueueFactory {
         this.connectionFactory = new ConnectionFactory();
         this.connectionFactory.setAutomaticRecoveryEnabled(false); // false -> SIC! - when leaving this 'true', old connections will be reused even if a old connection is closed and replace with a new one, resulting is "already closed exception".
         this.connectionFactory.setHost(this.server);
-        if (this.port > 0) this.connectionFactory.setPort(this.port);
+        if (this.nodePort > 0) this.connectionFactory.setPort(this.nodePort);
         if (this.username != null && this.username.length() > 0) this.connectionFactory.setUsername(this.username);
         if (this.password != null && this.password.length() > 0) this.connectionFactory.setPassword(this.password);
     }
@@ -115,6 +135,80 @@ public class RabbitQueueFactory implements QueueFactory {
     }
 
     @Override
+    public Map<String, QueueStats> getAllQueues() throws IOException {
+        // make url, i.e. http://localhost:15672/api/queues
+        String url = this.server.startsWith("http") ? this.server : "http://" + this.server;
+        if (this.managementPort >= 0) url = url + ":" + this.managementPort;
+        if (!url.endsWith("/")) url = url + "/";
+        url = url + "api/queues";
+
+        // load content from api
+        final String content = getContent(url, this.username, this.password);
+
+        // parse json and evaluate content
+        final Map<String, QueueStats> queues = new LinkedHashMap<>();
+        try {
+            final JSONArray queueList = new JSONArray(new JSONTokener(content));
+            for (int i = 0; i < queueList.length(); i++) {
+                final JSONObject q = queueList.getJSONObject(i);
+                final String name = q.optString("name");
+                final QueueStats stats = new QueueStats()
+                        .setTotal(q.optLong("messages", 0))
+                        .setReady(q.optLong("messages_ready", 0))
+                        .setUnacknowledged(q.optLong("messages_unacknowledged", 0));
+                if (name != null && name.length() > 0) queues.put(name, stats);
+            }
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+        return queues;
+    }
+
+    @Override
+    public Map<String, Queue> getOpenQueues() throws IOException {
+        return this.queues;
+    }
+
+    @Override
+    public QueueStats getAggregatedStats() throws IOException {
+        // make url, i.e. http://localhost:15672/api/overview
+        String url = this.server.startsWith("http") ? this.server : "http://" + this.server;
+        if (this.managementPort >= 0) url = url + ":" + this.managementPort;
+        if (!url.endsWith("/")) url = url + "/";
+        url = url + "api/overview";
+
+        // load content from api
+        final String content = getContent(url, this.username, this.password);
+
+        // parse json and evaluate content
+        final QueueStats result = new QueueStats();
+        try {
+            final JSONObject overview = new JSONObject(new JSONTokener(content));
+            final JSONObject queue_totals = overview.getJSONObject("queue_totals");
+            result.setTotal(queue_totals.optLong("messages", 0));
+            result.setReady(queue_totals.optLong("messages_ready", 0));
+            result.setUnacknowledged(queue_totals.optLong("messages_unacknowledged", 0));
+        } catch (final JSONException e) {
+            throw new IOException(e.getMessage());
+        }
+        return result;
+    }
+
+    private static String getContent(String url, String username, String password) throws IOException {
+        // load content from api
+        final HttpClient httpclient = HttpClients.custom().setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()).build();
+        final HttpUriRequest request = RequestBuilder.get()
+                .setUri(url)
+                //.setHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
+                .setHeader(HttpHeaders.AUTHORIZATION, "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes()))
+                .build(); //Authorization: Basic Z3Vlc3Q6Z3Vlc3Q=
+        final HttpResponse response = httpclient.execute(request);
+        final HttpEntity entity = response.getEntity();
+        final String content = new BufferedReader(new InputStreamReader(entity.getContent())).lines().collect(Collectors.joining("\n"));
+        return content;
+    }
+
+    @Override
     public void close() {
         //for (final Queue<byte[]> q: this.queues.values()) {try {q.close();} catch (final IOException e) {}}
         //
@@ -132,7 +226,7 @@ public class RabbitQueueFactory implements QueueFactory {
     public static void main(final String[] args) {
         RabbitQueueFactory qc;
         try {
-            qc = new RabbitQueueFactory("127.0.0.1", -1, "guest", "guest", true, 0);
+            qc = new RabbitQueueFactory("127.0.0.1", 15672, -1, "guest", "guest", true, 0);
             qc.getQueue("test").send("Hello World".getBytes());
             System.out.println(new String(qc.getQueue("test2").receive(60000, true).getPayload()));
             qc.close();

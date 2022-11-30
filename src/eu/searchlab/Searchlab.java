@@ -42,6 +42,7 @@ import eu.searchlab.storage.io.GenericIO;
 import eu.searchlab.storage.io.IOPath;
 import eu.searchlab.storage.io.MinioS3IO;
 import eu.searchlab.storage.queues.QueueFactory;
+import eu.searchlab.storage.queues.QueueStats;
 import eu.searchlab.storage.queues.RabbitQueueFactory;
 import eu.searchlab.tools.Logger;
 import net.yacy.grid.io.index.ElasticsearchClient;
@@ -79,8 +80,8 @@ public class Searchlab {
     public static AccountingTS accounting;
     public static AuthorizationTS authorization;
     public static String
-    	github_client_id, github_client_secret,
-    	patreon_client_id, patreon_client_secret, patreon_access_token;
+    github_client_id, github_client_secret,
+    patreon_client_id, patreon_client_secret, patreon_access_token;
 
     // Cron Tooling
     public static UserAudit userAudit;
@@ -139,10 +140,10 @@ public class Searchlab {
             final String envkey1 = "SEARCHLAB_" + envkey0.toUpperCase();
             final String envval0 = sysenv.get(envkey0);
             final String envval1 = sysenv.get(envkey1);
-            final boolean secret = 
-            		key.contains("secret") || key.contains("password") || key.contains("token") ||
-            		key.contains("client.id") || key.contains("client_id") ||
-            		key.contains("address") || key.contains("authorization");
+            final boolean secret =
+                    key.contains("secret") || key.contains("password") || key.contains("token") ||
+                    key.contains("client.id") || key.contains("client_id") ||
+                    key.contains("address") || key.contains("authorization");
             if (envval0 != null) {
                 Logger.debug("OVERWRITING CONFIG '" + key + "' with environment value" + (secret ? "" : (" '" + envval0 + "'")));
                 value = envval0;
@@ -168,7 +169,7 @@ public class Searchlab {
         boolean assertionenabled = false;
         assert (assertionenabled = true) == true; // compare to true to remove warning: "Possible accidental assignement"
         if (assertionenabled) Logger.info("Asserts are enabled");
-        
+
         // Test of Loglevel
         Logger.debug("DEBUG logger enabled");
         Logger.info("INFO logger enabled");
@@ -199,7 +200,7 @@ public class Searchlab {
                 hzMap = hzInstance.getMap("data");
             }
         }.start();
-        */
+         */
 
         // oauth config generated at https://github.com/settings/developers
         // these setting should not be anywhere in a confif and only passed by start parameters
@@ -242,8 +243,14 @@ public class Searchlab {
                 try {
                     // get connection to RabbitMQ
                     final String brokerAddress = System.getProperty("grid.broker.address", "");
-                    queues = new RabbitQueueFactory(getHost(brokerAddress), getPort(brokerAddress, "-1"), getUser(brokerAddress, "anonymous"), getPassword(brokerAddress, "yacy"), true, 0);
-                    Logger.info("Connected Broker at " + getHost(brokerAddress));
+                    queues = new RabbitQueueFactory(getHost(brokerAddress), 15672, getPort(brokerAddress, "-1"), getUser(brokerAddress, "anonymous"), getPassword(brokerAddress, "yacy"), true, 0);
+                    final QueueStats stat = queues.getAggregatedStats();
+                    final Map<String, QueueStats> q = queues.getAllQueues();
+                    Logger.info("Connected Broker at " + getHost(brokerAddress) + ", " + stat.toString() + ".");
+                    Logger.info("all queues:");
+                    for (final Map.Entry<String, QueueStats> entry: q.entrySet()) {
+                        Logger.info("- " + entry.getKey() + ": " + entry.getValue().toString());
+                    }
                     if (readyCounter.incrementAndGet() >= 3) ready = true;
                 } catch (final IOException e) {
                     Logger.error(e);
