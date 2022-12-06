@@ -63,7 +63,8 @@ public interface QueueFactory {
 
     /**
      * Close the Factory
+     * @throws IOException
      */
-    public void close();
+    public void close() throws IOException;
 
 }

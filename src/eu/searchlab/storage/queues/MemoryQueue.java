@@ -20,21 +20,26 @@
 package eu.searchlab.storage.queues;
 
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 
 public class MemoryQueue extends AbstractQueue implements Queue {
 
     private final ConcurrentLinkedQueue<byte[]> queue;
     private final ConcurrentHashMap<Long, byte[]> ackc;
+    boolean isClosed;
 
     public MemoryQueue() {
         this.queue = new ConcurrentLinkedQueue<>();
         this.ackc = new ConcurrentHashMap<>();
+        this.isClosed = false;
     }
 
     @Override
     public void checkConnection() throws IOException {
+        // not required, do nothing
     }
 
     @Override
@@ -47,7 +52,7 @@ public class MemoryQueue extends AbstractQueue implements Queue {
         final long t = System.currentTimeMillis();
         final byte[] b = this.queue.poll();
         if (b != null) {
-            this.ackc.put(t,  b);
+            if (!autoAck) this.ackc.put(t,  b);
             return new MessageContainer(b, t);
         }
         return null;
@@ -55,44 +60,59 @@ public class MemoryQueue extends AbstractQueue implements Queue {
 
     @Override
     public void acknowledge(long deliveryTag) throws IOException {
-        // TODO Auto-generated method stub
-
+        final byte[] b = this.ackc.remove(deliveryTag);
+        if (b == null) throw new IOException("tag " + deliveryTag + " cannot be acknowledged, it is unknown.");
     }
 
     @Override
     public void reject(long deliveryTag) throws IOException {
-        // TODO Auto-generated method stub
-
+        final byte[] b = this.ackc.remove(deliveryTag);
+        if (b == null) throw new IOException("tag " + deliveryTag + " cannot be rejected, it is unknown.");
+        this.queue.add(b);
     }
 
     @Override
     public void recover() throws IOException {
-        // TODO Auto-generated method stub
-
+        final ConcurrentHashMap<Long, byte[]> a = new ConcurrentHashMap<>();
+        a.putAll(this.ackc);
+        for (final Entry<Long, byte[]> entry: a.entrySet()) {
+            this.ackc.remove(entry.getKey());
+            this.queue.add(entry.getValue());
+        }
     }
 
     @Override
     public long available() throws IOException {
-        // TODO Auto-generated method stub
-        return 0;
+        return this.queue.size();
+    }
+
+    public long unacknowledged() throws IOException {
+        return this.ackc.size();
+    }
+
+    public long total() throws IOException {
+        return unacknowledged() + available();
     }
 
     @Override
     public void purge() throws IOException {
-        // TODO Auto-generated method stub
-
+        this.queue.clear();
+        this.ackc.clear();
     }
 
     @Override
     public void delete() throws IOException {
-        // TODO Auto-generated method stub
-
+        this.purge();
     }
 
     @Override
     public void close() throws IOException {
-        // TODO Auto-generated method stub
-
+        this.purge();
+        this.isClosed = true;
     }
 
+    @Override
+    public boolean isClosed() throws IOException {
+        return this.isClosed;
+    }
 }
