@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import eu.searchlab.tools.Logger;
 
@@ -48,6 +50,25 @@ public abstract class AbstractIO implements GenericIO {
         baos.close();
         write(iop, baos.toByteArray());
         this.dirListCache.remove(iop.getParent());
+    }
+
+    @Override
+    public void writeZIP(final IOPath iop, final byte[] object, String original_name) throws IOException {
+        // write object into memory into a temporary zip file
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ZipOutputStream zos = new ZipOutputStream(baos);
+        zos.setMethod(ZipOutputStream.DEFLATED);
+        zos.setLevel(9);
+
+        final ZipEntry ze = new ZipEntry(original_name);
+        zos.putNextEntry(ze);
+        zos.write(object, 0, object.length);
+        zos.closeEntry();
+        zos.close();
+        baos.close();
+
+        // now write the zip into IO
+        this.write(iop, baos.toByteArray());
     }
 
     @Override
@@ -168,7 +189,7 @@ public abstract class AbstractIO implements GenericIO {
     public IODirList dirList(final IOPath dirpath) throws IOException {
 
         // try to get the list from the cache
-        IODirList list = dirListCache.get(dirpath);
+        IODirList list = this.dirListCache.get(dirpath);
         if (list != null && !list.isStale()) {
             Logger.info("Delivering dirList from Cache: " + dirpath.toString());
             return list;
@@ -209,7 +230,7 @@ public abstract class AbstractIO implements GenericIO {
         }
 
         Logger.info("Delivering dirList from IO: " + dirpath.toString());
-        dirListCache.put(dirpath, list);
+        this.dirListCache.put(dirpath, list);
         return list;
     }
 

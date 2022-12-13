@@ -92,6 +92,15 @@ public interface GenericIO {
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException;
 
     /**
+     * write an object zipped from a byte array
+     * @param iop
+     * @param object
+     * @param original_name
+     * @throws IOException
+     */
+    public void writeZIP(final IOPath iop, final byte[] object, String original_name) throws IOException;
+
+    /**
      * write an object from a file
      * @param iop
      * @param object

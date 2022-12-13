@@ -32,13 +32,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import eu.searchlab.tools.Logger;
 import io.minio.BucketExistsArgs;
 import io.minio.CopyObjectArgs;
 import io.minio.CopySource;
 import io.minio.GetObjectArgs;
 import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
+import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveBucketArgs;
@@ -62,6 +66,8 @@ import io.minio.messages.QuoteFields;
 
 public class MinioS3IO extends AbstractIO implements GenericIO {
 
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
     // one "proper" part size
     private final long partSize = 10 * 1024 * 1024; // proper is a number between 5MB and 5GB
 
@@ -71,11 +77,18 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
 
     // the connection
     private final MinioClient mc;
+    private final MinioAsyncClient mac;
     private final String endpointURL, accessKey, secretKey;
 
     public MinioS3IO(final String endpointURL, final String accessKey, final String secretKey) {
+        Logger.info("S3IO: opening connection to " + endpointURL + ":" + accessKey);
         this.mc =
                 MinioClient.builder()
+                .endpoint(endpointURL)
+                .credentials(accessKey, secretKey)
+                .build();
+        this.mac =
+                MinioAsyncClient.builder()
                 .endpoint(endpointURL)
                 .credentials(accessKey, secretKey)
                 .build();
@@ -105,6 +118,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -118,6 +132,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -137,6 +152,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -161,6 +177,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -229,6 +246,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -264,6 +282,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -289,6 +308,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage() + "; path = " + iop.toString());
         }
     }
@@ -316,6 +336,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage() + "; path = " + iop.toString());
         }
     }
@@ -527,7 +548,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
 
     @Override
     public String toString() {
-    	return this.accessKey + "@" + this.endpointURL;
+        return this.accessKey + "@" + this.endpointURL;
     }
 
 }
