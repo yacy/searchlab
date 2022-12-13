@@ -62,7 +62,7 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
 
     /**
      * Create a new IOPath with a given bucket and object path.
-     * The object path shall be normalized in the following way: no leading and no ending "/".
+     * The object path shall be normalized in the following way: always leading and no ending "/".
      * @param bucket name of the bucket
      * @param objectPath "/"-separated list of path elements, where the last element may be the file
      */
@@ -88,7 +88,7 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
 
     /**
      * a folder is a root folder it can not be truncated
-     * @return
+     * @return true if the path is a folder and is the root folder
      */
     public final boolean isRootFolder() {
         final int p = this.objectPath.lastIndexOf('/');
@@ -96,9 +96,13 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
         return p > 0;
     }
 
+    /**
+     * An object is in the root folder if the path has only one slash inside (at the beginning)
+     * @return true if the path is a path in the root folder
+     */
     public final boolean isInRootFolder() {
-        final int p = this.objectPath.indexOf('/');
-        return p <= 0;
+        final int p = this.objectPath.lastIndexOf('/');
+        return p == 0;
     }
 
     /**
