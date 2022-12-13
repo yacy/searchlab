@@ -54,7 +54,7 @@ public final class ConcurrentIO {
 
     private final static IOPath lockFile(final IOPath iop) {
         if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
-        final IOPath lockFile = new IOPath(iop.getBucket(), iop.getPath() + ".lock");
+        final IOPath lockFile = new IOPath(iop.getBucket(), iop.getObjectPath() + ".lock");
         return lockFile;
     }
 
@@ -63,7 +63,7 @@ public final class ConcurrentIO {
         for (int i = 0; i < iops.length; i++) {
             final IOPath iop = iops[i];
             if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
-            lockFiles[i] = new IOPath(iop.getBucket(), iop.getPath() + ".lock");
+            lockFiles[i] = new IOPath(iop.getBucket(), iop.getObjectPath() + ".lock");
         }
         return lockFiles;
     }

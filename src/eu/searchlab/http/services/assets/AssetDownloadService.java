@@ -46,7 +46,7 @@ public class AssetDownloadService extends AbstractService implements Service {
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
         // evaluate request parameter
-        String path = IOPath.normalizePath(serviceRequest.get("path", ""));
+        String path = IOPath.canonicalPath(serviceRequest.get("path", ""));
         if (path.length() == 1 && path.equals("/")) path = "";
 
         final int p = path.lastIndexOf('.');

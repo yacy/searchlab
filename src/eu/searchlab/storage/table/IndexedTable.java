@@ -116,9 +116,9 @@ public class IndexedTable implements Iterable<JSONObject> {
      * @throws IOException
      */
     public IndexedTable(final GenericIO io, IOPath iop, final char separator, final Charset charset) throws IOException {
-        final IOPath iopgz = new IOPath(iop.getBucket(), iop.getPath() + ".gz");
+        final IOPath iopgz = new IOPath(iop.getBucket(), iop.getObjectPath() + ".gz");
         if (!io.exists(iop) && io.exists(iopgz)) iop = iopgz;
-        final InputStream ris = iopgz.getPath().endsWith(".gz") ? new GZIPInputStream(io.read(iopgz)) : io.read(iopgz);
+        final InputStream ris = iopgz.getObjectPath().endsWith(".gz") ? new GZIPInputStream(io.read(iopgz)) : io.read(iopgz);
         final InputStream is = new InputStream() {
             @Override
             public int read() throws IOException {

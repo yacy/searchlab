@@ -160,7 +160,7 @@ public abstract class AbstractIO implements GenericIO {
 
     @Override
     public List<IOPathMeta> list(final IOPath path) throws IOException {
-        final List<IOPathMeta> list = list(path.getBucket(), path.getPath());
+        final List<IOPathMeta> list = list(path.getBucket(), path.getObjectPath());
         return list;
     }
 
@@ -177,12 +177,12 @@ public abstract class AbstractIO implements GenericIO {
         // load the new list
         list = new IODirList();
         final Set<String> knownDir = new HashSet<>();
-        final String dirpaths = dirpath.getPath();
+        final String dirpaths = dirpath.getObjectPath();
         try {
             final List<IOPathMeta> dir = this.list(dirpath);
             for (final IOPathMeta meta: dir) {
                 final IOPath o = meta.getIOPath();
-                final String fullpath = o.getPath();
+                final String fullpath = o.getObjectPath();
                 // this is the 'full' path 'behind' assetsPath. We must also subtract the path where we are navigating to
                 assert fullpath.startsWith(dirpaths);
                 final String subpath = fullpath.substring(dirpaths.length());

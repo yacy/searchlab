@@ -60,7 +60,7 @@ public class FileIO extends AbstractIO implements GenericIO {
     }
 
     private File getObjectFile(final IOPath iop) {
-        return getObjectFile(iop.getBucket(), iop.getPath());
+        return getObjectFile(iop.getBucket(), iop.getObjectPath());
     }
 
     @Override

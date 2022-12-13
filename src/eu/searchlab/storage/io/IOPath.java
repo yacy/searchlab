@@ -29,32 +29,46 @@ import java.util.Comparator;
  * data structures which require a single object as denominator.
  * This object can be compared with "File" for file storage.
  * By conventional definition:
- * -  an IOPath is a file if the last element of the path
- *    after the last "/" contains an extension separator, a ".".
+ * - an IOPath is a file if the last element of the path
+ *   after the last "/" contains an extension separator, a ".".
  * - a path always starts with a "/".
  * - a path does never end with a "/".
  */
 public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
 
-    private final String bucket, path;
+    private final String bucket, objectPath;
 
-    public IOPath(final String bucket, final String path) {
-        this.bucket = bucket;
-        this.path = normalizePath(path);
-    }
-
-    public final static String normalizePath(String path) {
-    	if (path.length() == 0) return "";
+    /**
+     * Compute a canonical path from the given path.
+     * A canonical path is a string where
+     * - the first character is always a slash "/"
+     * - the last character is not a slash "/"
+     * @param path
+     * @return
+     */
+    public final static String canonicalPath(String path) {
+        if (path.length() == 0) return "";
         if (path.charAt(0) != '/') path = "/" + path;
         if (path.length() > 1 && path.charAt(path.length() - 1) == '/') path = path.substring(0, path.length() - 1);
 
         int p;
         while (path.length() > 3 && (p = path.indexOf("/..")) >= 0) {
-        	final String h = path.substring(0, p);
-        	final int q = h.lastIndexOf('/');
-        	path = q < 0 ? "" : h.substring(0, q) + path.substring(p + 3);
+            final String h = path.substring(0, p);
+            final int q = h.lastIndexOf('/');
+            path = q < 0 ? "" : h.substring(0, q) + path.substring(p + 3);
         }
         return path;
+    }
+
+    /**
+     * Create a new IOPath with a given bucket and object path.
+     * The object path shall be normalized in the following way: no leading and no ending "/".
+     * @param bucket name of the bucket
+     * @param objectPath "/"-separated list of path elements, where the last element may be the file
+     */
+    public IOPath(final String bucket, final String objectPath) {
+        this.bucket = bucket;
+        this.objectPath = canonicalPath(objectPath);
     }
 
     /**
@@ -63,12 +77,12 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
      * @return
      */
     public final boolean isFolder() {
-        int p = this.path.lastIndexOf('/');
-        if (p < 0) p = 0; // no '/' inside, thats ok
-        int q = this.path.indexOf('.', p);
+        int p = this.objectPath.lastIndexOf('/');
+        if (p < 0) p = 0; // no '/' inside, thats not normal but ok for this test
+        final int q = this.objectPath.indexOf('.', p);
         if (q < 0) return true; // no dot in last path -> not a file, therefore a dir
         // q is now the length of the head part
-        int extlength = this.path.length() - q - 1; // length of the extension
+        final int extlength = this.objectPath.length() - q - 1; // length of the extension
         return extlength > 8;
     }
 
@@ -77,9 +91,22 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
      * @return
      */
     public final boolean isRootFolder() {
-        final int p = this.path.lastIndexOf('/');
+        final int p = this.objectPath.lastIndexOf('/');
         assert p != 0;
         return p > 0;
+    }
+
+    public final boolean isInRootFolder() {
+        final int p = this.objectPath.indexOf('/');
+        return p <= 0;
+    }
+
+    /**
+     * construct the full access path, which is a combination of bucket + "/" + objectPath
+     * @return the full access path
+     */
+    public String getAccessPath() {
+        return this.bucket + this.objectPath;
     }
 
     /**
@@ -95,16 +122,30 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
      * The path starts with "/" but does never and with "/"
      * @return the path inside the bucket
      */
-    public final String getPath() {
-        return this.path;
+    public final String getObjectPath() {
+        return this.objectPath;
     }
-    
+
+    /**
+     * get the name of an object. This is the last parth of the path after the last "/".
+     * @return a name of an object without the path to it.
+     */
+    public String getObjectName() {
+        final int p = this.objectPath.lastIndexOf('/');
+        if (p < 0) throw new RuntimeException("IOPath must have at least one folder to truncate: " + this.toString());
+        return this.objectPath.substring(p + 1);
+    }
+
+    /**
+     * get the name of the object denoted by this IOPath
+     * @return the last element in the objectPath
+     */
     public final IOPath getParent() {
-        int pp = this.path.lastIndexOf('/');
-        String p = pp < 0 ? this.path : this.path.substring(0, pp);
+        final int pp = this.objectPath.lastIndexOf('/');
+        final String p = pp < 0 ? this.objectPath : this.objectPath.substring(0, pp);
         return new IOPath(this.bucket, p);
     }
-    
+
     /**
      * Append a subpath to the existing path.
      * The new path should not have a beginnt "/" and no ending "/" but if it exist, it is cutted away.
@@ -114,10 +155,10 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
      * @return
      */
     public IOPath append(String spath) {
-    	assert this.isFolder();
+        assert this.isFolder();
         if (!isFolder()) throw new RuntimeException("IOPath must be a folder to append a path: " + this.toString());
-        spath = normalizePath(spath);
-        return new IOPath(this.bucket, this.path + spath); // can be appended directly becaue now spath starts with "/"
+        spath = canonicalPath(spath);
+        return new IOPath(this.bucket, this.objectPath + spath); // can be appended directly becaue now spath starts with "/"
     }
 
     /**
@@ -126,22 +167,12 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
      * @return the tuncated path
      */
     public IOPath truncate() {
-    	if (this.path.length() <= 1) return new IOPath(this.bucket, ""); // should be an error
-        final int p = this.path.lastIndexOf('/');
+        if (this.objectPath.length() <= 1) return new IOPath(this.bucket, ""); // should be an error
+        final int p = this.objectPath.lastIndexOf('/');
         if (p < 0) throw new RuntimeException("IOPath must have at leas one folder to truncate: " + this.toString());
-        final IOPath t = new IOPath(this.bucket, this.path.substring(0, p));
+        final IOPath t = new IOPath(this.bucket, this.objectPath.substring(0, p));
         assert t.isFolder();
         return t;
-    }
-
-    /**
-     * get the name of an object. This is the last parth of the path after the last "/".
-     * @return a name of an object without the path to it.
-     */
-    public String name() {
-        final int p = this.path.lastIndexOf('/');
-        if (p < 0) throw new RuntimeException("IOPath must have at least one folder to truncate: " + this.toString());
-        return this.path.substring(p + 1);
     }
 
     /**
@@ -149,14 +180,14 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
      * @return
      */
     public String head() {
-        final int p = this.path.indexOf('/', 1);
+        final int p = this.objectPath.indexOf('/', 1);
         if (p < 0) throw new RuntimeException("IOPath must have at least one folder to truncate: " + this.toString());
-        return this.path.substring(1, p);
+        return this.objectPath.substring(1, p);
     }
 
     @Override
     public String toString() {
-        return this.bucket + this.path;
+        return this.bucket + this.objectPath;
     }
 
     @Override
@@ -164,19 +195,19 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
         return this.toString().hashCode();
     }
 
-	@Override
-	public int compareTo(final IOPath o) {
-		return this.toString().compareTo(o.toString());
-	}
-
-	@Override
-	public int compare(final IOPath o1, final IOPath o2) {
-		return o1.compareTo(o2);
-	}
+    @Override
+    public int compareTo(final IOPath o) {
+        return this.toString().compareTo(o.toString());
+    }
 
     @Override
-	public boolean equals(final Object obj) {
-    	if (!(obj instanceof IOPath)) return false;
-    	return this.toString().equals(((IOPath) obj).toString());
+    public int compare(final IOPath o1, final IOPath o2) {
+        return o1.compareTo(o2);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof IOPath)) return false;
+        return this.toString().equals(((IOPath) obj).toString());
     }
 }

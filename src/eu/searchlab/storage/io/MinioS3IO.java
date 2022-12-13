@@ -210,7 +210,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 this.mc.putObject(
                         PutObjectArgs.builder()
                         .bucket(iop.getBucket())
-                        .object(iop.getPath())
+                        .object(iop.getObjectPath())
                         .stream(stream, -1, this.partSize)
                         .contentType("application/octet-stream")
                         .build());
@@ -218,7 +218,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 this.mc.putObject(
                         PutObjectArgs.builder()
                         .bucket(iop.getBucket())
-                        .object(iop.getPath())
+                        .object(iop.getObjectPath())
                         .stream(stream, len, -1)
                         .contentType("application/octet-stream")
                         .build());
@@ -252,11 +252,11 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             this.mc.copyObject(
                     CopyObjectArgs.builder()
                     .bucket(toIOp.getBucket())
-                    .object(toIOp.getPath())
+                    .object(toIOp.getObjectPath())
                     .source(
                             CopySource.builder()
                             .bucket(fromIOp.getBucket())
-                            .object(fromIOp.getPath()).build())
+                            .object(fromIOp.getObjectPath()).build())
                     .build());
             super.dirListCache.remove(toIOp.getParent());
         } catch (InvalidKeyException | ErrorResponseException
@@ -281,7 +281,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
                     .bucket(iop.getBucket())
-                    .object(iop.getPath())
+                    .object(iop.getObjectPath())
                     .build());
             return stream;
         } catch (InvalidKeyException | ErrorResponseException
@@ -307,7 +307,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
                     .bucket(iop.getBucket())
-                    .object(iop.getPath())
+                    .object(iop.getObjectPath())
                     .offset(offset)
                     .build());
             return stream;
@@ -335,7 +335,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
                     .bucket(iop.getBucket())
-                    .object(iop.getPath())
+                    .object(iop.getObjectPath())
                     .offset(offset)
                     .length(len)
                     .build());
@@ -358,7 +358,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                     this.mc.selectObjectContent(
                             SelectObjectContentArgs.builder()
                             .bucket(iop.getBucket())
-                            .object(iop.getPath())
+                            .object(iop.getObjectPath())
                             .sqlExpression(sqlExpression)
                             .inputSerialization(is)
                             .outputSerialization(os)
@@ -382,7 +382,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     @Override
     public void remove(final IOPath iop) throws IOException {
         try {
-            this.mc.removeObject(RemoveObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            this.mc.removeObject(RemoveObjectArgs.builder().bucket(iop.getBucket()).object(iop.getObjectPath()).build());
             super.dirListCache.remove(iop);
             super.dirListCache.remove(iop.getParent());
         } catch (InvalidKeyException | ErrorResponseException
@@ -454,10 +454,10 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     }
 
     private Item getItem(final IOPath iop) throws IOException {
-        final int p = iop.getPath().lastIndexOf("/");
-        final String prefix = p < 0 ? "" : iop.getPath().substring(0, p);
+        final int p = iop.getObjectPath().lastIndexOf("/");
+        final String prefix = p < 0 ? "" : iop.getObjectPath().substring(0, p);
         final LinkedHashMap<String, Item> cache = this.getItems(iop.getBucket(), prefix);
-        final Item item = cache.get(iop.getPath());
+        final Item item = cache.get(iop.getObjectPath());
         if (item == null) throw new IOException("object " + iop.toString() + " does not exist (2)");
         return item;
     }
@@ -487,7 +487,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     @Override
     public long lastModified(final IOPath iop) throws IOException {
         try {
-            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getObjectPath()).build());
             return sor.lastModified().toInstant().toEpochMilli();
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -514,7 +514,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     @Override
     public boolean exists(final IOPath iop) {
         try {
-            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getObjectPath()).build());
             return !sor.deleteMarker();
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException

@@ -124,7 +124,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
         final ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType("application/octet-stream"); // was: text/plain
         metadata.setContentLength(object.length);
-        this.s3.putObject(new PutObjectRequest(iop.getBucket(), iop.getPath(), is, metadata));
+        this.s3.putObject(new PutObjectRequest(iop.getBucket(), iop.getObjectPath(), is, metadata));
     }
 
     @Override
@@ -161,23 +161,23 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
         final ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType("application/octet-stream"); // was: text/plain
         if (len >= 0) metadata.setContentLength(len);
-        this.s3.putObject(new PutObjectRequest(iop.getBucket(), iop.getPath(), is, metadata));
+        this.s3.putObject(new PutObjectRequest(iop.getBucket(), iop.getObjectPath(), is, metadata));
     }
 
     @Override
     public void copy(final IOPath fromIOp, final IOPath toIOp) throws IOException {
-        this.s3.copyObject(fromIOp.getBucket(), fromIOp.getPath(), toIOp.getBucket(), toIOp.getPath());
+        this.s3.copyObject(fromIOp.getBucket(), fromIOp.getObjectPath(), toIOp.getBucket(), toIOp.getObjectPath());
     }
 
     @Override
     public InputStream read(final IOPath iop) throws IOException {
-        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
+        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getObjectPath());
         return obj.getObjectContent();
     }
 
     @Override
     public InputStream read(final IOPath iop, final long offset) throws IOException {
-        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
+        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getObjectPath());
         if (obj == null) throw new IOException("object does not exist: " + iop.toString());
         final S3ObjectInputStream s3is = obj.getObjectContent();
         s3is.skip(offset);
@@ -195,7 +195,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
 
     @Override
     public void remove(final IOPath iop) throws IOException {
-        this.s3.deleteObject(iop.getBucket(), iop.getPath());
+        this.s3.deleteObject(iop.getBucket(), iop.getObjectPath());
     }
 
     @Override
@@ -221,21 +221,21 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
 
     @Override
     public long lastModified(final IOPath iop) throws IOException {
-        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
+        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getObjectPath());
         if (obj == null) throw new IOException("object does not exist: " + iop.toString());
         return obj.getObjectMetadata().getLastModified().getTime();
     }
 
     @Override
     public long size(final IOPath iop) throws IOException {
-        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
+        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getObjectPath());
         if (obj == null) throw new IOException("object does not exist: " + iop.toString());
         return obj.getObjectMetadata().getContentLength();
     }
 
     @Override
     public boolean exists(final IOPath iop) {
-        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getPath());
+        final S3Object obj = this.s3.getObject(iop.getBucket(), iop.getObjectPath());
         if (obj == null) return false;
         final Date date = obj.getObjectMetadata().getExpirationTime();
         if (date == null) return true;
