@@ -74,7 +74,7 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
     /**
      * an IOPath is a folder if the last element of the path after the latest "/" does not contains a "."
      * or the length of the extension is greater than 8
-     * @return
+     * @return true if the path denotes a folder, false otherwise
      */
     public final boolean isFolder() {
         int p = this.objectPath.lastIndexOf('/');
@@ -156,7 +156,7 @@ public final class IOPath implements Comparable<IOPath>, Comparator<IOPath> {
      * New subpaths are appended with a "/" in between, so IOPaths where you are appending anything
      * must be considered as a folder before.
      * @param spath
-     * @return
+     * @return the current path with another object or folder appended
      */
     public IOPath append(String spath) {
         assert this.isFolder();

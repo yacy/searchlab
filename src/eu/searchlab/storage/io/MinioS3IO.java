@@ -20,6 +20,7 @@
 package eu.searchlab.storage.io;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -31,15 +32,21 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import com.google.common.io.ByteStreams;
 
 import eu.searchlab.tools.Logger;
 import io.minio.BucketExistsArgs;
 import io.minio.CopyObjectArgs;
 import io.minio.CopySource;
 import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
 import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioAsyncClient;
@@ -366,8 +373,82 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
+    }
+
+    @Override
+    public Future<byte[]> readAll(final IOPath iop) throws IOException {
+        return this.executor.submit(() -> {
+            try {
+                final CompletableFuture<GetObjectResponse> objectFuture = this.mac.getObject(
+                        GetObjectArgs.builder()
+                        .bucket(iop.getBucket())
+                        .object(iop.getObjectPath())
+                        .build());
+                final GetObjectResponse response = objectFuture.get();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteStreams.copy(response, baos);
+                return baos.toByteArray();
+            } catch (InvalidKeyException
+                    | InsufficientDataException | InternalException
+                    | NoSuchAlgorithmException | XmlParserException
+                    | IllegalArgumentException | IOException
+                    | InterruptedException | ExecutionException e) {
+                Logger.error(e);
+                throw new IOException(e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public Future<byte[]> readAll(final IOPath iop, final long offset) throws IOException {
+        return this.executor.submit(() -> {
+            try {
+                final CompletableFuture<GetObjectResponse> objectFuture = this.mac.getObject(
+                        GetObjectArgs.builder()
+                        .bucket(iop.getBucket())
+                        .object(iop.getObjectPath())
+                        .offset(offset)
+                        .build());
+                final GetObjectResponse response = objectFuture.get();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteStreams.copy(response, baos);
+                return baos.toByteArray();
+            } catch (InvalidKeyException
+                    | InsufficientDataException | InternalException
+                    | NoSuchAlgorithmException | XmlParserException
+                    | IllegalArgumentException | IOException
+                    | InterruptedException | ExecutionException e) {
+                throw new IOException(e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public Future<byte[]> readAll(final IOPath iop, final long offset, final long len) throws IOException {
+        return this.executor.submit(() -> {
+            try {
+                final CompletableFuture<GetObjectResponse> objectFuture = this.mac.getObject(
+                        GetObjectArgs.builder()
+                        .bucket(iop.getBucket())
+                        .object(iop.getObjectPath())
+                        .offset(offset)
+                        .length(len)
+                        .build());
+                final GetObjectResponse response = objectFuture.get();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteStreams.copy(response, baos);
+                return baos.toByteArray();
+            } catch (InvalidKeyException
+                    | InsufficientDataException | InternalException
+                    | NoSuchAlgorithmException | XmlParserException
+                    | IllegalArgumentException | IOException
+                    | InterruptedException | ExecutionException e) {
+                throw new IOException(e.getMessage());
+            }
+        });
     }
 
     public InputStream select(final IOPath iop, final String sqlExpression) throws IOException {
@@ -389,10 +470,10 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
         } catch (InvalidKeyException | ErrorResponseException | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
-
 
     /**
      * removal of an object
@@ -411,6 +492,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -445,7 +527,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             for (final Result<Item> result: results) {
                 final Item item = result.get();
                 if (!item.isDir()) {
-                    cache.put(item.objectName(), item);
+                    cache.put("/" + item.objectName(), item);
                     final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, item.objectName()));
                     meta.setSize(item.size()).setLastModified(item.lastModified().toEpochSecond() * 1000L);
                     objectMetas.add(meta);
@@ -458,17 +540,19 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
 
     private LinkedHashMap<String, Item> getItems(final String bucketName, String prefix) throws IOException {
-        if (prefix.startsWith("/")) prefix = prefix.substring(1);
-        final String cacheKey = bucketName + "/" + prefix;
+        if (!prefix.startsWith("/")) prefix = "/" + prefix;
+        final String cacheKey = bucketName + prefix;
         LinkedHashMap<String, Item> cache = this.objectListCache.get(cacheKey);
         if (cache == null) {
-            this.list(bucketName, prefix);
-            cache = this.objectListCache.get(cacheKey);
+            this.list(bucketName, prefix); // writes into cache
+            cache = this.objectListCache.get(cacheKey); // this must not be null
+            assert cache != null;
         }
         if (cache == null) throw new IOException("prefix " + prefix + " in bucket " + bucketName + " does not exist");
         return cache;
@@ -550,5 +634,4 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     public String toString() {
         return this.accessKey + "@" + this.endpointURL;
     }
-
 }

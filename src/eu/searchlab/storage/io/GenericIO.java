@@ -121,6 +121,14 @@ public interface GenericIO {
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException;
 
     /**
+     * write an object gzipped from a file
+     * @param iop
+     * @param object
+     * @throws IOException
+     */
+    public void writeGZIP(final IOPath iop, final File fromFile) throws IOException;
+    
+    /**
      * write an object zipped from a byte array
      * @param iop
      * @param object
@@ -128,14 +136,6 @@ public interface GenericIO {
      * @throws IOException
      */
     public void writeZIP(final IOPath iop, final byte[] object, String original_name) throws IOException;
-
-    /**
-     * write an object gzipped from a file
-     * @param iop
-     * @param object
-     * @throws IOException
-     */
-    public void writeGZIP(final IOPath iop, final File fromFile) throws IOException;
 
     /**
      * client-side merge of two objects into a new object

@@ -54,8 +54,10 @@ public class FileIO extends AbstractIO implements GenericIO {
 
     private File getObjectFile(final String bucket, final String path) {
         File f = getBucketFile(bucket);
-        final String[] paths = path.split("/");
-        for (final String p: paths) f = new File(f, p);
+        final String[] paths = IOPath.canonicalPath(path).split("/");
+        for (final String p: paths) {
+            if (p.length() > 0) f = new File(f, p);
+        }
         return f;
     }
 
@@ -212,11 +214,13 @@ public class FileIO extends AbstractIO implements GenericIO {
     @Override
     public List<IOPathMeta> list(final String bucketName, final String prefix) throws IOException {
         final File f = getObjectFile(bucketName, prefix);
+        final String path = IOPath.canonicalPath(prefix);
         final String[] u = f.list();
+        if (u == null) throw new IOException("file " + f.getAbsolutePath() + " does not exist or is not a directory");
         final List<IOPathMeta> list = new ArrayList<>(u.length);
         for (final String objectName: u) {
             final File fc = new File(f, objectName);
-            final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, (prefix + "/" + objectName).replaceAll("//", "/")));
+            final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, (path + "/" + objectName).replaceAll("//", "/")));
             meta.setSize(fc.length()).setLastModified(fc.lastModified());
             list.add(meta);
         }
@@ -253,6 +257,6 @@ public class FileIO extends AbstractIO implements GenericIO {
 
     @Override
     public String toString() {
-    	return this.basePath.toString();
+        return this.basePath.toString();
     }
 }
