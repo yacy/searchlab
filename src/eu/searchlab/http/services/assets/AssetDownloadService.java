@@ -21,6 +21,7 @@ package eu.searchlab.http.services.assets;
 
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.AbstractService;
@@ -60,8 +61,8 @@ public class AssetDownloadService extends AbstractService implements Service {
 
         byte[] b;
         try {
-            b = Searchlab.io.readAll(apppath);
-        } catch (final IOException e) {
+            b = Searchlab.io.readAll(apppath).get();
+        } catch (final IOException | InterruptedException | ExecutionException e) {
             Logger.warn("attempt to list " + apppath.toString(), e);
             b = new byte[] {};
         }

@@ -30,6 +30,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
@@ -39,7 +43,14 @@ import eu.searchlab.tools.Logger;
 
 public abstract class AbstractIO implements GenericIO {
 
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     protected final ConcurrentHashMap<IOPath, IODirList> dirListCache = new ConcurrentHashMap<>();
+
+    @Override
+    public List<IOPathMeta> list(final IOPath path) throws IOException {
+        final List<IOPathMeta> list = list(path.getBucket(), path.getObjectPath());
+        return list;
+    }
 
     @Override
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException {
@@ -85,10 +96,14 @@ public abstract class AbstractIO implements GenericIO {
 
     @Override
     public InputStream readGZIP(final IOPath iop) throws IOException {
-        final byte[] a = readAll(iop);
-        final ByteArrayInputStream bais = new ByteArrayInputStream(a);
-        final GZIPInputStream gis = new GZIPInputStream(bais);
-        return gis;
+        try {
+            final byte[] a = readAll(iop).get();
+            final ByteArrayInputStream bais = new ByteArrayInputStream(a);
+            final GZIPInputStream gis = new GZIPInputStream(bais);
+            return gis;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     public static byte[] readAll(final InputStream is, final int len) throws IOException {
@@ -109,18 +124,24 @@ public abstract class AbstractIO implements GenericIO {
     }
 
     @Override
-    public byte[] readAll(final IOPath iop) throws IOException {
-        return readAll(read(iop), -1);
+    public Future<byte[]> readAll(final IOPath iop) throws IOException {
+        return this.executor.submit(() -> {
+            return readAll(read(iop), -1);
+        });
     }
 
     @Override
-    public byte[] readAll(final IOPath iop, final long offset) throws IOException {
-        return readAll(read(iop, offset), -1);
+    public Future<byte[]> readAll(final IOPath iop, final long offset) throws IOException {
+        return this.executor.submit(() -> {
+            return readAll(read(iop, offset), -1);
+        });
     }
 
     @Override
-    public byte[] readAll(final IOPath iop, final long offset, final long len) throws IOException {
-        return readAll(read(iop, offset), (int) len);
+    public Future<byte[]> readAll(final IOPath iop, final long offset, final long len) throws IOException {
+        return this.executor.submit(() -> {
+            return readAll(read(iop, offset), (int) len);
+        });
     }
 
     @Override
@@ -177,12 +198,6 @@ public abstract class AbstractIO implements GenericIO {
         this.remove(fromIOp);
         this.dirListCache.remove(fromIOp.getParent());
         this.dirListCache.remove(toIOp.getParent());
-    }
-
-    @Override
-    public List<IOPathMeta> list(final IOPath path) throws IOException {
-        final List<IOPathMeta> list = list(path.getBucket(), path.getObjectPath());
-        return list;
     }
 
     @Override

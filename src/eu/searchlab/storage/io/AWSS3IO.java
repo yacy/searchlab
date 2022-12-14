@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -244,7 +245,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
 
     @Override
     public String toString() {
-    	return this.accessKey + "@" + this.endpointURL;
+        return this.accessKey + "@" + this.endpointURL;
     }
 
     public static void main(final String[] args) {
@@ -269,21 +270,21 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
             final IOPath iop1 = new IOPath("test1", "file1");
             final IOPath iop2 = new IOPath("test1", "file2");
             io.write(iop1, "hello ".getBytes());
-            System.out.println("file1: " + new String(io.readAll(iop1)));
+            System.out.println("file1: " + new String(io.readAll(iop1).get()));
             io.write(iop2, "world".getBytes());
-            System.out.println("file2: " + new String(io.readAll(iop2)));
+            System.out.println("file2: " + new String(io.readAll(iop2).get()));
 
             final IOPath iop3 = new IOPath("test1", "file3");
             io.merge(iop1, iop2, iop3);
-            System.out.println("file3: " + new String(io.readAll(iop3)));
+            System.out.println("file3: " + new String(io.readAll(iop3).get()));
 
             final IOPath iop4 = new IOPath("test1", "file4");
             io.copy(iop3, iop4);
-            System.out.println("file4: " + new String(io.readAll(iop4)));
+            System.out.println("file4: " + new String(io.readAll(iop4).get()));
 
             final IOPath iop5 = new IOPath("test1", "file5");
             io.move(iop4, iop5);
-            System.out.println("file5: " + new String(io.readAll(iop5)));
+            System.out.println("file5: " + new String(io.readAll(iop5).get()));
 
             io.remove(iop5);
 
@@ -294,7 +295,7 @@ public class AWSS3IO extends AbstractIO implements GenericIO {
             public final long size(final IOPath iop) throws IOException;
             public final boolean exists(final IOPath iop);
              */
-        } catch (final IOException e) {
+        } catch (final IOException | InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
 

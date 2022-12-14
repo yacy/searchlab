@@ -20,6 +20,7 @@
 package eu.searchlab.storage.json;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -116,10 +117,10 @@ public class VolatileTray extends AbstractTray implements Tray {
             tray.put("c", json);
             tray.remove("b");
             tray.close();
-            System.out.println(new String(io.readAll(iop), "UTF-8"));
+            System.out.println(new String(io.readAll(iop).get(), "UTF-8"));
             io.remove(iop);
             io.removeBucket("test");
-        } catch (final IOException e) {
+        } catch (final IOException | InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
         System.exit(0);

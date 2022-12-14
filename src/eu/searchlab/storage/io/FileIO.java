@@ -113,9 +113,14 @@ public class FileIO extends AbstractIO implements GenericIO {
 
     @Override
     public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException {
+        final InputStream is = new PipedInputStream(pos, 4096);
+        write(iop, is, len);
+    }
+
+    @Override
+    public void write(final IOPath iop, final InputStream stream, final long len) throws IOException {
         final File f = getObjectFile(iop);
         final FileOutputStream fos = new FileOutputStream(f);
-        final InputStream is = new PipedInputStream(pos, 4096);
         final IOException[] ea = new IOException[1];
         ea[0] = null;
         final AtomicLong ai = new AtomicLong(len);
@@ -126,27 +131,26 @@ public class FileIO extends AbstractIO implements GenericIO {
                 final byte[] buffer = new byte[4096];
                 int l;
                 try {
-                    while ((l = is.read(buffer)) > 0) {
+                    while ((l = stream.read(buffer)) > 0) {
                         if (len >= 0) {
                             if (l > ai.get()) {
                                 fos.write(buffer, 0, (int) ai.get());
                                 break;
                             } else {
                                 fos.write(buffer, 0, l);
-                                ai.addAndGet((int) -l);
+                                ai.addAndGet(-l);
                             }
                         } else {
                             fos.write(buffer, 0, l);
-                            ai.addAndGet((int) -l);
+                            ai.addAndGet(-l);
                         }
                     }
                     fos.close();
-                    is.close();
+                    stream.close();
                 } catch (final IOException e) {
                     e.printStackTrace();
                     ea[0] = e;
-                    try {pos.close();} catch (final IOException e1) {}
-                    try {is.close();} catch (final IOException e1) {}
+                    try {stream.close();} catch (final IOException e1) {}
                 }
             }
         };
