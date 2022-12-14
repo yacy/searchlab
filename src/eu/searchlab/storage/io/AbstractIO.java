@@ -30,14 +30,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import eu.searchlab.tools.Logger;
 
 public abstract class AbstractIO implements GenericIO {
 
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     protected final ConcurrentHashMap<IOPath, IODirList> dirListCache = new ConcurrentHashMap<>();
+
+    @Override
+    public List<IOPathMeta> list(final IOPath path) throws IOException {
+        final List<IOPathMeta> list = list(path.getBucket(), path.getObjectPath());
+        return list;
+    }
 
     @Override
     public void writeGZIP(final IOPath iop, final byte[] object) throws IOException {
@@ -48,6 +61,25 @@ public abstract class AbstractIO implements GenericIO {
         baos.close();
         write(iop, baos.toByteArray());
         this.dirListCache.remove(iop.getParent());
+    }
+
+    @Override
+    public void writeZIP(final IOPath iop, final byte[] object, String original_name) throws IOException {
+        // write object into memory into a temporary zip file
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ZipOutputStream zos = new ZipOutputStream(baos);
+        zos.setMethod(ZipOutputStream.DEFLATED);
+        zos.setLevel(9);
+
+        final ZipEntry ze = new ZipEntry(original_name);
+        zos.putNextEntry(ze);
+        zos.write(object, 0, object.length);
+        zos.closeEntry();
+        zos.close();
+        baos.close();
+
+        // now write the zip into IO
+        this.write(iop, baos.toByteArray());
     }
 
     @Override
@@ -64,10 +96,14 @@ public abstract class AbstractIO implements GenericIO {
 
     @Override
     public InputStream readGZIP(final IOPath iop) throws IOException {
-        final byte[] a = readAll(iop);
-        final ByteArrayInputStream bais = new ByteArrayInputStream(a);
-        final GZIPInputStream gis = new GZIPInputStream(bais);
-        return gis;
+        try {
+            final byte[] a = readAll(iop).get();
+            final ByteArrayInputStream bais = new ByteArrayInputStream(a);
+            final GZIPInputStream gis = new GZIPInputStream(bais);
+            return gis;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     public static byte[] readAll(final InputStream is, final int len) throws IOException {
@@ -88,18 +124,24 @@ public abstract class AbstractIO implements GenericIO {
     }
 
     @Override
-    public byte[] readAll(final IOPath iop) throws IOException {
-        return readAll(read(iop), -1);
+    public Future<byte[]> readAll(final IOPath iop) throws IOException {
+        return this.executor.submit(() -> {
+            return readAll(read(iop), -1);
+        });
     }
 
     @Override
-    public byte[] readAll(final IOPath iop, final long offset) throws IOException {
-        return readAll(read(iop, offset), -1);
+    public Future<byte[]> readAll(final IOPath iop, final long offset) throws IOException {
+        return this.executor.submit(() -> {
+            return readAll(read(iop, offset), -1);
+        });
     }
 
     @Override
-    public byte[] readAll(final IOPath iop, final long offset, final long len) throws IOException {
-        return readAll(read(iop, offset), (int) len);
+    public Future<byte[]> readAll(final IOPath iop, final long offset, final long len) throws IOException {
+        return this.executor.submit(() -> {
+            return readAll(read(iop, offset), (int) len);
+        });
     }
 
     @Override
@@ -159,16 +201,10 @@ public abstract class AbstractIO implements GenericIO {
     }
 
     @Override
-    public List<IOPathMeta> list(final IOPath path) throws IOException {
-        final List<IOPathMeta> list = list(path.getBucket(), path.getPath());
-        return list;
-    }
-
-    @Override
     public IODirList dirList(final IOPath dirpath) throws IOException {
 
         // try to get the list from the cache
-        IODirList list = dirListCache.get(dirpath);
+        IODirList list = this.dirListCache.get(dirpath);
         if (list != null && !list.isStale()) {
             Logger.info("Delivering dirList from Cache: " + dirpath.toString());
             return list;
@@ -177,12 +213,12 @@ public abstract class AbstractIO implements GenericIO {
         // load the new list
         list = new IODirList();
         final Set<String> knownDir = new HashSet<>();
-        final String dirpaths = dirpath.getPath();
+        final String dirpaths = dirpath.getObjectPath();
         try {
             final List<IOPathMeta> dir = this.list(dirpath);
             for (final IOPathMeta meta: dir) {
                 final IOPath o = meta.getIOPath();
-                final String fullpath = o.getPath();
+                final String fullpath = o.getObjectPath();
                 // this is the 'full' path 'behind' assetsPath. We must also subtract the path where we are navigating to
                 assert fullpath.startsWith(dirpaths);
                 final String subpath = fullpath.substring(dirpaths.length());
@@ -209,7 +245,7 @@ public abstract class AbstractIO implements GenericIO {
         }
 
         Logger.info("Delivering dirList from IO: " + dirpath.toString());
-        dirListCache.put(dirpath, list);
+        this.dirListCache.put(dirpath, list);
         return list;
     }
 

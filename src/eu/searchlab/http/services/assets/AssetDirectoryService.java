@@ -51,21 +51,21 @@ public class AssetDirectoryService extends AbstractService implements Service {
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
         // evaluate request parameter
-    	String paths= serviceRequest.get("path", "");
-    	String dels= serviceRequest.get("del", "");
-        String path = IOPath.normalizePath(paths);
+        final String paths= serviceRequest.get("path", "");
+        final String dels= serviceRequest.get("del", "");
+        String path = IOPath.canonicalPath(paths);
         if (path.length() == 1 && path.equals("/")) path = "";
         final String user_id = serviceRequest.getUser();
         final IOPath assets = Searchlab.accounting.getAssetsPathForUser(user_id);
         //final String assetsPath = assets.getPath();
         final IOPath dirpath = assets.append(path);
         if (dirpath.isFolder() && dels.length() > 0) {
-        	IOPath del = dirpath.append(dels);
-        	try {
-				Searchlab.io.remove(del);
-			} catch (IOException e) {
-				Logger.warn(e);
-			}
+            final IOPath del = dirpath.append(dels);
+            try {
+                Searchlab.io.remove(del);
+            } catch (final IOException e) {
+                Logger.warn(e);
+            }
         }
         final JSONArray dirarray = new JSONArray();
         //final Set<String> knownDir = new HashSet<>();

@@ -219,6 +219,12 @@ public class RabbitQueue extends AbstractQueue implements Queue {
         }
     }
 
+    public long total() throws IOException {
+        int b = (int) this.channel.messageCount(this.queueName);
+        b += (int) this.channel.messageCount(this.queueName);
+        return b;
+    }
+
     @Override
     public long available() throws IOException {
         try {
@@ -253,5 +259,10 @@ public class RabbitQueue extends AbstractQueue implements Queue {
             this.channel.close();
         } catch (IOException | TimeoutException e) {
         }
+    }
+
+    @Override
+    public boolean isClosed() throws IOException {
+        return this.channel == null || !this.channel.isOpen();
     }
 }

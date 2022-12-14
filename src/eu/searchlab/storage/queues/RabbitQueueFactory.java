@@ -152,11 +152,16 @@ public class RabbitQueueFactory implements QueueFactory {
             for (int i = 0; i < queueList.length(); i++) {
                 final JSONObject q = queueList.getJSONObject(i);
                 final String name = q.optString("name");
-                final QueueStats stats = new QueueStats()
-                        .setTotal(q.optLong("messages", 0))
-                        .setReady(q.optLong("messages_ready", 0))
-                        .setUnacknowledged(q.optLong("messages_unacknowledged", 0));
-                if (name != null && name.length() > 0) queues.put(name, stats);
+                if (name != null && name.length() > 0) {
+                    String idle_since = q.optString("idle_since", null); // null or like "2022-12-01 12:29:28"
+                    // XXXXTODOXXX
+                    final QueueStats stats = new QueueStats()
+                            .setTotal(q.optLong("messages", 0))
+                            .setReady(q.optLong("messages_ready", 0))
+                            .setUnacknowledged(q.optLong("messages_unacknowledged", 0))
+                            .setIdletime(0);
+                    queues.put(name, stats);
+                }
             }
         } catch (final JSONException e) {
             throw new IOException(e.getMessage());
@@ -188,6 +193,7 @@ public class RabbitQueueFactory implements QueueFactory {
             result.setTotal(queue_totals.optLong("messages", 0));
             result.setReady(queue_totals.optLong("messages_ready", 0));
             result.setUnacknowledged(queue_totals.optLong("messages_unacknowledged", 0));
+            result.setIdletime(0);
         } catch (final JSONException e) {
             throw new IOException(e.getMessage());
         }

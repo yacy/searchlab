@@ -22,6 +22,7 @@ package net.yacy.grid.io.assets;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.ExecutionException;
 
 import eu.searchlab.storage.io.AWSS3IO;
 import eu.searchlab.storage.io.GenericIO;
@@ -90,8 +91,13 @@ public class GenericIOStorageFactory implements StorageFactory<byte[]> {
             @Override
             public Asset<byte[]> load(String path) throws IOException {
                 final IOPath iop = new IOPath(GenericIOStorageFactory.this.bucketName, path);
-                final byte[] b = GenericIOStorageFactory.this.io.readAll(iop);
-                return new Asset<>(GenericIOStorageFactory.this, b);
+
+                try {
+                    byte[] b = GenericIOStorageFactory.this.io.readAll(iop).get();
+                    return new Asset<>(GenericIOStorageFactory.this, b);
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new IOException(e.getMessage());
+                }
             }
 
             @Override

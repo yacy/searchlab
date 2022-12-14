@@ -54,13 +54,15 @@ public class FileIO extends AbstractIO implements GenericIO {
 
     private File getObjectFile(final String bucket, final String path) {
         File f = getBucketFile(bucket);
-        final String[] paths = path.split("/");
-        for (final String p: paths) f = new File(f, p);
+        final String[] paths = IOPath.canonicalPath(path).split("/");
+        for (final String p: paths) {
+            if (p.length() > 0) f = new File(f, p);
+        }
         return f;
     }
 
     private File getObjectFile(final IOPath iop) {
-        return getObjectFile(iop.getBucket(), iop.getPath());
+        return getObjectFile(iop.getBucket(), iop.getObjectPath());
     }
 
     @Override
@@ -113,9 +115,14 @@ public class FileIO extends AbstractIO implements GenericIO {
 
     @Override
     public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException {
+        final InputStream is = new PipedInputStream(pos, 4096);
+        write(iop, is, len);
+    }
+
+    @Override
+    public void write(final IOPath iop, final InputStream stream, final long len) throws IOException {
         final File f = getObjectFile(iop);
         final FileOutputStream fos = new FileOutputStream(f);
-        final InputStream is = new PipedInputStream(pos, 4096);
         final IOException[] ea = new IOException[1];
         ea[0] = null;
         final AtomicLong ai = new AtomicLong(len);
@@ -126,27 +133,26 @@ public class FileIO extends AbstractIO implements GenericIO {
                 final byte[] buffer = new byte[4096];
                 int l;
                 try {
-                    while ((l = is.read(buffer)) > 0) {
+                    while ((l = stream.read(buffer)) > 0) {
                         if (len >= 0) {
                             if (l > ai.get()) {
                                 fos.write(buffer, 0, (int) ai.get());
                                 break;
                             } else {
                                 fos.write(buffer, 0, l);
-                                ai.addAndGet((int) -l);
+                                ai.addAndGet(-l);
                             }
                         } else {
                             fos.write(buffer, 0, l);
-                            ai.addAndGet((int) -l);
+                            ai.addAndGet(-l);
                         }
                     }
                     fos.close();
-                    is.close();
+                    stream.close();
                 } catch (final IOException e) {
                     e.printStackTrace();
                     ea[0] = e;
-                    try {pos.close();} catch (final IOException e1) {}
-                    try {is.close();} catch (final IOException e1) {}
+                    try {stream.close();} catch (final IOException e1) {}
                 }
             }
         };
@@ -208,11 +214,13 @@ public class FileIO extends AbstractIO implements GenericIO {
     @Override
     public List<IOPathMeta> list(final String bucketName, final String prefix) throws IOException {
         final File f = getObjectFile(bucketName, prefix);
+        final String path = IOPath.canonicalPath(prefix);
         final String[] u = f.list();
+        if (u == null) throw new IOException("file " + f.getAbsolutePath() + " does not exist or is not a directory");
         final List<IOPathMeta> list = new ArrayList<>(u.length);
         for (final String objectName: u) {
             final File fc = new File(f, objectName);
-            final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, (prefix + "/" + objectName).replaceAll("//", "/")));
+            final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, (path + "/" + objectName).replaceAll("//", "/")));
             meta.setSize(fc.length()).setLastModified(fc.lastModified());
             list.add(meta);
         }
@@ -249,6 +257,6 @@ public class FileIO extends AbstractIO implements GenericIO {
 
     @Override
     public String toString() {
-    	return this.basePath.toString();
+        return this.basePath.toString();
     }
 }

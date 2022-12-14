@@ -115,4 +115,11 @@ public interface Queue {
      * @throws IOException
      */
     public void close() throws IOException;
+
+    /**
+     * test if a queue is closed
+     * @return true if the queue was closed
+     * @throws IOException
+     */
+    public boolean isClosed() throws IOException;
 }

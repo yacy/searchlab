@@ -20,6 +20,7 @@
 package eu.searchlab.storage.io;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -31,14 +32,24 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
+import com.google.common.io.ByteStreams;
+
+import eu.searchlab.tools.Logger;
 import io.minio.BucketExistsArgs;
 import io.minio.CopyObjectArgs;
 import io.minio.CopySource;
 import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
 import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
+import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveBucketArgs;
@@ -62,6 +73,8 @@ import io.minio.messages.QuoteFields;
 
 public class MinioS3IO extends AbstractIO implements GenericIO {
 
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
     // one "proper" part size
     private final long partSize = 10 * 1024 * 1024; // proper is a number between 5MB and 5GB
 
@@ -71,11 +84,18 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
 
     // the connection
     private final MinioClient mc;
+    private final MinioAsyncClient mac;
     private final String endpointURL, accessKey, secretKey;
 
     public MinioS3IO(final String endpointURL, final String accessKey, final String secretKey) {
+        Logger.info("S3IO: opening connection to " + endpointURL + ":" + accessKey);
         this.mc =
                 MinioClient.builder()
+                .endpoint(endpointURL)
+                .credentials(accessKey, secretKey)
+                .build();
+        this.mac =
+                MinioAsyncClient.builder()
                 .endpoint(endpointURL)
                 .credentials(accessKey, secretKey)
                 .build();
@@ -105,6 +125,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -118,6 +139,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -137,6 +159,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -161,6 +184,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -210,7 +234,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 this.mc.putObject(
                         PutObjectArgs.builder()
                         .bucket(iop.getBucket())
-                        .object(iop.getPath())
+                        .object(iop.getObjectPath().substring(1))
                         .stream(stream, -1, this.partSize)
                         .contentType("application/octet-stream")
                         .build());
@@ -218,7 +242,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 this.mc.putObject(
                         PutObjectArgs.builder()
                         .bucket(iop.getBucket())
-                        .object(iop.getPath())
+                        .object(iop.getObjectPath().substring(1))
                         .stream(stream, len, -1)
                         .contentType("application/octet-stream")
                         .build());
@@ -229,6 +253,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -252,11 +277,12 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             this.mc.copyObject(
                     CopyObjectArgs.builder()
                     .bucket(toIOp.getBucket())
-                    .object(toIOp.getPath())
+                    .object(toIOp.getObjectPath().substring(1))
                     .source(
                             CopySource.builder()
                             .bucket(fromIOp.getBucket())
-                            .object(fromIOp.getPath()).build())
+                            .object(fromIOp.getObjectPath().substring(1))
+                            .build())
                     .build());
             super.dirListCache.remove(toIOp.getParent());
         } catch (InvalidKeyException | ErrorResponseException
@@ -264,6 +290,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -281,7 +308,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
                     .bucket(iop.getBucket())
-                    .object(iop.getPath())
+                    .object(iop.getObjectPath().substring(1))
                     .build());
             return stream;
         } catch (InvalidKeyException | ErrorResponseException
@@ -289,6 +316,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage() + "; path = " + iop.toString());
         }
     }
@@ -307,7 +335,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
                     .bucket(iop.getBucket())
-                    .object(iop.getPath())
+                    .object(iop.getObjectPath().substring(1))
                     .offset(offset)
                     .build());
             return stream;
@@ -316,6 +344,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage() + "; path = " + iop.toString());
         }
     }
@@ -335,7 +364,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             final InputStream stream = this.mc.getObject(
                     GetObjectArgs.builder()
                     .bucket(iop.getBucket())
-                    .object(iop.getPath())
+                    .object(iop.getObjectPath().substring(1))
                     .offset(offset)
                     .length(len)
                     .build());
@@ -345,8 +374,82 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
+    }
+
+    @Override
+    public Future<byte[]> readAll(final IOPath iop) throws IOException {
+        return this.executor.submit(() -> {
+            try {
+                final CompletableFuture<GetObjectResponse> objectFuture = this.mac.getObject(
+                        GetObjectArgs.builder()
+                        .bucket(iop.getBucket())
+                        .object(iop.getObjectPath().substring(1))
+                        .build());
+                final GetObjectResponse response = objectFuture.get();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteStreams.copy(response, baos);
+                return baos.toByteArray();
+            } catch (InvalidKeyException
+                    | InsufficientDataException | InternalException
+                    | NoSuchAlgorithmException | XmlParserException
+                    | IllegalArgumentException | IOException
+                    | InterruptedException | ExecutionException e) {
+                Logger.error(e);
+                throw new IOException(e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public Future<byte[]> readAll(final IOPath iop, final long offset) throws IOException {
+        return this.executor.submit(() -> {
+            try {
+                final CompletableFuture<GetObjectResponse> objectFuture = this.mac.getObject(
+                        GetObjectArgs.builder()
+                        .bucket(iop.getBucket())
+                        .object(iop.getObjectPath().substring(1))
+                        .offset(offset)
+                        .build());
+                final GetObjectResponse response = objectFuture.get();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteStreams.copy(response, baos);
+                return baos.toByteArray();
+            } catch (InvalidKeyException
+                    | InsufficientDataException | InternalException
+                    | NoSuchAlgorithmException | XmlParserException
+                    | IllegalArgumentException | IOException
+                    | InterruptedException | ExecutionException e) {
+                throw new IOException(e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public Future<byte[]> readAll(final IOPath iop, final long offset, final long len) throws IOException {
+        return this.executor.submit(() -> {
+            try {
+                final CompletableFuture<GetObjectResponse> objectFuture = this.mac.getObject(
+                        GetObjectArgs.builder()
+                        .bucket(iop.getBucket())
+                        .object(iop.getObjectPath().substring(1))
+                        .offset(offset)
+                        .length(len)
+                        .build());
+                final GetObjectResponse response = objectFuture.get();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteStreams.copy(response, baos);
+                return baos.toByteArray();
+            } catch (InvalidKeyException
+                    | InsufficientDataException | InternalException
+                    | NoSuchAlgorithmException | XmlParserException
+                    | IllegalArgumentException | IOException
+                    | InterruptedException | ExecutionException e) {
+                throw new IOException(e.getMessage());
+            }
+        });
     }
 
     public InputStream select(final IOPath iop, final String sqlExpression) throws IOException {
@@ -358,7 +461,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                     this.mc.selectObjectContent(
                             SelectObjectContentArgs.builder()
                             .bucket(iop.getBucket())
-                            .object(iop.getPath())
+                            .object(iop.getObjectPath().substring(1))
                             .sqlExpression(sqlExpression)
                             .inputSerialization(is)
                             .outputSerialization(os)
@@ -368,10 +471,10 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
         } catch (InvalidKeyException | ErrorResponseException | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
-
 
     /**
      * removal of an object
@@ -382,7 +485,11 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     @Override
     public void remove(final IOPath iop) throws IOException {
         try {
-            this.mc.removeObject(RemoveObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            this.mc.removeObject(
+                    RemoveObjectArgs.builder()
+                    .bucket(iop.getBucket())
+                    .object(iop.getObjectPath().substring(1))
+                    .build());
             super.dirListCache.remove(iop);
             super.dirListCache.remove(iop.getParent());
         } catch (InvalidKeyException | ErrorResponseException
@@ -390,6 +497,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
@@ -424,7 +532,7 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
             for (final Result<Item> result: results) {
                 final Item item = result.get();
                 if (!item.isDir()) {
-                    cache.put(item.objectName(), item);
+                    cache.put("/" + item.objectName(), item);
                     final IOPathMeta meta = new IOPathMeta(new IOPath(bucketName, item.objectName()));
                     meta.setSize(item.size()).setLastModified(item.lastModified().toEpochSecond() * 1000L);
                     objectMetas.add(meta);
@@ -437,27 +545,29 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
                 | InvalidResponseException | NoSuchAlgorithmException
                 | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
+            Logger.error(e);
             throw new IOException(e.getMessage());
         }
     }
 
     private LinkedHashMap<String, Item> getItems(final String bucketName, String prefix) throws IOException {
-        if (prefix.startsWith("/")) prefix = prefix.substring(1);
-        final String cacheKey = bucketName + "/" + prefix;
+        if (!prefix.startsWith("/")) prefix = "/" + prefix;
+        final String cacheKey = bucketName + prefix;
         LinkedHashMap<String, Item> cache = this.objectListCache.get(cacheKey);
         if (cache == null) {
-            this.list(bucketName, prefix);
-            cache = this.objectListCache.get(cacheKey);
+            this.list(bucketName, prefix); // writes into cache
+            cache = this.objectListCache.get(cacheKey); // this must not be null
+            assert cache != null;
         }
         if (cache == null) throw new IOException("prefix " + prefix + " in bucket " + bucketName + " does not exist");
         return cache;
     }
 
     private Item getItem(final IOPath iop) throws IOException {
-        final int p = iop.getPath().lastIndexOf("/");
-        final String prefix = p < 0 ? "" : iop.getPath().substring(0, p);
+        final int p = iop.getObjectPath().lastIndexOf("/");
+        final String prefix = p < 0 ? "" : iop.getObjectPath().substring(0, p);
         final LinkedHashMap<String, Item> cache = this.getItems(iop.getBucket(), prefix);
-        final Item item = cache.get(iop.getPath());
+        final Item item = cache.get(iop.getObjectPath());
         if (item == null) throw new IOException("object " + iop.toString() + " does not exist (2)");
         return item;
     }
@@ -487,7 +597,11 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     @Override
     public long lastModified(final IOPath iop) throws IOException {
         try {
-            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            final StatObjectResponse sor = this.mc.statObject(
+                    StatObjectArgs.builder()
+                    .bucket(iop.getBucket())
+                    .object(iop.getObjectPath().substring(1))
+                    .build());
             return sor.lastModified().toInstant().toEpochMilli();
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -514,7 +628,11 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
     @Override
     public boolean exists(final IOPath iop) {
         try {
-            final StatObjectResponse sor = this.mc.statObject(StatObjectArgs.builder().bucket(iop.getBucket()).object(iop.getPath()).build());
+            final StatObjectResponse sor = this.mc.statObject(
+                    StatObjectArgs.builder()
+                    .bucket(iop.getBucket())
+                    .object(iop.getObjectPath().substring(1))
+                    .build());
             return !sor.deleteMarker();
         } catch (InvalidKeyException | ErrorResponseException
                 | InsufficientDataException | InternalException
@@ -527,7 +645,6 @@ public class MinioS3IO extends AbstractIO implements GenericIO {
 
     @Override
     public String toString() {
-    	return this.accessKey + "@" + this.endpointURL;
+        return this.accessKey + "@" + this.endpointURL;
     }
-
 }

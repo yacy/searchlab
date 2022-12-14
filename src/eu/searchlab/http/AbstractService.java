@@ -30,9 +30,9 @@ public abstract class AbstractService implements Service {
 
     @Override
     public boolean supportsPath(String path) {
-        path = IOPath.normalizePath(path);
+        path = IOPath.canonicalPath(path);
         final String[] paths = this.getPaths();
-        for (final String p: paths) if (IOPath.normalizePath(p).equals(path)) return true;
+        for (final String p: paths) if (IOPath.canonicalPath(p).equals(path)) return true;
         return false;
     }
 

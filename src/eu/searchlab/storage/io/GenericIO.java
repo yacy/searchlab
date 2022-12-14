@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedOutputStream;
 import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * Storage Engine which makes an abstraction of the actual storage system, which can be i.e.:
@@ -84,12 +85,24 @@ public interface GenericIO {
     public void write(final IOPath iop, final byte[] object) throws IOException;
 
     /**
-     * write an object gzipped from a byte array
-     * @param iop
-     * @param object
+     * write to an object until given PipedOutputStream is closed
+     * @param bucketName
+     * @param objectName
+     * @param pos
+     * @param len
      * @throws IOException
      */
-    public void writeGZIP(final IOPath iop, final byte[] object) throws IOException;
+    public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException;
+
+    /**
+     * write a stream with known size (len >= 0) or unknown size (len < 0) while reading from an inputStream
+     * @param bucketName
+     * @param objectName
+     * @param stream
+     * @param len
+     * @throws IOException
+     */
+    public void write(final IOPath iop, final InputStream stream, final long len) throws IOException;
 
     /**
      * write an object from a file
@@ -100,22 +113,29 @@ public interface GenericIO {
     public void write(final IOPath iop, final File fromFile) throws IOException;
 
     /**
+     * write an object gzipped from a byte array
+     * @param iop
+     * @param object
+     * @throws IOException
+     */
+    public void writeGZIP(final IOPath iop, final byte[] object) throws IOException;
+
+    /**
      * write an object gzipped from a file
      * @param iop
      * @param object
      * @throws IOException
      */
     public void writeGZIP(final IOPath iop, final File fromFile) throws IOException;
-
+    
     /**
-     * write to an object until given PipedOutputStream is closed
-     * @param bucketName
-     * @param objectName
-     * @param pos
-     * @param len
+     * write an object zipped from a byte array
+     * @param iop
+     * @param object
+     * @param original_name
      * @throws IOException
      */
-    public void write(final IOPath iop, final PipedOutputStream pos, final long len) throws IOException;
+    public void writeZIP(final IOPath iop, final byte[] object, String original_name) throws IOException;
 
     /**
      * client-side merge of two objects into a new object
@@ -157,7 +177,7 @@ public interface GenericIO {
      * @return whole object as byte[]
      * @throws IOException
      */
-    public byte[] readAll(final IOPath iop) throws IOException;
+    public Future<byte[]> readAll(final IOPath iop) throws IOException;
 
     /**
      * reading of an object beginning with an offset into a byte array
@@ -166,7 +186,7 @@ public interface GenericIO {
      * @return whole object as byte[]
      * @throws IOException
      */
-    public byte[] readAll(final IOPath iop, final long offset) throws IOException;
+    public Future<byte[]> readAll(final IOPath iop, final long offset) throws IOException;
 
     /**
      * reading of an object from an offset with given length into a byte array
@@ -176,7 +196,7 @@ public interface GenericIO {
      * @return whole object as byte[]
      * @throws IOException
      */
-    public byte[] readAll(final IOPath iop, final long offset, final long len) throws IOException;
+    public Future<byte[]> readAll(final IOPath iop, final long offset, final long len) throws IOException;
 
     /**
      * reading of an object into a stream
@@ -193,6 +213,14 @@ public interface GenericIO {
      * @throws IOException
      */
     public InputStream readGZIP(final IOPath iop) throws IOException;
+
+    /**
+     * unZIP a compressed zip object and write it back to the same path with the name given in the zip file
+     * @param iop
+     * @return ths IOPath of the unzipped file
+     * @throws IOException
+     */
+    //public IOPath unZIP(final IOPath iop) throws IOException;
 
     /**
      * reading of an object beginning with an offset

@@ -21,6 +21,7 @@ package eu.searchlab.http.services.assets;
 
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import eu.searchlab.Searchlab;
 import eu.searchlab.http.AbstractService;
@@ -46,7 +47,7 @@ public class AssetDownloadService extends AbstractService implements Service {
     public ServiceResponse serve(final ServiceRequest serviceRequest) {
 
         // evaluate request parameter
-        String path = IOPath.normalizePath(serviceRequest.get("path", ""));
+        String path = IOPath.canonicalPath(serviceRequest.get("path", ""));
         if (path.length() == 1 && path.equals("/")) path = "";
 
         final int p = path.lastIndexOf('.');
@@ -60,8 +61,8 @@ public class AssetDownloadService extends AbstractService implements Service {
 
         byte[] b;
         try {
-            b = Searchlab.io.readAll(apppath);
-        } catch (final IOException e) {
+            b = Searchlab.io.readAll(apppath).get();
+        } catch (final IOException | InterruptedException | ExecutionException e) {
             Logger.warn("attempt to list " + apppath.toString(), e);
             b = new byte[] {};
         }

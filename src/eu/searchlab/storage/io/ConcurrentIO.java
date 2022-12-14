@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPOutputStream;
 
 import org.json.JSONException;
@@ -54,7 +55,7 @@ public final class ConcurrentIO {
 
     private final static IOPath lockFile(final IOPath iop) {
         if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
-        final IOPath lockFile = new IOPath(iop.getBucket(), iop.getPath() + ".lock");
+        final IOPath lockFile = new IOPath(iop.getBucket(), iop.getObjectPath() + ".lock");
         return lockFile;
     }
 
@@ -63,7 +64,7 @@ public final class ConcurrentIO {
         for (int i = 0; i < iops.length; i++) {
             final IOPath iop = iops[i];
             if (iop.isFolder()) throw new RuntimeException("IOPath must not be a folder: " + iop.toString());
-            lockFiles[i] = new IOPath(iop.getBucket(), iop.getPath() + ".lock");
+            lockFiles[i] = new IOPath(iop.getBucket(), iop.getObjectPath() + ".lock");
         }
         return lockFiles;
     }
@@ -81,8 +82,12 @@ public final class ConcurrentIO {
 
     private final IOObject readLockFile(final IOPath lockFile) throws IOException {
         assert this.io.exists(lockFile);
-        final byte[] a = this.io.readAll(lockFile);
-        return new IOObject(lockFile, a);
+        try {
+            final byte[] a = this.io.readAll(lockFile).get();
+            return new IOObject(lockFile, a);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     private final void writeLockFiles(final IOPath... lockFiles) throws IOException {
@@ -178,8 +183,12 @@ public final class ConcurrentIO {
         if (waitUntilUnlocks(lockFiles)) {
             writeLockFiles(lockFiles);
             for (int i = 0; i < iops.length; i++) {
-                final byte[] a = this.io.readAll(iops[i]);
-                as[i] = new IOObject(iops[i], a);
+                try {
+                    final byte[] a = this.io.readAll(iops[i]).get();
+                    as[i] = new IOObject(iops[i], a);
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new IOException(e.getMessage());
+                }
             }
             releaseLockFiles(lockFiles);
             return as;
@@ -208,11 +217,15 @@ public final class ConcurrentIO {
         if (waitUntilUnlock(lockFile)) {
             writeLockFiles(lockFile);
             if (this.io.exists(iop)) {
-                final byte[] a = this.io.readAll(iop);
-                final byte[] ab = new byte[a.length + b.length];
-                System.arraycopy(a, 0, ab, 0, a.length);
-                System.arraycopy(b, 0, ab, a.length, b.length);
-                this.io.write(iop, ab);
+                try {
+                    final byte[] a = this.io.readAll(iop).get();
+                    final byte[] ab = new byte[a.length + b.length];
+                    System.arraycopy(a, 0, ab, 0, a.length);
+                    System.arraycopy(b, 0, ab, a.length, b.length);
+                    this.io.write(iop, ab);
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new IOException(e.getMessage());
+                }
             } else {
                 this.io.write(iop, b);
             }

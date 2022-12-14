@@ -22,7 +22,6 @@ package eu.searchlab.http;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import eu.searchlab.storage.io.IOPath;
 
 
@@ -35,7 +34,7 @@ public class ServiceMap {
     }
 
     public static Service getService(String path) {
-        path = IOPath.normalizePath(path);
+        path = IOPath.canonicalPath(path);
         Service service = null;
         for (int i = 0; i < services.size(); i++) {
             if (services.get(i).supportsPath(path)) {
@@ -45,5 +44,5 @@ public class ServiceMap {
         }
         return service;
     }
-    
+
 }
