@@ -22,14 +22,18 @@ package eu.searchlab.storage.queues;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MemoryQueue extends AbstractQueue implements Queue {
 
-    private final ConcurrentLinkedQueue<byte[]> queue;
+    private AtomicLong acnt = new AtomicLong(0);
+    private final LinkedBlockingDeque<byte[]> queue;
     private final ConcurrentHashMap<Long, byte[]> ackc;
 
     public MemoryQueue() {
-        this.queue = new ConcurrentLinkedQueue<>();
+        this.queue = new LinkedBlockingDeque<>();
         this.ackc = new ConcurrentHashMap<>();
     }
 
@@ -42,21 +46,39 @@ public class MemoryQueue extends AbstractQueue implements Queue {
         this.queue.add(message);
     }
 
+    private long getAckHandle() {
+        return System.currentTimeMillis() * 1000 + acnt.incrementAndGet();
+    }
+
     @Override
     public MessageContainer receive(long timeout, boolean autoAck) throws IOException {
-        final long t = System.currentTimeMillis();
-        final byte[] b = this.queue.poll();
-        if (b != null) {
-            this.ackc.put(t,  b);
-            return new MessageContainer(b, t);
+        final long deliveryTag = getAckHandle();
+        if (timeout <= 0) {
+            try {
+                final byte[] b = this.queue.takeFirst();
+                if (!autoAck) {
+                    this.ackc.put(deliveryTag, b);
+                }
+                return new MessageContainer(b, deliveryTag);
+            } catch (InterruptedException e) {
+                throw new IOException(e.getMessage());
+            }
+        } else {
+            try {
+                final byte[] b = this.queue.pollFirst(timeout, TimeUnit.MILLISECONDS);
+                if (b == null) throw new IOException("no new object in queue");
+                this.ackc.put(deliveryTag,  b);
+                return new MessageContainer(b, deliveryTag);
+            } catch (InterruptedException e) {
+                throw new IOException(e.getMessage());
+            }
         }
-        return null;
     }
 
     @Override
     public void acknowledge(long deliveryTag) throws IOException {
-        // TODO Auto-generated method stub
-
+        byte[] b = this.ackc.remove(deliveryTag); 
+        if (b == null) throw new IOException("no such tag in acknowlege queue: " + deliveryTag);
     }
 
     @Override
