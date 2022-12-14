@@ -42,7 +42,7 @@ repositories {
 }
 
 dependencies {
-  implementation 'org.elasticsearch.client:transport:7.17.+'
+  implementation 'org.elasticsearch.client:transport:7.17.7'
   implementation 'io.undertow:undertow-core:2.3.0.Final'
   implementation 'tech.tablesaw:tablesaw-jsplot:0.43.+'
   implementation 'tech.tablesaw:tablesaw-json:0.43.+'
