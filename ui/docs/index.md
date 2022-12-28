@@ -16,7 +16,7 @@ body {
 
 <br/>
 
-# Web Harvesting for Data Mining
+# Create Your Own Search Engine
 
 <p>
 <form class="input-group input-group-lg" name="searchform" action="search/" method="get">
@@ -25,4 +25,10 @@ body {
 <button id="search" type="submit" class="btn btn-default">search</button>
 </span>
 </form>
+</p>
+
+<p>
+Create your own personalized search engine, start a web crawler and index the content to make your own search portal.
+There is a variety of customizable search interfaces to choose from and the option to create and share your own.
+Crawled data can be downloaded and used for other purposes (time-series data, machine learning, archiving) and can also be imported into a <a href="http://yacy.net">YaCy</a> personal search engine.
 </p>
