@@ -177,6 +177,7 @@ public class WebServer {
         final HttpHandler encodingHandler = new EncodingHandler.Builder().build(null).wrap(ph);
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         builder.setHandler(encodingHandler);
+        builder.setBufferSize(1024 * 1024); // prevents chunked-encoding
         this.server = builder.build();
         this.server.start();
     }
@@ -271,7 +272,7 @@ public class WebServer {
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date(d))); // like a proper file server
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=" + (System.currentTimeMillis() - d + 600)); // 10 minutes cache, for production: increase
                     exchange.getResponseHeaders().remove(Headers.EXPIRES); // MUST NOT appear in headers to enable caching with cache-control
-                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, bb.remaining());
+                    exchange.setResponseContentLength(f.length());
                     exchange.getResponseSender().send(bb);
                     log(serviceRequest.getIP00(), client, user, method, path, StatusCodes.OK, f.length(), referer, userAgent);
                 } catch (final IOException e) {
@@ -318,7 +319,7 @@ public class WebServer {
                     */
                     exchange.getResponseHeaders().put(Headers.DATE, DateParser.formatRFC1123(new Date())); // current time because it is generated right now
                     exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "no-cache");
-                    exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, b.length);
+                    exchange.setResponseContentLength(b.length);
                     exchange.getResponseSender().send(ByteBuffer.wrap(b));
                 }
                 log(serviceRequest.getIP00(), client, user, method,
