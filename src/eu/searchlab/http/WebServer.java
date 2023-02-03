@@ -177,7 +177,7 @@ public class WebServer {
         final HttpHandler encodingHandler = new EncodingHandler.Builder().build(null).wrap(ph);
         final Builder builder = Undertow.builder().addHttpListener(this.port, this.bind);
         builder.setHandler(encodingHandler);
-        builder.setBufferSize(1024 * 1024); // prevents chunked-encoding
+        builder.setBufferSize(1024 * 16 - 20);
         this.server = builder.build();
         this.server.start();
     }
